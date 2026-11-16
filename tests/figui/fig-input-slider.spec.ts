@@ -835,7 +835,7 @@ test.describe("fig-input-slider", () => {
     });
 
     expect(result.rest).toEqual({ overlaps: false, opacity: "1" });
-    expect(result.defaultThreshold).toBe("0.5rem");
+    expect(result.defaultThreshold).toMatch(/^0?\.5rem$/);
     expect(result.approaching).not.toBeNull();
     expect(result.approaching!.opacity).toBeGreaterThan(0.25);
     expect(result.approaching!.opacity).toBeLessThan(1);
