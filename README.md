@@ -6,7 +6,7 @@ Editor and experimental Lab web components for
 ## Install
 
 ```sh
-npm install @rogieking/figui3 github:rogie/figui3-extended#v1.0.0
+npm install @rogieking/figui3 git+https://github.com/rogie/figui3-extended.git#v1.0.0
 ```
 
 ```js

@@ -66,6 +66,7 @@
   ],
   "scripts": {
     "build": "npm run build:js && npm run build:css && npm run check:artifacts && npm run check:licenses",
+    "prepare": "npm run build",
     "prepack": "npm run build",
     "build:js": "bun scripts/build-js.mjs",
     "build:css": "node scripts/build-css.mjs",
