@@ -30,8 +30,8 @@ React: [../figui3/react.md](../figui3/react.md). Per-tag JSX: [components.md](co
 ```js
 import "@rogieking/figui3/fig.css";
 import "@rogieking/figui3/fig.js";
-import "@rogieking/figui3/fig-editor.css";
-import "@rogieking/figui3/fig-editor.js";
+import "@rogieking/figui3-extended/fig-editor.css";
+import "@rogieking/figui3-extended/fig-editor.js";
 ```
 
 `fig-editor.js` imports `fig.js`. Still import `fig-editor.css`.

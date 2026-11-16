@@ -71,14 +71,19 @@
     "build:css": "node scripts/build-css.mjs",
     "check:artifacts": "node scripts/check-artifacts.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
+    "dev": "bun --hot server.ts",
+    "dev:playground": "node playground/dev.mjs",
+    "build:playground": "cd playground && npm run build",
     "test": "npm run build && npm run test:types",
-    "test:types": "tsc -p tests/types/tsconfig.json"
+    "test:types": "tsc -p tests/types/tsconfig.json",
+    "test:components": "playwright test"
   },
   "peerDependencies": {
     "@rogieking/figui3": ">=11.11.20 <13"
   },
   "devDependencies": {
     "@rogieking/figui3": "11.11.20",
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.3.0",
     "lightningcss": "^1.32.0",
     "typescript": "^5.9.3"

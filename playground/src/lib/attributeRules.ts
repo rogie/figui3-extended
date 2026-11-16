@@ -1,0 +1,1553 @@
+export type AttributeTarget = "field" | "control";
+
+export type BoolMode = "presence" | "string" | "custom";
+
+export interface BaseAttributeRule {
+  label: string;
+  type: "boolean" | "number" | "enum" | "string" | "color";
+}
+
+export interface BooleanAttributeRule extends BaseAttributeRule {
+  type: "boolean";
+  boolMode?: BoolMode;
+  defaultChecked?: boolean;
+  trueValue?: string | null;
+  falseValue?: string | null;
+}
+
+export interface NumberAttributeRule extends BaseAttributeRule {
+  type: "number";
+  min?: number;
+  max?: number;
+  step?: number;
+  units?: string;
+}
+
+export interface EnumAttributeRule extends BaseAttributeRule {
+  type: "enum";
+  options: string[];
+}
+
+export interface StringAttributeRule extends BaseAttributeRule {
+  type: "string";
+  options?: string[];
+  placeholder?: string;
+  defaultValue?: string;
+}
+
+export interface ColorAttributeRule extends BaseAttributeRule {
+  type: "color";
+  defaultValue?: string;
+}
+
+export type AttributeRule =
+  | BooleanAttributeRule
+  | NumberAttributeRule
+  | EnumAttributeRule
+  | StringAttributeRule
+  | ColorAttributeRule;
+
+export type AttributeRuleSet = Record<string, AttributeRule>;
+
+export function getSplitInputTypePreset(type: "text" | "number") {
+  return type === "number"
+    ? {
+        options: "2,4,8,16,32",
+        placeholder: "Padding",
+        values: new Set(["2", "4", "8", "16", "32"]),
+      }
+    : {
+        options: "House, Apartment, Condo, Townhouse, Other",
+        placeholder: "Type of residence",
+        values: new Set([
+          "House",
+          "Apartment",
+          "Condo",
+          "Townhouse",
+          "Other",
+        ]),
+      };
+}
+
+const aspectRatioRule: AttributeRule = {
+  label: "Aspect ratio",
+  type: "enum",
+  options: ["1/1", "4/3", "16/9"],
+};
+
+const fillPickerPositionOptions = [
+  "left",
+  "top",
+  "right",
+  "bottom",
+  "center",
+  "top left",
+  "top center",
+  "top right",
+  "center left",
+  "center center",
+  "center right",
+  "bottom left",
+  "bottom center",
+  "bottom right",
+];
+
+export const fieldAttributeRules: AttributeRuleSet = {
+  direction: {
+    label: "Direction",
+    type: "enum",
+    options: ["horizontal", "vertical"],
+  },
+  columns: {
+    label: "Columns",
+    type: "enum",
+    options: ["thirds", "half"],
+  },
+};
+
+const splitInputAttributeRules: AttributeRuleSet = {
+  type: {
+    label: "Type",
+    type: "enum",
+    options: ["text", "number"],
+  },
+  options: { label: "Options", type: "string" },
+  placeholder: { label: "Placeholder", type: "string" },
+  value: { label: "Value", type: "string" },
+  disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+};
+
+const buttonVariantOptions = [
+  "",
+  "secondary",
+  "property",
+  "destructive",
+  "destructiveSecondary",
+  "destructiveGhost",
+  "destructiveLink",
+  "ghost",
+  "link",
+  "input",
+  "overlay",
+];
+
+const buttonComboVariantOptions = ["", "secondary", "input", "overlay"];
+
+const inputSliderAttributeRules: AttributeRuleSet = {
+  name: { label: "Name", type: "string" },
+  value: { label: "Value", type: "string" },
+  default: { label: "Default", type: "string" },
+  "occlusion-targets": {
+    label: "Occlusion targets",
+    type: "string",
+  },
+  min: { label: "Min", type: "number", step: 1 },
+  max: { label: "Max", type: "number", step: 1 },
+  step: { label: "Step", type: "number", min: 0.001, max: 100, step: 0.001 },
+  precision: { label: "Precision", type: "number", min: 0, max: 8, step: 1 },
+  ghost: {
+    label: "Ghost",
+    type: "boolean",
+    boolMode: "string",
+    defaultChecked: false,
+  },
+  disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+};
+
+export const controlAttributeRules: Record<string, AttributeRuleSet> = {
+  "fig-stack": {
+    direction: {
+      label: "Direction",
+      type: "enum",
+      options: ["horizontal", "vertical", "grid"],
+    },
+    gap: { label: "Gap", type: "string" },
+    align: {
+      label: "Align",
+      type: "enum",
+      options: ["", "start", "center", "end", "stretch", "baseline"],
+    },
+    justify: {
+      label: "Justify",
+      type: "enum",
+      options: ["", "start", "center", "end", "between", "around", "stretch"],
+    },
+    wrap: { label: "Wrap", type: "boolean", boolMode: "presence" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+    columns: { label: "Columns", type: "string" },
+    "min-width": { label: "Minimum width", type: "string" },
+  },
+  "fig-tab": {
+    value: { label: "Value", type: "string" },
+    content: { label: "Content selector", type: "string" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-choice": {
+    value: { label: "Value", type: "string" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-button": {
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: buttonVariantOptions,
+    },
+    type: {
+      label: "Type",
+      type: "enum",
+      options: ["button", "toggle", "submit", "link", "select", "upload"],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    align: {
+      label: "Align",
+      type: "enum",
+      options: ["", "start", "center", "end"],
+    },
+    icon: {
+      label: "Icon",
+      type: "enum",
+      options: ["none", "true", "compact"],
+    },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    pill: { label: "Pill", type: "boolean", boolMode: "presence" },
+  },
+  "fig-button-combo": {
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: buttonComboVariantOptions,
+    },
+  },
+  "fig-dropdown": {
+    value: { label: "Value", type: "string" },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    type: {
+      label: "Type",
+      type: "enum",
+      options: ["select", "dropdown"],
+    },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["", "ghost"],
+    },
+    subtle: { label: "Subtle", type: "boolean", boolMode: "presence" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-avatar": {
+    image: {
+      label: "Image",
+      type: "boolean",
+      boolMode: "presence",
+      defaultChecked: true,
+    },
+    name: { label: "Name", type: "string" },
+    size: { label: "Size", type: "enum", options: ["", "large"] },
+  },
+  "fig-tooltip": {
+    text: { label: "Text", type: "string" },
+    action: { label: "Action", type: "enum", options: ["hover", "click", "manual"] },
+    pointer: {
+      label: "Pointer",
+      type: "boolean",
+      boolMode: "custom",
+      trueValue: null,
+      falseValue: "false",
+      defaultChecked: true,
+    },
+    show: { label: "Show", type: "boolean", boolMode: "custom", trueValue: "true", falseValue: null },
+    delay: { label: "Delay", type: "number", min: 0, max: 5000, step: 50 },
+    theme: {
+      label: "Theme",
+      type: "enum",
+      options: ["", "dark", "light", "brand"],
+    },
+  },
+  "fig-dialog": {
+    modal: { label: "Modal", type: "boolean", boolMode: "presence" },
+    drag: { label: "Drag", type: "boolean", boolMode: "presence" },
+    resizable: { label: "Resizable", type: "boolean", boolMode: "presence" },
+    autoresize: { label: "Auto resize", type: "boolean", boolMode: "presence" },
+    handle: { label: "Drag handle", type: "string" },
+    footer: {
+      label: "Footer",
+      type: "boolean",
+      boolMode: "presence",
+      defaultChecked: false,
+    },
+    closedby: {
+      label: "Closed by",
+      type: "enum",
+      options: ["any", "closerequest", "none"],
+    },
+    position: {
+      label: "Position",
+      type: "enum",
+      options: [
+        "",
+        "top left",
+        "top center",
+        "top right",
+        "center left",
+        "center center",
+        "center right",
+        "bottom left",
+        "bottom center",
+        "bottom right",
+      ],
+    },
+  },
+  "fig-popup": {
+    position: {
+      label: "Position",
+      type: "enum",
+      options: [
+        "top",
+        "right",
+        "bottom",
+        "left",
+        "center",
+        "top left",
+        "top center",
+        "top right",
+        "center left",
+        "center center",
+        "center right",
+        "bottom left",
+        "bottom center",
+        "bottom right",
+      ],
+    },
+    offset: { label: "Offset", type: "string" },
+    "viewport-margin": { label: "Viewport margin", type: "string" },
+    title: { label: "Title", type: "string" },
+    autoresize: {
+      label: "Auto resize",
+      type: "boolean",
+      boolMode: "custom",
+      trueValue: null,
+      falseValue: "false",
+      defaultChecked: true,
+    },
+    theme: {
+      label: "Theme",
+      type: "enum",
+      options: ["default", "light", "dark", "menu"],
+    },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["", "popover", "tooltip"],
+    },
+  },
+  "fig-fill-picker": {
+    mode: { label: "Mode", type: "string" },
+    alpha: {
+      label: "Alpha",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    "dialog-position": {
+      label: "Dialog position",
+      type: "enum",
+      options: fillPickerPositionOptions,
+    },
+    "webcam-mode": {
+      label: "Webcam mode",
+      type: "enum",
+      options: ["", "live", "snapshot"],
+    },
+    "default-video": { label: "Default video", type: "string" },
+  },
+  "fig-color-tip": {
+    control: {
+      label: "Control",
+      type: "enum",
+      options: ["color", "add", "remove"],
+    },
+    value: { label: "Value", type: "string" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-swatch": {
+    size: { label: "Size", type: "enum", options: ["small", "medium", "large"] },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    alpha: { label: "Alpha", type: "number", min: 0, max: 1, step: 0.05 },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+  },
+  "fig-checkbox": {
+    label: { label: "Label", type: "enum", options: ["none", "label"] },
+    checked: { label: "Checked", type: "boolean", boolMode: "presence" },
+    "default-checked": {
+      label: "Default checked",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-radio": {
+    label: { label: "Label", type: "enum", options: ["none", "label"] },
+    checked: { label: "Checked", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-field": {
+    direction: {
+      label: "Direction",
+      type: "enum",
+      options: ["horizontal", "vertical"],
+    },
+    label: { label: "Label", type: "string" },
+  },
+  "fig-split-input": splitInputAttributeRules,
+  "fig-combo-input": splitInputAttributeRules,
+  "fig-image": {
+    caption: { label: "Caption", type: "string" },
+    "aspect-ratio": aspectRatioRule,
+    fit: {
+      label: "Fit",
+      type: "enum",
+      options: ["contain", "cover", "fill", "none", "scale-down"],
+    },
+    upload: {
+      label: "Upload",
+      type: "enum",
+      options: ["", "true", "icon", "false"],
+    },
+    "loading-indicator": {
+      label: "Loading indicator",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    checkerboard: { label: "Checkered", type: "boolean", boolMode: "string" },
+    controls: {
+      label: "Controls",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: false,
+    },
+    autoplay: { label: "Autoplay", type: "boolean", boolMode: "string" },
+    loop: { label: "Loop", type: "boolean", boolMode: "string" },
+  },
+  "fig-card": {
+    src: { label: "Src", type: "string" },
+    label: { label: "Label", type: "string" },
+    sublabel: { label: "Sublabel", type: "string" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+    size: { label: "Size", type: "enum", options: ["", "large"] },
+    direction: {
+      label: "Direction",
+      type: "enum",
+      options: ["vertical", "horizontal"],
+    },
+    "aspect-ratio": aspectRatioRule,
+    fit: {
+      label: "Fit",
+      type: "enum",
+      options: ["contain", "cover", "fill", "none", "scale-down"],
+    },
+    "label-line-clamp": {
+      label: "Label lines",
+      type: "enum",
+      options: ["1", "2"],
+    },
+    "label-overflow": {
+      label: "Label overflow",
+      type: "enum",
+      options: ["ellipsis", "fade"],
+    },
+  },
+  "fig-media": {
+    caption: { label: "Caption", type: "string" },
+    "aspect-ratio": aspectRatioRule,
+    fit: {
+      label: "Fit",
+      type: "enum",
+      options: ["contain", "cover", "fill", "none", "scale-down"],
+    },
+    upload: {
+      label: "Upload",
+      type: "enum",
+      options: ["", "true", "icon", "false"],
+    },
+    "loading-indicator": {
+      label: "Loading indicator",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    checkerboard: { label: "Checkered", type: "boolean", boolMode: "string" },
+    controls: {
+      label: "Controls",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: false,
+    },
+    autoplay: { label: "Autoplay", type: "boolean", boolMode: "string" },
+    loop: { label: "Loop", type: "boolean", boolMode: "string" },
+    muted: { label: "Muted", type: "boolean", boolMode: "string" },
+    poster: { label: "Poster", type: "string" },
+  },
+  "fig-carousel": {
+    index: { label: "Index", type: "number", min: 0, max: 20, step: 1 },
+    playing: { label: "Playing", type: "boolean", boolMode: "presence" },
+    autoplay: {
+      label: "Autoplay",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    duration: {
+      label: "Duration",
+      type: "number",
+      min: 0.1,
+      max: 60,
+      step: 0.1,
+      units: "s",
+    },
+    loop: { label: "Loop", type: "boolean", boolMode: "presence" },
+    navigation: {
+      label: "Navigation",
+      type: "enum",
+      options: ["buttons", "dots"],
+    },
+    progress: {
+      label: "Progress",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+  },
+  "fig-video": {
+    caption: { label: "Caption", type: "string" },
+    "aspect-ratio": aspectRatioRule,
+    fit: {
+      label: "Fit",
+      type: "enum",
+      options: ["contain", "cover", "fill", "none", "scale-down"],
+    },
+    upload: {
+      label: "Upload",
+      type: "enum",
+      options: ["", "true", "icon", "false"],
+    },
+    checkerboard: { label: "Checkered", type: "boolean", boolMode: "string" },
+    controls: {
+      label: "Controls",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: false,
+    },
+    autoplay: { label: "Autoplay", type: "boolean", boolMode: "string" },
+    loop: { label: "Loop", type: "boolean", boolMode: "string" },
+    muted: { label: "Muted", type: "boolean", boolMode: "string" },
+    poster: { label: "Poster", type: "string" },
+  },
+  "fig-media-controls": {
+    playing: { label: "Playing", type: "boolean", boolMode: "presence" },
+    overlay: { label: "Overlay", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    duration: { label: "Duration", type: "number", min: 0, max: 600, step: 1 },
+    time: { label: "Time", type: "number", min: 0, max: 600, step: 1 },
+  },
+  "fig-audio": {
+    src: { label: "Audio file", type: "string" },
+    variant: {
+      label: "Waveform",
+      type: "enum",
+      options: ["bars", "ribbon"],
+    },
+    autoplay: { label: "Autoplay", type: "boolean", boolMode: "string" },
+    controls: {
+      label: "Controls",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: false,
+    },
+    muted: { label: "Muted", type: "boolean", boolMode: "string" },
+    loop: { label: "Loop", type: "boolean", boolMode: "string" },
+  },
+  "fig-preview": {
+    "aspect-ratio": aspectRatioRule,
+    fit: {
+      label: "Fit",
+      type: "enum",
+      options: ["contain", "cover", "fill", "none", "scale-down"],
+    },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+    checkerboard: {
+      label: "Checkered",
+      type: "boolean",
+      boolMode: "presence",
+    },
+  },
+  "fig-slider": {
+    default: { label: "Default", type: "number" },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["default", "classic"],
+    },
+    text: { label: "Text", type: "boolean", boolMode: "string" },
+    placeholder: { label: "Placeholder", type: "string" },
+    units: {
+      label: "Units",
+      type: "enum",
+      options: ["", "%", "px", "°"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-reorder": {
+    axis: {
+      label: "Axis",
+      type: "enum",
+      options: ["vertical", "horizontal"],
+    },
+    handle: { label: "Handle", type: "string" },
+    items: { label: "Items", type: "string" },
+    indicator: {
+      label: "Indicator",
+      type: "enum",
+      options: ["default", "ring"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-property": {
+    label: { label: "Label", type: "string" },
+    ratio: {
+      label: "Ratio",
+      type: "string",
+      options: ["1:3", "1:2", "2:3", "1:1"],
+      placeholder: "1:2",
+      defaultValue: "1:2",
+    },
+    leading: {
+      label: "Leading",
+      type: "enum",
+      options: ["", "drag", "chevron"],
+    },
+    "show-leading": {
+      label: "Show leading",
+      type: "enum",
+      options: ["hover", "false", ""],
+    },
+    trailing: {
+      label: "Trailing",
+      type: "enum",
+      options: ["", "remove", "add", "bind"],
+    },
+    "show-trailing": {
+      label: "Show trailing",
+      type: "enum",
+      options: ["hover", "false", ""],
+    },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-rotate": {
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["default", "simple"],
+    },
+    x: { label: "X", type: "number", step: 1 },
+    y: { label: "Y", type: "number", step: 1 },
+    z: { label: "Z", type: "number", step: 1 },
+    "default-x": { label: "Default X", type: "number", step: 1 },
+    "default-y": { label: "Default Y", type: "number", step: 1 },
+    "default-z": { label: "Default Z", type: "number", step: 1 },
+    units: {
+      label: "Units",
+      type: "enum",
+      options: ["deg", "°", "rad", "turn", "grad"],
+    },
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-point": {
+    x: { label: "X", type: "number", step: 1 },
+    y: { label: "Y", type: "number", step: 1 },
+    "default-x": { label: "Default X", type: "number", step: 1 },
+    "default-y": { label: "Default Y", type: "number", step: 1 },
+    units: {
+      label: "Units",
+      type: "enum",
+      options: ["", "%", "px", "°"],
+    },
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+  },
+  "fig-select": {
+    value: { label: "Value", type: "string" },
+    default: { label: "Default", type: "string" },
+    label: { label: "Label", type: "string" },
+    options: { label: "Options", type: "string" },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["", "primary", "ghost", "input"],
+    },
+    icon: { label: "Icon", type: "boolean", boolMode: "presence" },
+    "menu-anchor": { label: "Menu anchor", type: "string" },
+    full: { label: "Full", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    position: {
+      label: "Position",
+      type: "enum",
+      options: [
+        "",
+        "bottom left",
+        "bottom right",
+        "top left",
+        "top right",
+        "bottom center",
+        "top center",
+      ],
+    },
+  },
+  "fig-input-slider": inputSliderAttributeRules,
+  "fig-input-slider-hue": {
+    ...inputSliderAttributeRules,
+    color: { label: "Color", type: "color", defaultValue: "#0D99FF" },
+    "color-space": {
+      label: "Color space",
+      type: "enum",
+      options: [
+        "srgb",
+        "srgb-linear",
+        "display-p3",
+        "oklab",
+        "oklch",
+        "hsl",
+      ],
+    },
+  },
+  "fig-input-slider-opacity": {
+    ...inputSliderAttributeRules,
+    color: { label: "Color", type: "color", defaultValue: "#808080" },
+  },
+  "fig-input-slider-delta": inputSliderAttributeRules,
+  "fig-input-slider-stepper": inputSliderAttributeRules,
+  "fig-input-slider-wheel": inputSliderAttributeRules,
+  "fig-input-wheel": {
+    value: { label: "Value", type: "number", min: -10000, max: 10000, step: 1 },
+    min: { label: "Min", type: "number", step: 1 },
+    max: { label: "Max", type: "number", step: 1 },
+    step: { label: "Step", type: "number", min: 0.001, max: 1000, step: 0.001 },
+    spin: {
+      label: "Spin",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-audio-waveform": {
+    url: { label: "Audio file", type: "string" },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["bars", "ribbon"],
+    },
+    progress: {
+      label: "Progress",
+      type: "number",
+      min: 0,
+      max: 1,
+      step: 0.01,
+    },
+    polarization: {
+      label: "Polarization",
+      type: "number",
+      min: 0,
+      max: 4,
+      step: 0.1,
+    },
+    full: { label: "Full width", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-fill": {
+    mode: { label: "Mode", type: "string" },
+    alpha: {
+      label: "Alpha",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    "picker-dialog-position": {
+      label: "Picker position",
+      type: "enum",
+      options: fillPickerPositionOptions,
+    },
+    "webcam-mode": {
+      label: "Webcam mode",
+      type: "enum",
+      options: ["", "live", "snapshot"],
+    },
+    "default-video": { label: "Default video", type: "string" },
+  },
+  "fig-input-palette": {
+    default: { label: "Default", type: "string" },
+    edit: { label: "Edit", type: "enum", options: ["true", "false", "picker"] },
+    fixed: { label: "Fixed", type: "boolean", boolMode: "presence" },
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-palette-editor": {
+    max: { label: "Max", type: "number", min: 2, step: 1 },
+    "show-rows": {
+      label: "Show rows",
+      type: "number",
+      min: 0.5,
+      step: 0.5,
+    },
+    overflow: {
+      label: "Overflow",
+      type: "enum",
+      options: ["fade", "visible"],
+    },
+  },
+  "fig-gradient-editor": {
+    "color-space": {
+      label: "Color space",
+      type: "enum",
+      options: ["srgb", "display-p3"],
+    },
+    "show-rows": {
+      label: "Show rows",
+      type: "number",
+      min: 0.5,
+      step: 0.5,
+    },
+    overflow: {
+      label: "Overflow",
+      type: "enum",
+      options: ["fade", "visible"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-gradient": {
+    default: { label: "Default", type: "string" },
+    edit: { label: "Edit", type: "enum", options: ["true", "false", "picker"] },
+    mode: { label: "Mode", type: "enum", options: ["handle", "tip"] },
+    size: { label: "Size", type: "enum", options: ["", "large"] },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  // Gradient/interpolation controls are custom-rendered in AttributesView.
+  "fig-interpolation-swatch": {
+    size: { label: "Size", type: "enum", options: ["small", "large"] },
+  },
+  "fig-input-color": {
+    default: { label: "Default", type: "string" },
+    alpha: {
+      label: "Alpha",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    text: {
+      label: "Text",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-switch": {
+    checked: {
+      label: "Checked",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    "default-checked": {
+      label: "Default checked",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    indeterminate: {
+      label: "Indeterminate",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    disabled: {
+      label: "Disabled",
+      type: "boolean",
+      boolMode: "presence",
+    },
+  },
+  "fig-segmented-control": {
+    value: { label: "Value", type: "string" },
+    name: { label: "Name", type: "string" },
+    animated: { label: "Animated", type: "boolean", boolMode: "presence" },
+    sizing: {
+      label: "Sizing",
+      type: "enum",
+      options: ["equal", "auto"],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-options": {
+    options: { label: "Options", type: "string" },
+    value: { label: "Value", type: "string" },
+    sizing: {
+      label: "Sizing",
+      type: "enum",
+      options: ["equal", "auto"],
+    },
+    disabled: { label: "Disabled", type: "boolean" },
+    full: { label: "Full width", type: "boolean" },
+  },
+  "fig-easing-curve": {
+    default: { label: "Default", type: "string" },
+    mode: {
+      label: "Mode",
+      type: "enum",
+      options: ["", "bezier", "spring"],
+    },
+    edit: {
+      label: "Edit",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    presets: {
+      label: "Presets",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    text: {
+      label: "Text",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    "aspect-ratio": aspectRatioRule,
+  },
+  "fig-3d-rotate": {
+    "aspect-ratio": aspectRatioRule,
+    perspective: {
+      label: "Perspective",
+      type: "boolean",
+      boolMode: "custom",
+      trueValue: null,
+      falseValue: "none",
+      defaultChecked: true,
+    },
+    "perspective-distance": {
+      label: "Distance",
+      type: "number",
+      min: 0,
+      max: 1000,
+      step: 1,
+    },
+    fields: {
+      label: "Fields",
+      type: "enum",
+      options: ["", "rotateX,rotateY,rotateZ", "rotateX,rotateY"],
+    },
+  },
+  "fig-origin-grid": {
+    "aspect-ratio": aspectRatioRule,
+    drag: { label: "Drag", type: "boolean", boolMode: "string" },
+    fields: { label: "Fields", type: "boolean", boolMode: "string" },
+  },
+  "fig-angle": {
+    default: {
+      label: "Default",
+      type: "number",
+      min: -1080,
+      max: 1080,
+      step: 1,
+    },
+    min: { label: "Min", type: "number", min: -1080, max: 1080, step: 1 },
+    max: { label: "Max", type: "number", min: -1080, max: 1080, step: 1 },
+    precision: {
+      label: "Precision",
+      type: "number",
+      min: 0,
+      max: 6,
+      step: 1,
+    },
+    dial: {
+      label: "Dial",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    rotations: {
+      label: "Rotations",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    units: {
+      label: "Units",
+      type: "enum",
+      options: ["deg", "rad", "turn", "grad"],
+    },
+    step: {
+      label: "Step",
+      type: "number",
+      min: 0.001,
+      max: 45,
+      step: 0.001,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-joystick": {
+    "aspect-ratio": aspectRatioRule,
+    "axis-labels": { label: "Axis labels", type: "string" },
+    fields: { label: "Fields", type: "boolean", boolMode: "string" },
+  },
+  "fig-input-text": {
+    default: { label: "Default", type: "string" },
+    type: {
+      label: "Type",
+      type: "enum",
+      options: ["text", "email", "password", "search", "url"],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    multiline: { label: "Multiline", type: "boolean", boolMode: "presence" },
+    autoresize: { label: "Auto resize", type: "boolean", boolMode: "presence" },
+    resizable: { label: "Resizable", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    readonly: { label: "Readonly", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-number": {
+    default: { label: "Default", type: "number", step: 1 },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: ["", "ghost"],
+    },
+    min: { label: "Min", type: "number", min: -1000, max: 1000, step: 1 },
+    max: { label: "Max", type: "number", min: -1000, max: 1000, step: 1 },
+    step: { label: "Step", type: "number", min: 0.001, max: 100, step: 0.001 },
+    units: {
+      label: "Units",
+      type: "enum",
+      options: ["", "%", "px", "°"],
+    },
+    "units-disallow": {
+      label: "Units disallow",
+      type: "string",
+    },
+    steppers: { label: "Steppers", type: "boolean", boolMode: "string" },
+    tabular: { label: "Tabular", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-toast": {
+    duration: {
+      label: "Duration",
+      type: "number",
+      min: 0,
+      max: 10000,
+      step: 100,
+    },
+    offset: { label: "Offset", type: "number", min: 0, max: 200, step: 1 },
+    theme: {
+      label: "Theme",
+      type: "enum",
+      options: ["auto", "dark", "light", "danger", "brand", "success"],
+    },
+    icon: {
+      label: "Name",
+      type: "enum",
+      options: [
+        "add",
+        "angle",
+        "send",
+        "adjust",
+        "minus",
+        "close",
+        "back",
+        "forward",
+        "chevron",
+        "reset",
+        "arrow-left",
+        "steppers",
+        "eyedropper",
+        "rotate",
+        "rotate3d",
+        "swap",
+        "play",
+        "pause",
+        "search",
+        "download",
+        "upload",
+        "image",
+        "audio",
+        "sound",
+        "sound-off",
+        "sun",
+        "moon",
+        "edit",
+        "settings",
+        "more",
+        "visible",
+        "hidden",
+        "globe",
+        "warning",
+        "copy",
+        "trash",
+      ],
+    },
+    dismiss: { label: "Dismiss", type: "boolean", boolMode: "string" },
+  },
+  "fig-icon": {
+    name: {
+      label: "Name",
+      type: "enum",
+      options: [
+        "add",
+        "angle",
+        "send",
+        "adjust",
+        "minus",
+        "close",
+        "back",
+        "forward",
+        "chevron",
+        "checkmark",
+        "reset",
+        "arrow-left",
+        "rotate",
+        "rotate3d",
+        "swap",
+        "play",
+        "pause",
+        "search",
+        "download",
+        "upload",
+        "image",
+        "audio",
+        "sound",
+        "sound-off",
+        "sun",
+        "moon",
+        "visible",
+        "hidden",
+        "edit",
+        "settings",
+        "more",
+        "eyedropper",
+        "steppers",
+        "globe",
+        "warning",
+        "copy",
+        "trash",
+      ],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["medium", "small"],
+    },
+    color: {
+      label: "Color",
+      type: "enum",
+      options: [
+        "",
+        "primary",
+        "secondary",
+        "tertiary",
+        "disabled",
+        "brand",
+        "component",
+        "danger",
+        "success",
+        "warning",
+        "selected",
+        "hover",
+        "pressed",
+        "onbrand",
+        "oncomponent",
+        "ondanger",
+        "ondisabled",
+        "oninverse",
+        "onselected",
+        "onsuccess",
+        "onwarning",
+      ],
+    },
+  },
+  "fig-spinner": {
+    size: { label: "Size", type: "enum", options: ["default", "small"] },
+  },
+  "fig-button-play": {
+    playing: { label: "Playing", type: "boolean", boolMode: "presence" },
+    duration: {
+      label: "Duration",
+      type: "number",
+      min: 0.1,
+      max: 60,
+      step: 0.1,
+      units: "s",
+    },
+    progress: {
+      label: "Progress",
+      type: "number",
+      min: 0,
+      max: 1,
+      step: 0.05,
+    },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: [
+        "secondary",
+        "primary",
+        "ghost",
+        "destructive",
+        "destructiveSecondary",
+      ],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "large"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-shimmer": {
+    duration: {
+      label: "Duration",
+      type: "number",
+      min: 0.2,
+      max: 8,
+      step: 0.1,
+      units: "s",
+    },
+    direction: {
+      label: "Direction",
+      type: "enum",
+      options: ["", "vertical", "diagonal"],
+    },
+    playing: {
+      label: "Playing",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+  },
+  "fig-skeleton": {
+    duration: {
+      label: "Duration",
+      type: "number",
+      min: 0.2,
+      max: 8,
+      step: 0.1,
+      units: "s",
+    },
+    direction: {
+      label: "Direction",
+      type: "enum",
+      options: ["", "vertical", "diagonal"],
+    },
+    playing: {
+      label: "Playing",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+  },
+  "fig-layer": {
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+    visible: { label: "Visible", type: "boolean", boolMode: "string" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-tabs": {
+    overflow: {
+      label: "Overflow",
+      type: "enum",
+      options: ["buttons", "fade"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-toolbelt": {
+    layout: {
+      label: "Layout",
+      type: "enum",
+      options: ["horizontal", "vertical"],
+    },
+    overflow: {
+      label: "Overflow",
+      type: "enum",
+      options: ["scrollbar", "buttons"],
+    },
+    value: { label: "Value", type: "string" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-toolbelt-item": {
+    value: { label: "Value", type: "string" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-header": {
+    borderless: { label: "Borderless", type: "boolean", boolMode: "presence" },
+    compact: { label: "Compact", type: "boolean", boolMode: "string" },
+  },
+  "fig-footer": {
+    borderless: { label: "Borderless", type: "boolean", boolMode: "presence" },
+    sticky: { label: "Sticky", type: "boolean", boolMode: "presence" },
+  },
+  "fig-group": {
+    name: { label: "Name", type: "string" },
+    collapsible: { label: "Collapsible", type: "boolean", boolMode: "presence" },
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+    chevron: {
+      label: "Chevron",
+      type: "enum",
+      options: ["start", "end"],
+    },
+    "toggle-target": {
+      label: "Toggle target",
+      type: "string",
+      placeholder: ".group-toggle",
+    },
+    compact: { label: "Compact", type: "boolean", boolMode: "string" },
+  },
+  "fig-handle": {
+    type: {
+      label: "Type",
+      type: "enum",
+      options: ["default", "minimal", "color", "canvas"],
+    },
+    tip: {
+      label: "Tip",
+      type: "enum",
+      options: ["", "color", "add", "remove"],
+    },
+    size: {
+      label: "Size",
+      type: "enum",
+      options: ["", "small"],
+    },
+    color: { label: "Color", type: "boolean", boolMode: "presence" },
+    selected: { label: "Selected", type: "boolean", boolMode: "presence" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    drag: { label: "Drag", type: "boolean", boolMode: "presence" },
+    "drag-axes": { label: "Axes", type: "enum", options: ["x,y", "x", "y"] },
+    "drag-snapping": {
+      label: "Snapping",
+      type: "enum",
+      options: ["false", "modifier", "true"],
+    },
+    precision: {
+      label: "Precision",
+      type: "number",
+      min: 0,
+      max: 10,
+      step: 1,
+    },
+  },
+  "fig-chooser": {
+    layout: {
+      label: "Layout",
+      type: "enum",
+      options: ["vertical", "horizontal", "grid"],
+    },
+    columns: {
+      label: "Columns",
+      type: "number",
+      min: 2,
+      max: 4,
+      step: 1,
+    },
+    drag: {
+      label: "Drag",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    loop: {
+      label: "Loop",
+      type: "boolean",
+      boolMode: "presence",
+    },
+    "auto-scroll": {
+      label: "Auto scroll",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    "scroll-behavior": {
+      label: "Scroll behavior",
+      type: "enum",
+      options: ["smooth", "auto"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  progress: {
+    value: { label: "Value", type: "number", min: 0, max: 100, step: 1 },
+    max: { label: "Max", type: "number", min: 1, max: 100, step: 1 },
+  },
+  meter: {
+    value: { label: "Value", type: "number", min: 0, max: 100, step: 0.1 },
+  },
+  "fig-canvas-control": {
+    type: {
+      label: "Type",
+      type: "enum",
+      options: ["point", "color", "point-radius", "point-radius-angle", "point-point"],
+    },
+    name: { label: "Name", type: "string" },
+    tooltips: {
+      label: "Tooltips",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    snapping: {
+      label: "Snapping",
+      type: "enum",
+      options: ["false", "modifier", "true"],
+    },
+    precision: {
+      label: "Precision",
+      type: "number",
+      min: 0,
+      max: 8,
+      step: 1,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-separator": {
+    label: { label: "Label", type: "string" },
+    sticky: { label: "Sticky", type: "boolean", boolMode: "presence" },
+  },
+  "fig-menu-separator": {
+    label: { label: "Label", type: "string" },
+    sticky: { label: "Sticky", type: "boolean", boolMode: "presence" },
+  },
+  "fig-attachment": {
+    src: { label: "Source", type: "string" },
+    name: { label: "Name", type: "string" },
+    value: { label: "Value", type: "string" },
+    removable: {
+      label: "Removable",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-chat-message": {
+    from: { label: "From", type: "enum", options: ["agent", "user"] },
+  },
+  "fig-menu": {
+    position: {
+      label: "Position",
+      type: "enum",
+      options: [
+        "top",
+        "right",
+        "bottom",
+        "left",
+        "top left",
+        "top right",
+        "bottom left",
+        "bottom right",
+      ],
+    },
+    offset: { label: "Offset", type: "string" },
+    closedby: {
+      label: "Closed by",
+      type: "enum",
+      options: ["auto", "any", "none"],
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+    open: { label: "Open", type: "boolean", boolMode: "presence" },
+  },
+  "fig-menu-item": {
+    value: { label: "Value", type: "string" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+  "fig-truncate": {
+    overflow: { label: "Overflow", type: "enum", options: ["ellipsis", "fade"] },
+    text: { label: "Text", type: "string" },
+    position: { label: "Position", type: "enum", options: ["right", "left", "middle"] },
+    tail: { label: "Tail", type: "string" },
+    tooltip: { label: "Tooltip", type: "boolean", boolMode: "presence" },
+  },
+  "fig-input-file": {
+    label: { label: "Label", type: "string" },
+    "default-url": { label: "Default URL", type: "string" },
+    "default-filename": { label: "Default filename", type: "string" },
+    variant: {
+      label: "Variant",
+      type: "enum",
+      options: [
+        "property",
+        "primary",
+        "secondary",
+        "destructive",
+        "destructiveSecondary",
+        "destructiveGhost",
+        "destructiveLink",
+        "ghost",
+        "link",
+        "input",
+        "overlay",
+      ],
+    },
+    accepts: { label: "Accepts", type: "string" },
+    preview: {
+      label: "Preview",
+      type: "enum",
+      options: ["true", "false", "large"],
+    },
+    multiple: { label: "Multiple", type: "boolean", boolMode: "presence" },
+    remove: {
+      label: "Remove",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
+};
+
+export function getRuleSetForTarget(
+  target: AttributeTarget,
+  controlTag: string,
+): AttributeRuleSet {
+  if (target === "field") return fieldAttributeRules;
+  return controlAttributeRules[controlTag] ?? {};
+}

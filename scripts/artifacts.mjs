@@ -39,3 +39,17 @@ export const outputs = [
   ...jsArtifacts.map(({ output }) => output),
   ...cssArtifacts.map(({ output }) => output),
 ];
+
+export const rootAssetNames = [
+  "fig-editor.js",
+  "fig-editor.css",
+  "fig-lab.js",
+  "fig-lab.css",
+];
+
+export const publicAliases = {
+  "fig-input-rotate.js": "src/editor/entrypoints/fig-input-rotate.js",
+  "fig-input-rotate.css": "src/editor/entrypoints/fig-input-rotate.css",
+  "fig-input-slider.js": "src/lab/entrypoints/fig-input-slider.js",
+  "fig-input-slider.css": "src/lab/entrypoints/fig-input-slider.css",
+};

@@ -25,8 +25,8 @@ React: [../figui3/react.md](../figui3/react.md). Per-tag JSX: [components.md](co
 ```js
 import "@rogieking/figui3/fig.css";
 import "@rogieking/figui3/fig.js";
-import "@rogieking/figui3/fig-lab.css";
-import "@rogieking/figui3/fig-lab.js";
+import "@rogieking/figui3-extended/fig-lab.css";
+import "@rogieking/figui3-extended/fig-lab.js";
 ```
 
 Use Lab for slider primitives, wheel inputs, canvas handles, and AI composition surfaces. Keep Lab out of `fig.js`.

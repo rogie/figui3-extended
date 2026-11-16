@@ -1,0 +1,320 @@
+import {
+  parseAttributeTargets,
+  applyAttributeMutation,
+  applyButtonIconMutation,
+  applyButtonTypeMutation,
+  applyButtonComboVariantMutation,
+  applyButtonVariantMutation,
+  applyChooserContentMutation,
+  applyChooserMaxSizeMutation,
+  applyAppendSlotMutation,
+  applyFieldLabelMutation,
+  applyPropertyControlMutation,
+  applyPrependSlotMutation,
+  applySelectSeparatorStickyMutation,
+  getChooserContentMode,
+  getAppendSlotMode,
+  getPrependSlotMode,
+  getPropertyControlTag,
+  getSelectSeparatorStickyEnabled,
+  isPropertyControlTag,
+  type ChooserContentMode,
+  type AppendSlotMode,
+  type PrependSlotMode,
+} from "./attributeParser";
+
+const FIELD_PREFIX = "f.";
+const SPECIAL_PREFIX = "_";
+const REMOVE_SENTINEL = "!";
+const URL_EXCLUDED_ATTRS = new Set(["src"]);
+
+function stripsAttribute(
+  target: ReturnType<typeof parseAttributeTargets>[number] | undefined,
+  attr: string,
+): boolean {
+  return Boolean(
+    target?.controlAttributes["data-playground-strip-attrs"]
+      ?.split(",")
+      .map((value) => value.trim())
+      .includes(attr),
+  );
+}
+
+export function diffFromDefault(
+  currentMarkup: string,
+  defaultMarkup: string,
+): Record<string, string> {
+  const currentTargets = parseAttributeTargets(currentMarkup);
+  const defaultTargets = parseAttributeTargets(defaultMarkup);
+  const params: Record<string, string> = {};
+
+  for (let i = 0; i < currentTargets.length; i++) {
+    const cur = currentTargets[i];
+    const def = defaultTargets[i];
+    if (!cur || !def) continue;
+
+    const idx = currentTargets.length > 1 ? `${i}.` : "";
+
+    for (const [key, val] of Object.entries(cur.controlAttributes)) {
+      if (
+        !URL_EXCLUDED_ATTRS.has(key) &&
+        !stripsAttribute(def, key) &&
+        def.controlAttributes[key] !== val
+      ) {
+        params[`${idx}${key}`] = val;
+      }
+    }
+    for (const key of Object.keys(def.controlAttributes)) {
+      if (
+        !URL_EXCLUDED_ATTRS.has(key) &&
+        !stripsAttribute(def, key) &&
+        !(key in cur.controlAttributes)
+      ) {
+        params[`${idx}${key}`] = REMOVE_SENTINEL;
+      }
+    }
+
+    for (const [key, val] of Object.entries(cur.fieldAttributes)) {
+      if (def.fieldAttributes[key] !== val) {
+        params[`${idx}${FIELD_PREFIX}${key}`] = val;
+      }
+    }
+    for (const key of Object.keys(def.fieldAttributes)) {
+      if (!(key in cur.fieldAttributes)) {
+        params[`${idx}${FIELD_PREFIX}${key}`] = REMOVE_SENTINEL;
+      }
+    }
+
+    if (cur.controlTag === "fig-chooser") {
+      const curContent = getChooserContentMode(currentMarkup, i);
+      const defContent = getChooserContentMode(defaultMarkup, i);
+      if (curContent !== defContent) {
+        params[`${idx}${SPECIAL_PREFIX}content`] = curContent;
+      }
+    }
+
+    if (
+      cur.controlTag === "fig-property" &&
+      def.controlTag === "fig-property"
+    ) {
+      const propertyIndex =
+        currentTargets
+          .slice(0, i + 1)
+          .filter((target) => target.controlTag === "fig-property").length - 1;
+      const curPropertyControl = getPropertyControlTag(
+        currentMarkup,
+        propertyIndex,
+      );
+      const defPropertyControl = getPropertyControlTag(
+        defaultMarkup,
+        propertyIndex,
+      );
+      if (curPropertyControl !== defPropertyControl) {
+        params[`${idx}${SPECIAL_PREFIX}control`] = curPropertyControl;
+      }
+    }
+
+    if (cur.controlTag === "fig-select") {
+      const curSticky = getSelectSeparatorStickyEnabled(currentMarkup, i);
+      const defSticky = getSelectSeparatorStickyEnabled(defaultMarkup, i);
+      if (curSticky !== defSticky) {
+        params[`${idx}${SPECIAL_PREFIX}sticky`] = curSticky ? "1" : "0";
+      }
+    }
+
+    if (
+      cur.controlTag === "fig-input-text" ||
+      cur.controlTag === "fig-input-number"
+    ) {
+      const curPrepend = getPrependSlotMode(currentMarkup, i);
+      const defPrepend = getPrependSlotMode(defaultMarkup, i);
+      if (curPrepend !== defPrepend) {
+        params[`${idx}${SPECIAL_PREFIX}prepend`] = curPrepend;
+      }
+      const curAppend = getAppendSlotMode(currentMarkup, i);
+      const defAppend = getAppendSlotMode(defaultMarkup, i);
+      if (curAppend !== defAppend) {
+        params[`${idx}${SPECIAL_PREFIX}append`] = curAppend;
+      }
+    }
+
+    if (cur.hasLabel !== def.hasLabel) {
+      params[`${idx}${SPECIAL_PREFIX}label`] = cur.hasLabel ? "1" : "0";
+    }
+  }
+
+  return params;
+}
+
+export function serializeToURL(params: Record<string, string>): void {
+  const search = new URLSearchParams();
+  for (const [key, val] of Object.entries(params)) {
+    search.set(key, val);
+  }
+  const searchStr = search.toString();
+  const hashPart = location.hash;
+  const path = location.pathname;
+  const next = searchStr
+    ? `${path}?${searchStr}${hashPart}`
+    : `${path}${hashPart}`;
+  history.replaceState(null, "", next);
+}
+
+export function readFromURL(): Record<string, string> {
+  const params: Record<string, string> = {};
+  new URLSearchParams(location.search).forEach((val, key) => {
+    params[key] = val;
+  });
+  return params;
+}
+
+export function clearURLParams(): void {
+  const next = `${location.pathname}${location.hash}`;
+  history.replaceState(null, "", next);
+}
+
+export function hasURLParams(): boolean {
+  return location.search.length > 1;
+}
+
+export function applyParamsToMarkup(
+  defaultMarkup: string,
+  params: Record<string, string>,
+): string {
+  let markup = defaultMarkup;
+  const defaultTargets = parseAttributeTargets(defaultMarkup);
+  const singleTarget = defaultTargets.length <= 1;
+
+  const specialEntries: { idx: number; key: string; val: string }[] = [];
+  const fieldEntries: { idx: number; attr: string; val: string }[] = [];
+  const controlEntries: { idx: number; attr: string; val: string }[] = [];
+
+  for (const [key, val] of Object.entries(params)) {
+    let idxStr = "";
+    let rest = key;
+
+    if (!singleTarget && /^\d+\./.test(key)) {
+      const dotPos = key.indexOf(".");
+      idxStr = key.slice(0, dotPos);
+      rest = key.slice(dotPos + 1);
+    }
+
+    const fieldIndex = idxStr ? parseInt(idxStr) : 0;
+
+    if (rest.startsWith(SPECIAL_PREFIX)) {
+      specialEntries.push({ idx: fieldIndex, key: rest, val });
+    } else if (rest.startsWith(FIELD_PREFIX)) {
+      fieldEntries.push({ idx: fieldIndex, attr: rest.slice(FIELD_PREFIX.length), val });
+    } else {
+      controlEntries.push({ idx: fieldIndex, attr: rest, val });
+    }
+  }
+
+  for (const { idx, key, val } of specialEntries) {
+    if (key === "_content" && val) {
+      markup = applyChooserContentMutation(markup, idx, val as ChooserContentMode);
+    } else if (key === "_control" && isPropertyControlTag(val)) {
+      const propertyIndex =
+        defaultTargets
+          .slice(0, idx + 1)
+          .filter((target) => target.controlTag === "fig-property").length - 1;
+      if (propertyIndex >= 0) {
+        const controlTag =
+          val === "fig-slider" &&
+          defaultTargets[idx]?.controlAttributes.activation === "row"
+            ? "fig-input-slider"
+            : val;
+        markup = applyPropertyControlMutation(
+          markup,
+          propertyIndex,
+          controlTag,
+        );
+      }
+    } else if (key === "_prepend" && val) {
+      markup = applyPrependSlotMutation(markup, idx, val as PrependSlotMode);
+    } else if (key === "_append" && val) {
+      markup = applyAppendSlotMutation(markup, idx, val as AppendSlotMode);
+    } else if (key === "_sticky") {
+      markup = applySelectSeparatorStickyMutation(markup, idx, val !== "0");
+    } else if (key === "_label") {
+      markup = applyFieldLabelMutation(markup, {
+        fieldIndex: idx,
+        enabled: val !== "0",
+        text: "Label",
+      });
+    }
+  }
+
+  for (const { idx, attr, val } of controlEntries) {
+    if (stripsAttribute(defaultTargets[idx], attr)) continue;
+    if (
+      attr === "variant" &&
+      defaultTargets[idx]?.controlTag === "fig-button-combo"
+    ) {
+      markup = applyButtonComboVariantMutation(
+        markup,
+        idx,
+        val === REMOVE_SENTINEL ? "" : val,
+      );
+      continue;
+    }
+    if (attr === "style") {
+      markup = applyChooserMaxSizeMutation(markup, idx, val);
+    } else {
+      markup = applyAttributeMutation(markup, {
+        fieldIndex: idx,
+        target: "control",
+        name: attr,
+        value: val === REMOVE_SENTINEL ? null : val,
+      });
+    }
+  }
+
+  const buttonAttrsByIndex = new Map<number, Set<string>>();
+  for (const { idx, attr } of controlEntries) {
+    if (defaultTargets[idx]?.controlTag !== "fig-button") continue;
+    const attrs = buttonAttrsByIndex.get(idx) ?? new Set<string>();
+    attrs.add(attr);
+    buttonAttrsByIndex.set(idx, attrs);
+  }
+  for (const [idx, changedAttrs] of buttonAttrsByIndex) {
+    let target = parseAttributeTargets(markup)[idx];
+    if (!target) continue;
+
+    if (changedAttrs.has("type")) {
+      markup = applyButtonTypeMutation(
+        markup,
+        idx,
+        target.controlAttributes.type ?? "button",
+      );
+      target = parseAttributeTargets(markup)[idx];
+    }
+    if (changedAttrs.has("variant")) {
+      markup = applyButtonVariantMutation(
+        markup,
+        idx,
+        target?.controlAttributes.variant ?? "",
+      );
+      target = parseAttributeTargets(markup)[idx];
+    }
+    if (changedAttrs.has("icon")) {
+      const icon = target?.controlAttributes.icon;
+      markup = applyButtonIconMutation(
+        markup,
+        idx,
+        icon !== undefined && icon !== "false",
+      );
+    }
+  }
+
+  for (const { idx, attr, val } of fieldEntries) {
+    markup = applyAttributeMutation(markup, {
+      fieldIndex: idx,
+      target: "field",
+      name: attr,
+      value: val === REMOVE_SENTINEL ? null : val,
+    });
+  }
+
+  return markup;
+}

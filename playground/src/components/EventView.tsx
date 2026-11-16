@@ -1,0 +1,141 @@
+import { useState, useEffect, useRef } from "react";
+import { createEditor, replaceDoc } from "../lib/codemirror";
+import type { EditorView } from "@codemirror/view";
+
+export default function EventView() {
+  const [latest, setLatest] = useState<unknown | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<EditorView | null>(null);
+
+  useEffect(() => {
+    const container = document.querySelector(".example-view-container");
+    if (!container) return;
+
+    let rafId = 0;
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const tag = target.tagName.toLowerCase();
+      if (!tag.startsWith("fig-")) return;
+      const value =
+        "value" in target
+          ? (target as unknown as { value?: unknown }).value ?? null
+          : null;
+      const detail = ce.detail;
+      const envelope =
+        detail && typeof detail === "object" && !Array.isArray(detail)
+          ? (detail as Record<string, unknown>)
+          : null;
+      const payload: Record<string, unknown> = {
+        event: e.type,
+        control:
+          typeof envelope?.control === "string" ? envelope.control : tag,
+        value,
+      };
+      const name =
+        typeof envelope?.name === "string"
+          ? envelope.name
+          : target.getAttribute("name");
+      if (name) payload.name = name;
+      if (typeof envelope?.label === "string") {
+        payload.label = envelope.label;
+      }
+      if (envelope?.input instanceof HTMLElement) {
+        payload.input = envelope.input;
+      }
+
+      if (envelope) {
+        const extraDetail = Object.fromEntries(
+          Object.entries(envelope).filter(
+            ([key]) =>
+              !["control", "name", "value", "label", "input"].includes(key),
+          ),
+        );
+        if (Object.keys(extraDetail).length) payload.detail = extraDetail;
+      } else if (detail !== undefined && detail !== value) {
+        payload.detail = detail;
+      }
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => setLatest(payload));
+    };
+
+    const types = [
+      "input",
+      "change",
+      "optionschange",
+      "loaded",
+      "optionfocus",
+      "optionhover",
+      "reorder",
+      "remove",
+      "add",
+      "bind",
+      "openchange",
+      "reset",
+    ];
+    for (const type of types) container.addEventListener(type, handler);
+    return () => {
+      for (const type of types) container.removeEventListener(type, handler);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!editorContainerRef.current) return;
+    const view = createEditor(editorContainerRef.current, {
+      lang: "json",
+      readOnly: true,
+      minimal: true,
+      doc: "",
+    });
+    editorRef.current = view;
+    return () => view.destroy();
+  }, []);
+
+  useEffect(() => {
+    if (!editorRef.current || latest === null) return;
+    const serializable = JSON.parse(JSON.stringify(latest, (key, value) => {
+      if (value instanceof HTMLElement) {
+        const tag = value.tagName.toLowerCase();
+        const attrs = Array.from(value.attributes)
+          .map((a) => `${a.name}="${a.value}"`)
+          .join(" ");
+        const text = value.textContent?.trim() || "";
+        return `<${tag}${attrs ? " " + attrs : ""}>${text}</${tag}>`;
+      }
+      if (value instanceof FileList) {
+        return Array.from(value).map((f) => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+        }));
+      }
+      if (value instanceof File) {
+        return { name: value.name, size: value.size, type: value.type };
+      }
+      return value;
+    }));
+    replaceDoc(editorRef.current, JSON.stringify(serializable, null, 2));
+  }, [latest]);
+
+  return (
+    <div className="propkit-attributes-view">
+      <fig-header borderless>
+        <h3>Event output</h3>
+      </fig-header>
+      <section className="propkit-attributes-content event-view-content">
+        {latest === null && (
+          <div className="event-view-empty">
+            Interact with the component to see event output
+          </div>
+        )}
+        <div
+          ref={editorContainerRef}
+          className="event-view-editor"
+          style={{ display: latest === null ? "none" : undefined }}
+        />
+      </section>
+    </div>
+  );
+}

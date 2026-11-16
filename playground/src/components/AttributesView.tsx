@@ -1,0 +1,3241 @@
+import {
+  Children,
+  cloneElement,
+  createElement,
+  Fragment,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import {
+  applyAttributeMutation,
+  applyAttributeMutationToMatchingControls,
+  applyButtonComboVariantMutation,
+  applyButtonIconMutation,
+  applyButtonTypeMutation,
+  applyButtonVariantMutation,
+  applyDialogFooterMutation,
+  applyFieldControlMutation,
+  applyFieldLabelMutation,
+  applyGroupHeaderControlMutation,
+  applyPropertyControlAttributeMutation,
+  applyPropertyControlMutation,
+  applyChooserMaxSizeMutation,
+  applyChooserPaletteLabelsMutation,
+  applyHandleHitAreaDebugMutation,
+  applyHandleHitAreaMutation,
+  applyHeaderIconMutation,
+  applyIconCharacterMutation,
+  applyInputAdornmentSlotMutation,
+  applyOverflowFadeEdgeMutation,
+  applySelectSeparatorStickyMutation,
+  applyTooltipActionMutation,
+  getChooserPaletteLabelsEnabled,
+  FIG_ICON_COLOR_OPTIONS,
+  getFigIconColorOptionLabel,
+  getFigIconPlaygroundNames,
+  getHandleHitArea,
+  getHandleHitAreaDebug,
+  getHeaderIconEnabled,
+  getIconCharacter,
+  getInputAdornmentSlotMode,
+  getGroupHeaderControl,
+  getPropertyControlAttribute,
+  getPropertyControlTag,
+  getSelectSeparatorStickyEnabled,
+  parseAttributeTargets,
+  type FigIconPlaygroundSet,
+  type InputAdornmentSlot,
+  type InputAdornmentSlotMode,
+  type PropertyControlTag,
+} from "../lib/attributeParser";
+import {
+  getRuleSetForTarget,
+  getSplitInputTypePreset,
+  type AttributeRule,
+  type BoolMode,
+} from "../lib/attributeRules";
+import {
+  gradientValueToCss,
+  withGradientPreviewBackground,
+} from "../lib/gradientPreview";
+import { landscapeUrl } from "../lib/images";
+
+const SWATCH_PALETTE_COLORS = [
+  "#0D99FF",
+  "#14AE5C",
+  "#FFCD29",
+  "#FF7262",
+  "#9747FF",
+];
+const SWATCH_PALETTE_BACKGROUND = `linear-gradient(to right, ${SWATCH_PALETTE_COLORS.flatMap(
+  (color, index) => {
+    const start = (index / SWATCH_PALETTE_COLORS.length) * 100;
+    const end = ((index + 1) / SWATCH_PALETTE_COLORS.length) * 100;
+    return [`${color} ${start}%`, `${color} ${end}%`];
+  },
+).join(", ")})`;
+
+interface Props {
+  markup: string;
+  onMarkupChange: (markup: string) => void;
+  showFieldControls?: boolean;
+  includeFullControl?: boolean;
+  resetKey?: string;
+}
+
+interface RuleEntry {
+  name: string;
+  value: string | undefined;
+  rule: AttributeRule;
+}
+
+function propertyRatio(columns: unknown): string | undefined {
+  if (typeof columns !== "string") return undefined;
+  const match = columns.match(/^(\d+)\/(\d+)$/);
+  if (!match) return undefined;
+  const label = Number(match[1]);
+  const total = Number(match[2]);
+  return label > 0 && total > label ? `${label}:${total - label}` : undefined;
+}
+
+function convertAttributeField(child: ReactNode): ReactNode {
+  if (!isValidElement(child)) return child;
+  const props = child.props as {
+    children?: ReactNode;
+    columns?: unknown;
+    [key: string]: unknown;
+  };
+
+  if (child.type === Fragment) {
+    return cloneElement(
+      child,
+      undefined,
+      Children.map(props.children, convertAttributeField),
+    );
+  }
+  if (child.type !== "fig-field") return child;
+
+  const { children, columns, ...propertyProps } = props;
+  const parts = Children.toArray(children);
+  const labels = parts.filter(
+    (part) => isValidElement(part) && part.type === "label",
+  );
+  const inputs = parts.filter(
+    (part) => !(isValidElement(part) && part.type === "label"),
+  );
+  const input =
+    inputs.length === 1 && isValidElement(inputs[0]) ? (
+      cloneElement(inputs[0] as ReactElement<{ slot?: string }>, {
+        slot: "input",
+      })
+    ) : (
+      <span slot="input">{inputs}</span>
+    );
+  const ratio = propertyRatio(columns);
+
+  return createElement(
+    "fig-property",
+    {
+      ...propertyProps,
+      ...(ratio ? { ratio } : {}),
+      key: child.key,
+    },
+    ...labels,
+    input,
+  );
+}
+
+function AttributePropertyGroup({ children }: { children: ReactNode }) {
+  return (
+    <div className="propkit-attributes-group">
+      {Children.map(children, convertAttributeField)}
+    </div>
+  );
+}
+
+type FieldInputTag =
+  | "fig-checkbox"
+  | "fig-dropdown"
+  | "fig-image"
+  | "fig-input-color"
+  | "fig-input-fill"
+  | "fig-input-number"
+  | "fig-input-text"
+  | "fig-segmented-control"
+  | "fig-slider"
+  | "fig-switch";
+
+const FIELD_INPUT_OPTIONS: Array<{ tag: FieldInputTag; label: string }> = [
+  { tag: "fig-checkbox", label: "Checkbox" },
+  { tag: "fig-input-color", label: "Color" },
+  { tag: "fig-dropdown", label: "Dropdown" },
+  { tag: "fig-input-fill", label: "Fill" },
+  { tag: "fig-image", label: "Image" },
+  { tag: "fig-input-number", label: "Number" },
+  { tag: "fig-segmented-control", label: "Segmented control" },
+  { tag: "fig-slider", label: "Slider" },
+  { tag: "fig-switch", label: "Switch" },
+  { tag: "fig-input-text", label: "Text" },
+];
+
+const PROPERTY_CONTROL_OPTIONS: Array<{
+  tag: PropertyControlTag;
+  label: string;
+}> = [
+  { tag: "fig-input-number", label: "Number" },
+  { tag: "fig-input-combo", label: "Combo input" },
+  { tag: "angle", label: "Angle" },
+  { tag: "fig-slider", label: "Slider" },
+  { tag: "fig-input-text", label: "String" },
+  { tag: "fig-switch", label: "Boolean" },
+  { tag: "fig-input-color", label: "Color" },
+  { tag: "fig-select", label: "Select" },
+  { tag: "fig-input-point", label: "Point" },
+  { tag: "fig-easing-curve", label: "Easing" },
+  { tag: "fig-input-gradient", label: "Gradient" },
+  { tag: "fig-input-palette", label: "Palette" },
+  { tag: "fig-input-rotate", label: "3D Rotate" },
+  { tag: "fig-input-file", label: "File" },
+  { tag: "audio", label: "Audio" },
+];
+
+function resolveFieldInputTag(value: string): FieldInputTag | undefined {
+  const normalized = value.trim().toLowerCase();
+  const byTag = FIELD_INPUT_OPTIONS.find((option) => option.tag === normalized);
+  if (byTag) return byTag.tag;
+  const byLabel = FIELD_INPUT_OPTIONS.find(
+    (option) => option.label.toLowerCase() === normalized,
+  );
+  return byLabel?.tag;
+}
+
+function createRandomAvatarUrl(): string {
+  const id = Math.floor(Math.random() * 70) + 1;
+  return `https://i.pravatar.cc/128?img=${id}`;
+}
+
+function readBooleanValue(
+  value: string | undefined,
+  mode: BoolMode,
+  defaultChecked = false,
+  falseValue?: string | null,
+): boolean {
+  if (value === undefined) return defaultChecked;
+  if (mode === "presence") return true;
+  if (mode === "custom") {
+    if (falseValue !== undefined && falseValue !== null && value === falseValue) return false;
+    return true;
+  }
+  if (value === "") return true;
+  return value?.toLowerCase() === "true";
+}
+
+function toNumberValue(value: string | undefined, fallback: number): number {
+  if (value === undefined || value === "") return fallback;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+function toTitle(text: string): string {
+  if (!text) return "Field";
+  return text;
+}
+
+function toSentenceCaseLabel(value: string): string {
+  if (!value) return value;
+  const withSpaces = value.replace(/[-_]+/g, " ");
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+}
+
+function isDefaultLargeSizeControl(controlTag: string): boolean {
+  return (
+    controlTag === "fig-input-gradient"
+  );
+}
+
+function toFieldsLabel(value: string): string {
+  return value
+    .split(",")
+    .map((part) =>
+      part
+        .trim()
+        .replace(/^rotate/i, "")
+        .toUpperCase(),
+    )
+    .join(", ");
+}
+
+function resolveEnumOption(options: string[], rawValue: string): string {
+  const normalize = (input: string) =>
+    input
+      .trim()
+      .replace(/\s*\/\s*/g, "/")
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  if (options.includes(rawValue)) return rawValue;
+  const normalized = normalize(rawValue);
+  const directMatch = options.find(
+    (option) => normalize(option) === normalized,
+  );
+  if (directMatch !== undefined) return directMatch;
+  const labelMatch = options.find(
+    (option) => normalize(toSentenceCaseLabel(option)) === normalized,
+  );
+  return labelMatch ?? rawValue;
+}
+
+function sentenceCase(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function readColorInputEventValue(event: unknown): string | undefined {
+  const customEvent = event as CustomEvent<{ value?: string }>;
+  if (typeof customEvent.detail?.value === "string") {
+    return customEvent.detail.value;
+  }
+  const host = (event as { currentTarget?: HTMLElement & { value?: string } })
+    .currentTarget;
+  if (typeof host?.value === "string") return host.value;
+  return undefined;
+}
+
+function getInputPanelTitle(controlTag: string): string {
+  const titles: Record<string, string> = {
+    "fig-button": "Button",
+    "fig-avatar": "Avatar",
+    "fig-tooltip": "Tooltip",
+    "fig-dialog": "Dialog",
+    "fig-popup": "Popup",
+    "fig-fill-picker": "Fill picker",
+    "fig-color-tip": "Color tip",
+    "fig-checkbox": "Checkbox",
+    "fig-swatch": "Swatch",
+    "fig-radio": "Radio",
+    "fig-field": "Field",
+    "fig-split-input": "Split input",
+    "fig-combo-input": "Combo input (alias)",
+    "fig-audio": "Audio",
+    "fig-media": "Media",
+    "fig-media-controls": "Media controls",
+    "fig-preview": "Preview",
+    "fig-image": "Image",
+    "fig-card": "Card",
+    "fig-video": "Video",
+    "fig-input-color": "Color",
+    "fig-input-gradient": "Gradient",
+    "fig-interpolation-swatch": "Interpolation swatch",
+    "fig-input-fill": "Fill",
+    "fig-slider": "Slider",
+    "fig-input-number": "Number",
+    "fig-input-rotate": "Input Rotate",
+    "fig-input-point": "Input point",
+    "fig-input-text": "Text input",
+    "fig-switch": "Switch",
+    "fig-dropdown": "Dropdown",
+    "fig-segmented-control": "Segmented control",
+    "fig-easing-curve": "Easing curve",
+    "fig-3d-rotate": "3D rotate",
+    "fig-origin-grid": "Origin grid",
+    "fig-angle": "Angle",
+    "fig-joystick": "Joystick",
+    "fig-toast": "Toast",
+    "fig-icon": "Icon",
+    "fig-spinner": "Spinner",
+    "fig-shimmer": "Shimmer",
+    "fig-skeleton": "Skeleton",
+    "fig-layer": "Layer",
+    "fig-header": "Header",
+    "fig-footer": "Footer",
+    "fig-tabs": "Tabs",
+    "fig-chooser": "Chooser",
+    "fig-handle": "Handle",
+    "fig-menu": "Menu",
+    "fig-overflow-fade": "Overflow fade",
+    "fig-input-palette": "Palette",
+    "fig-canvas-control": "Canvas control",
+    progress: "Progress",
+  };
+  return (
+    titles[controlTag] ?? sentenceCase(toTitle(controlTag.replace(/^fig-/, "")))
+  );
+}
+
+const INTERPOLATION_SWATCH_DEFAULT_VALUE = {
+  type: "gradient" as const,
+  gradient: {
+    type: "linear",
+    stops: [
+      { color: "#FF0000", position: 0, opacity: 100 },
+      { color: "#4F9EFF", position: 100, opacity: 100 },
+    ],
+    interpolationSpace: "srgb",
+    hueInterpolation: "shorter",
+  },
+};
+
+function parseInterpolationSwatchValue(raw: string | undefined): {
+  type: "gradient";
+  gradient: {
+    type: string;
+    stops: Array<{ color: string; position: number; opacity?: number }>;
+    interpolationSpace: string;
+    hueInterpolation: string;
+    [key: string]: unknown;
+  };
+} {
+  const fallback = {
+    type: "gradient" as const,
+    gradient: {
+      ...INTERPOLATION_SWATCH_DEFAULT_VALUE.gradient,
+      stops: INTERPOLATION_SWATCH_DEFAULT_VALUE.gradient.stops.map((s) => ({
+        ...s,
+      })),
+    },
+  };
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    const gradient =
+      parsed?.type === "gradient" && parsed.gradient
+        ? parsed.gradient
+        : parsed?.gradient
+          ? parsed.gradient
+          : parsed;
+    if (!gradient || typeof gradient !== "object") return fallback;
+    const stops = Array.isArray(gradient.stops)
+      ? gradient.stops.map(
+          (stop: { color?: string; position?: number; opacity?: number }) => ({
+            color: String(stop?.color || "#D9D9D9"),
+            position: stop?.position ?? 0,
+            opacity: stop?.opacity ?? 100,
+          }),
+        )
+      : fallback.gradient.stops;
+    return {
+      type: "gradient",
+      gradient: {
+        ...fallback.gradient,
+        ...gradient,
+        stops: stops.length >= 2 ? stops : fallback.gradient.stops,
+        interpolationSpace: String(
+          gradient.interpolationSpace ?? "srgb",
+        ).toLowerCase(),
+        hueInterpolation: String(
+          gradient.hueInterpolation ?? "shorter",
+        ).toLowerCase(),
+      },
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function withInterpolationSwatchGradientValue(
+  nextGradientValue: string,
+): string {
+  const next = parseInterpolationSwatchValue(nextGradientValue);
+  return JSON.stringify(next);
+}
+
+function getNumberAttrDefault(
+  controlTag: string,
+  attrName: string,
+  units?: string,
+): number | undefined {
+  if (controlTag === "fig-tooltip" && attrName === "delay") return 500;
+  if (
+    (controlTag === "fig-palette-editor" ||
+      controlTag === "fig-gradient-editor") &&
+    attrName === "show-rows"
+  )
+    return 6.5;
+  if (
+    (controlTag === "fig-shimmer" || controlTag === "fig-skeleton") &&
+    attrName === "duration"
+  )
+    return 1.5;
+  if (controlTag === "fig-input-number") {
+    if (attrName === "min") return 0;
+    if (attrName === "max") return 100;
+    if (attrName === "step") return 0.5;
+  }
+  if (
+    controlTag === "fig-input-wheel" &&
+    attrName === "step"
+  ) {
+    const normalizedUnits = units?.trim().toLowerCase();
+    if (normalizedUnits === "seconds" || normalizedUnits === "s") return 0.1;
+    if (normalizedUnits === "milliseconds" || normalizedUnits === "ms")
+      return 100;
+    return 1;
+  }
+  if (controlTag === "fig-input-wheel" && attrName === "value") return 0;
+  if (controlTag === "fig-audio-waveform" && attrName === "progress") return 0;
+  if (controlTag === "fig-audio-waveform" && attrName === "polarization")
+    return 1.5;
+  if (controlTag === "fig-angle" && attrName === "default") return 0;
+  if (
+    (controlTag === "fig-handle" ||
+      controlTag === "fig-canvas-control") &&
+    attrName === "precision"
+  )
+    return 2;
+  return undefined;
+}
+
+function convertAngleUnits(
+  value: string,
+  fromUnit: string | undefined,
+  toUnit: string,
+): string {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return value;
+  const from = (fromUnit || "deg").trim().toLowerCase();
+  const to = toUnit.trim().toLowerCase();
+  let degrees = numericValue;
+  if (from === "rad") degrees = (numericValue * 180) / Math.PI;
+  else if (from === "turn") degrees = numericValue * 360;
+  else if (from === "grad") degrees = numericValue * 0.9;
+
+  let converted = degrees;
+  if (to === "rad") converted = (degrees * Math.PI) / 180;
+  else if (to === "turn") converted = degrees / 360;
+  else if (to === "grad") converted = degrees / 0.9;
+  return String(Number(converted.toPrecision(12)));
+}
+
+export default function AttributesView({
+  markup,
+  onMarkupChange,
+  showFieldControls = true,
+  includeFullControl = false,
+  resetKey = "",
+}: Props) {
+  const targets = useMemo(() => parseAttributeTargets(markup), [markup]);
+  const labelMemoryRef = useRef<Record<number, string>>({});
+  const audioObjectUrlRef = useRef<string | null>(null);
+
+  useEffect(
+    () => () => {
+      if (audioObjectUrlRef.current) {
+        URL.revokeObjectURL(audioObjectUrlRef.current);
+      }
+    },
+    [],
+  );
+
+  const applyChange = useCallback(
+    (
+      fieldIndex: number,
+      target: "field" | "control",
+      name: string,
+      value: string | null,
+    ) => {
+      const currentTarget = targets.find(
+        (entry) => entry.fieldIndex === fieldIndex,
+      );
+      if (
+        currentTarget?.controlTag === "fig-group" &&
+        target === "control" &&
+        name === "compact"
+      ) {
+        onMarkupChange(
+          applyAttributeMutationToMatchingControls(
+            markup,
+            "fig-group",
+            name,
+            value,
+          ),
+        );
+        return;
+      }
+      if (
+        (currentTarget?.controlTag === "fig-split-input" ||
+          currentTarget?.controlTag === "fig-combo-input") &&
+        target === "control" &&
+        name === "type" &&
+        (value === "text" || value === "number")
+      ) {
+        const preset = getSplitInputTypePreset(value);
+        let nextMarkup = applyAttributeMutation(markup, {
+          fieldIndex,
+          target,
+          name,
+          value,
+        });
+        nextMarkup = applyAttributeMutation(nextMarkup, {
+          fieldIndex,
+          target,
+          name: "options",
+          value: preset.options,
+        });
+        nextMarkup = applyAttributeMutation(nextMarkup, {
+          fieldIndex,
+          target,
+          name: "placeholder",
+          value: preset.placeholder,
+        });
+        const currentValue = currentTarget.controlAttributes.value;
+        if (currentValue !== undefined && !preset.values.has(currentValue)) {
+          nextMarkup = applyAttributeMutation(nextMarkup, {
+            fieldIndex,
+            target,
+            name: "value",
+            value: null,
+          });
+        }
+        onMarkupChange(nextMarkup);
+        return;
+      }
+      if (
+        currentTarget?.controlTag === "fig-angle" &&
+        target === "control" &&
+        name === "units" &&
+        value
+      ) {
+        let nextMarkup = markup;
+        for (const angleAttribute of [
+          "value",
+          "default",
+          "min",
+          "max",
+          "step",
+        ]) {
+          const currentValue =
+            currentTarget.controlAttributes[angleAttribute];
+          if (currentValue === undefined || currentValue === "") continue;
+          nextMarkup = applyAttributeMutation(nextMarkup, {
+            fieldIndex,
+            target,
+            name: angleAttribute,
+            value: convertAngleUnits(
+              currentValue,
+              currentTarget.controlAttributes.units,
+              value,
+            ),
+          });
+        }
+        nextMarkup = applyAttributeMutation(nextMarkup, {
+          fieldIndex,
+          target,
+          name,
+          value,
+        });
+        onMarkupChange(nextMarkup);
+        return;
+      }
+      const nextValue =
+        name === "direction" &&
+        value?.toLowerCase() === "horizontal" &&
+        (target === "field" ||
+          (target === "control" && currentTarget?.controlTag === "fig-field"))
+          ? null
+          : value;
+      onMarkupChange(
+        applyAttributeMutation(markup, {
+          fieldIndex,
+          target,
+          name,
+          value: nextValue,
+        }),
+      );
+    },
+    [markup, onMarkupChange, targets],
+  );
+
+  const applyLabelChange = useCallback(
+    (fieldIndex: number, enabled: boolean, text?: string) => {
+      onMarkupChange(
+        applyFieldLabelMutation(markup, {
+          fieldIndex,
+          enabled,
+          text,
+        }),
+      );
+    },
+    [markup, onMarkupChange],
+  );
+
+  const applyFieldInputChange = useCallback(
+    (fieldIndex: number, controlTag: FieldInputTag) => {
+      onMarkupChange(
+        applyFieldControlMutation(markup, {
+          fieldIndex,
+          controlTag,
+        }),
+      );
+    },
+    [markup, onMarkupChange],
+  );
+
+  useEffect(() => {
+    targets.forEach((target) => {
+      if (target.hasLabel && target.label.trim()) {
+        labelMemoryRef.current[target.fieldIndex] = target.label.trim();
+      }
+    });
+  }, [targets]);
+
+  if (!targets.length) return null;
+
+  return (
+    <>
+      {targets.map((target) => {
+        const fieldRules = getRuleSetForTarget("field", target.controlTag);
+        const controlRules = getRuleSetForTarget("control", target.controlTag);
+        const fullSupportedTags = new Set([
+          "fig-button",
+          "fig-checkbox",
+          "fig-image",
+          "fig-dropdown",
+          "fig-slider",
+          "fig-input-text",
+          "fig-input-number",
+          "fig-input-color",
+          "fig-input-fill",
+          "fig-input-rotate",
+          "fig-segmented-control",
+          "fig-easing-curve",
+          "fig-3d-rotate",
+          "fig-origin-grid",
+          "fig-angle",
+          "fig-split-input",
+          "fig-combo-input",
+          "fig-joystick",
+          "fig-radio",
+          "fig-chooser",
+        ]);
+        const mergedControlRules = { ...controlRules };
+        if (
+          includeFullControl &&
+          fullSupportedTags.has(target.controlTag) &&
+          !("full" in mergedControlRules)
+        ) {
+          mergedControlRules.full = {
+            label: "Full",
+            type: "boolean",
+            boolMode: "presence",
+          };
+        }
+        if (
+          target.controlTag === "fig-truncate" &&
+          target.controlAttributes.overflow === "fade" &&
+          mergedControlRules.position?.type === "enum"
+        ) {
+          mergedControlRules.position = {
+            ...mergedControlRules.position,
+            options: ["right", "left"],
+          };
+        }
+
+        const fieldDirection = (
+          target.fieldAttributes.direction ?? "horizontal"
+        ).toLowerCase();
+        const fieldEntries: RuleEntry[] = Object.entries(fieldRules)
+          .filter(
+            ([name]) =>
+              !(
+                (name === "direction" && !target.hasLabel) ||
+                (name === "columns" &&
+                  (fieldDirection === "vertical" || !target.hasLabel))
+              ),
+          )
+          .map(([name, rule]) => ({
+            name,
+            value: target.fieldAttributes[name],
+            rule,
+          }));
+        const suppressControlAttributes =
+          target.fieldAttributes["data-playground-field-only-controls"] ===
+          "true";
+        const showFieldInputSelector =
+          includeFullControl && suppressControlAttributes;
+        const currentFieldInputTag = FIELD_INPUT_OPTIONS.some(
+          (option) => option.tag === target.controlTag,
+        )
+          ? (target.controlTag as FieldInputTag)
+          : "fig-slider";
+        const hiddenControlAttrs = new Set(
+          (target.controlAttributes["data-playground-hide-attrs"] ?? "")
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+        );
+        if (
+          target.controlTag === "fig-icon" &&
+          target.controlAttributes.name === undefined &&
+          target.controlAttributes["data-playground-icon-set"] === undefined
+        ) {
+          hiddenControlAttrs.add("name");
+        }
+        if (target.controlTag === "fig-segmented-control") {
+          hiddenControlAttrs.add("value");
+          hiddenControlAttrs.add("name");
+        }
+
+        const controlEntries: RuleEntry[] = suppressControlAttributes
+          ? []
+          : Object.entries(mergedControlRules)
+              .filter(([name]) => {
+                if (target.controlTag !== "fig-property") return true;
+                if (name === "show-leading") {
+                  return Boolean(target.controlAttributes.leading?.trim());
+                }
+                if (name === "show-trailing") {
+                  return Boolean(target.controlAttributes.trailing?.trim());
+                }
+                return true;
+              })
+              .map(([name, rule]) => ({
+                name,
+                value:
+                  name === "perspective-distance"
+                    ? target.controlAttributes.perspective
+                    : target.controlAttributes[name],
+                rule,
+              }));
+        const sliderTextEnabled =
+          target.controlTag === "fig-slider" &&
+          (target.controlAttributes.text ?? "true").toLowerCase() !== "false";
+        const isShimmerLikeControl =
+          target.controlTag === "fig-shimmer" ||
+          target.controlTag === "fig-skeleton";
+        const dialogDragEnabled =
+          target.controlTag === "fig-dialog" &&
+          target.controlAttributes.drag !== undefined &&
+          target.controlAttributes.drag.toLowerCase() !== "false";
+        const handleDragEnabled =
+          target.controlTag === "fig-handle" &&
+          target.controlAttributes.drag !== undefined &&
+          target.controlAttributes.drag.toLowerCase() !== "false";
+        const perspectiveEnabled =
+          target.controlTag === "fig-3d-rotate" &&
+          (target.controlAttributes.perspective ?? "") !== "none";
+        const toastIconEnabled =
+          target.controlTag === "fig-toast" &&
+          target.controlAttributes.icon !== undefined;
+        const textInputMultiline =
+          target.controlTag === "fig-input-text" &&
+          target.controlAttributes.multiline !== undefined;
+        const colorTipControlMode =
+          target.controlTag === "fig-color-tip"
+            ? (target.controlAttributes.control || "color")
+            : null;
+        const mediaImageType =
+          target.controlTag === "fig-media" &&
+          (target.controlAttributes.type || "image").toLowerCase() !== "video";
+        const swatchBackground = (
+          target.controlAttributes.background ?? ""
+        ).toLowerCase();
+        const swatchFill =
+          target.controlTag !== "fig-swatch"
+            ? null
+            : swatchBackground === SWATCH_PALETTE_BACKGROUND.toLowerCase()
+              ? "Palette"
+              : swatchBackground.includes("url(")
+                ? "Image"
+                : swatchBackground.includes("gradient")
+                  ? "Gradient"
+                  : "Solid";
+        const mediaVideoOnlyAttrs = new Set([
+          "controls",
+          "autoplay",
+          "muted",
+          "loop",
+          "poster",
+        ]);
+        const visibleControlEntries = controlEntries
+          .filter(
+            (entry) =>
+              !hiddenControlAttrs.has(entry.name) &&
+              !(
+                target.controlTag === "fig-swatch" &&
+                entry.name === "alpha"
+              ) &&
+              !(mediaImageType && mediaVideoOnlyAttrs.has(entry.name)) &&
+              !(
+                entry.name === "placeholder" &&
+                target.controlTag === "fig-slider" &&
+                !sliderTextEnabled
+              ) &&
+              !(
+                entry.name === "units" &&
+                target.controlTag === "fig-slider" &&
+                !sliderTextEnabled
+              ) &&
+              !(
+                entry.name === "handle" &&
+                target.controlTag === "fig-dialog" &&
+                !dialogDragEnabled
+              ) &&
+              !(
+                entry.name === "color" &&
+                target.controlTag === "fig-handle"
+              ) &&
+              !(
+                (entry.name === "drag-axes" ||
+                  entry.name === "drag-snapping") &&
+                target.controlTag === "fig-handle" &&
+                !handleDragEnabled
+              ) &&
+              !(
+                entry.name === "perspective-distance" &&
+                target.controlTag === "fig-3d-rotate" &&
+                !perspectiveEnabled
+              ) &&
+              !(
+                entry.name === "icon" &&
+                target.controlTag === "fig-toast"
+              ) &&
+              !(
+                entry.name === "multiline" &&
+                target.controlTag === "fig-input-text"
+              ) &&
+              !(
+                (entry.name === "autoresize" || entry.name === "resizable") &&
+                target.controlTag === "fig-input-text" &&
+                !textInputMultiline
+              ) &&
+              !(
+                entry.name === "type" &&
+                target.controlTag === "fig-input-text" &&
+                textInputMultiline
+              ) &&
+              !(
+                entry.name === "value" &&
+                target.controlTag === "fig-color-tip" &&
+                colorTipControlMode !== "color"
+              ) &&
+              !(
+                (entry.name === "open" || entry.name === "chevron") &&
+                target.controlTag === "fig-group" &&
+                target.controlAttributes.collapsible === undefined
+              ) &&
+              !(
+                entry.name === "columns" &&
+                target.controlTag === "fig-chooser"
+              ) &&
+              !(
+                target.controlTag === "progress" &&
+                !("value" in target.controlAttributes) &&
+                (entry.name === "value" || entry.name === "max")
+              ),
+          )
+          .sort((a, b) => {
+            // Keep segmented-control animation toggle at the bottom of the panel.
+            if (target.controlTag !== "fig-segmented-control") return 0;
+            if (a.name === "animated" && b.name !== "animated") return 1;
+            if (b.name === "animated" && a.name !== "animated") return -1;
+            return 0;
+          });
+
+        const renderControl = (
+          entry: RuleEntry,
+          scope: "field" | "control",
+        ) => {
+          const { name, rule, value } = entry;
+
+          if (rule.type === "boolean") {
+            const mode = rule.boolMode ?? "presence";
+            const checked =
+              target.controlTag === "fig-avatar" && name === "image"
+                ? Boolean(target.controlAttributes.src?.trim())
+                : target.controlTag === "fig-dialog" && name === "footer"
+                    ? markup.includes("<footer>") || markup.includes("<fig-footer>")
+                    : target.controlTag === "fig-3d-rotate" &&
+                        name === "perspective"
+                      ? (value ?? "") !== "none"
+                      : readBooleanValue(
+                          value,
+                          mode,
+                          rule.defaultChecked ?? false,
+                          rule.falseValue,
+                        );
+            return (
+              <fig-switch
+                checked={checked ? "true" : undefined}
+                onInput={(e: any) => {
+                  const customEvent = e as CustomEvent<{ checked?: boolean }>;
+                  const host = e.currentTarget as HTMLElement & {
+                    checked?: boolean;
+                  };
+                  const next =
+                    typeof customEvent.detail?.checked === "boolean"
+                      ? customEvent.detail.checked
+                      : Boolean(host.checked ?? host.hasAttribute("checked"));
+
+                  if (
+                    target.controlTag === "fig-avatar" &&
+                    scope === "control" &&
+                    name === "image"
+                  ) {
+                    applyChange(
+                      target.fieldIndex,
+                      "control",
+                      "src",
+                      next ? createRandomAvatarUrl() : null,
+                    );
+                    return;
+                  }
+
+                  if (
+                    target.controlTag === "fig-dialog" &&
+                    scope === "control" &&
+                    name === "footer"
+                  ) {
+                    onMarkupChange(
+                      applyDialogFooterMutation(
+                        markup,
+                        target.fieldIndex,
+                        next,
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (
+                    target.controlTag === "fig-switch" &&
+                    scope === "control" &&
+                    name === "indeterminate"
+                  ) {
+                    if (next) {
+                      let nextMarkup = applyAttributeMutation(markup, {
+                        fieldIndex: target.fieldIndex,
+                        target: "control",
+                        name: "checked",
+                        value: null,
+                      });
+                      nextMarkup = applyAttributeMutation(nextMarkup, {
+                        fieldIndex: target.fieldIndex,
+                        target: "control",
+                        name: "indeterminate",
+                        value: "",
+                      });
+                      onMarkupChange(nextMarkup);
+                      return;
+                    }
+                    applyChange(target.fieldIndex, scope, name, null);
+                    return;
+                  }
+
+                  if (
+                    target.controlTag === "fig-slider" &&
+                    scope === "control" &&
+                    name === "text"
+                  ) {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      next ? null : "false",
+                    );
+                    return;
+                  }
+
+                  if (mode === "presence") {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      next ? "" : null,
+                    );
+                  } else if (mode === "custom") {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      next
+                        ? (rule.trueValue ?? "true")
+                        : (rule.falseValue ?? null),
+                    );
+                  } else {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      next ? "true" : "false",
+                    );
+                  }
+                }}
+              ></fig-switch>
+            );
+          }
+
+          if (rule.type === "number") {
+            const isPerspectiveDistance =
+              target.controlTag === "fig-3d-rotate" &&
+              name === "perspective-distance";
+            const fallback = isPerspectiveDistance
+              ? 500
+              : (getNumberAttrDefault(
+                  target.controlTag,
+                  name,
+                  target.controlAttributes.units,
+                ) ??
+                rule.min ??
+                0);
+            const isOptionalWheelBound =
+              target.controlTag === "fig-input-wheel" &&
+              (name === "min" || name === "max");
+            const isOptionalPaletteMax =
+              target.controlTag === "fig-palette-editor" && name === "max";
+            const isEditorShowRows =
+              (target.controlTag === "fig-palette-editor" ||
+                target.controlTag === "fig-gradient-editor") &&
+              name === "show-rows";
+            const isOptionalSliderDefault =
+              target.controlTag === "fig-slider" && name === "default";
+            const isOptionalNumberValue =
+              isOptionalWheelBound ||
+              isOptionalPaletteMax ||
+              isOptionalSliderDefault;
+            const numberValue =
+              isShimmerLikeControl && name === "duration"
+                ? toNumberValue((value ?? "").replace(/s$/i, ""), fallback)
+                : isPerspectiveDistance
+                  ? toNumberValue(
+                      (value ?? "").replace(/[a-z]+$/i, ""),
+                      fallback,
+                    )
+                  : isOptionalNumberValue &&
+                      (value === undefined || value === "")
+                    ? ""
+                    : toNumberValue(value, fallback);
+            const useNumberInputControl =
+              (target.controlTag === "fig-input-number" &&
+                (name === "min" || name === "max" || name === "step")) ||
+              isOptionalWheelBound ||
+              isOptionalPaletteMax ||
+              isEditorShowRows ||
+              isOptionalSliderDefault ||
+              ((target.controlTag === "fig-handle" ||
+                target.controlTag === "fig-canvas-control") &&
+                name === "precision") ||
+              (target.controlTag === "fig-chooser" && name === "columns");
+            if (useNumberInputControl) {
+              const handleNumberInput = (e: any) => {
+                const host = e.currentTarget as HTMLElement & {
+                  value?: string;
+                };
+                const nextValue =
+                  host.value ?? (e as CustomEvent).detail?.value;
+                if (nextValue === undefined || nextValue === null) return;
+                if (
+                  isOptionalNumberValue &&
+                  nextValue === ""
+                ) {
+                  applyChange(target.fieldIndex, scope, name, null);
+                  return;
+                }
+                applyChange(target.fieldIndex, scope, name, String(nextValue));
+              };
+              return (
+                <fig-input-number
+                  value={numberValue === "" ? "" : String(numberValue)}
+                  step={
+                    isOptionalSliderDefault
+                      ? target.controlAttributes.step || "1"
+                      : isEditorShowRows
+                        ? String(rule.step ?? 0.5)
+                        : name === "step"
+                          ? "0.1"
+                          : "1"
+                  }
+                  min={
+                    isOptionalSliderDefault
+                      ? target.controlAttributes.min
+                      : rule.min === undefined
+                        ? undefined
+                        : String(rule.min)
+                  }
+                  max={
+                    isOptionalSliderDefault
+                      ? target.controlAttributes.max
+                      : rule.max === undefined
+                        ? undefined
+                        : String(rule.max)
+                  }
+                  steppers={isOptionalPaletteMax ? undefined : "true"}
+                  placeholder={isOptionalPaletteMax ? "Infinity" : undefined}
+                  full
+                  onInput={handleNumberInput}
+                  onChange={handleNumberInput}
+                ></fig-input-number>
+              );
+            }
+            return (
+              <fig-slider
+                value={String(numberValue)}
+                min={String(rule.min ?? 0)}
+                max={String(rule.max ?? 100)}
+                step={String(rule.step ?? 1)}
+                units={rule.units ?? undefined}
+                text="true"
+                full
+                onInput={(e: any) => {
+                  const host = e.currentTarget as HTMLElement & {
+                    value?: string;
+                  };
+                  const nextValue =
+                    host.value ?? (e as CustomEvent).detail?.value;
+                  if (nextValue === undefined || nextValue === null) return;
+                  if (isShimmerLikeControl && name === "duration") {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      `${String(nextValue)}s`,
+                    );
+                    return;
+                  }
+                  if (isPerspectiveDistance) {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      "perspective",
+                      `${String(nextValue)}px`,
+                    );
+                    return;
+                  }
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    String(nextValue),
+                  );
+                }}
+              ></fig-slider>
+            );
+          }
+
+          if (rule.type === "color") {
+            const colorValue = value || rule.defaultValue || "#0D99FF";
+            const handleColorChange = (e: unknown) => {
+              const nextValue = readColorInputEventValue(e);
+              if (typeof nextValue !== "string") return;
+              applyChange(target.fieldIndex, scope, name, nextValue || null);
+            };
+            return (
+              <fig-input-color
+                value={colorValue}
+                text="true"
+                alpha="true"
+                full
+                onInput={handleColorChange}
+                onChange={handleColorChange}
+              ></fig-input-color>
+            );
+          }
+
+          if (rule.type === "enum") {
+            const isMediaLikeControl =
+              target.controlTag === "fig-image" ||
+              target.controlTag === "fig-media" ||
+              target.controlTag === "fig-video";
+            const options =
+              name === "aspect-ratio" && isMediaLikeControl
+                ? ["", ...rule.options.filter((option) => option !== "auto")]
+                : rule.options;
+            const isCheckRadioLabel =
+              name === "label" &&
+              (target.controlTag === "fig-checkbox" ||
+                target.controlTag === "fig-radio");
+            const isButtonIconMode =
+              target.controlTag === "fig-button" &&
+              scope === "control" &&
+              name === "icon";
+            const isColorPickerMode =
+              target.controlTag === "fig-input-color" &&
+              scope === "control" &&
+              name === "picker";
+            const currentRaw = isCheckRadioLabel
+              ? value !== undefined && value !== null
+                ? "label"
+                : "none"
+              : isButtonIconMode
+                ? value === undefined
+                  ? "none"
+                  : value === "compact"
+                    ? "compact"
+                    : "true"
+              : target.controlTag === "fig-input-file" &&
+                  name === "preview" &&
+                  value === ""
+                ? "true"
+              : isColorPickerMode && value === "false"
+                ? "native"
+                : (value ??
+                  (name === "variant" && target.controlTag === "fig-slider"
+                    ? "default"
+                    : (options[0] ?? "")));
+            const current =
+              typeof currentRaw === "string"
+                ? resolveEnumOption(options, currentRaw)
+                : currentRaw;
+            const useSegmentedControl =
+              isCheckRadioLabel ||
+              isButtonIconMode ||
+              isColorPickerMode ||
+              (target.controlTag === "fig-icon" &&
+                scope === "control" &&
+                name === "size") ||
+              (isDefaultLargeSizeControl(target.controlTag) &&
+                scope === "control" &&
+                name === "size") ||
+              (target.controlTag === "fig-handle" &&
+                scope === "control" &&
+                (name === "drag-axes" ||
+                  name === "drag-snapping" ||
+                  name === "size" ||
+                  name === "type" ||
+                  name === "tip")) ||
+              (target.controlTag === "fig-color-tip" &&
+                scope === "control" &&
+                name === "control") ||
+              (target.controlTag === "fig-tooltip" &&
+                scope === "control" &&
+                name === "action");
+            if (useSegmentedControl) {
+              const labelForOption = (option: string): string => {
+                if (
+                  (target.controlTag === "fig-handle" ||
+                    target.controlTag === "fig-color-tip") &&
+                  (name === "tip" || name === "control")
+                ) {
+                  return toSentenceCaseLabel(option || "None");
+                }
+                if (target.controlTag === "fig-handle" && name === "size") {
+                  return option === "" ? "Default" : "Small";
+                }
+                if (target.controlTag === "fig-icon" && name === "size") {
+                  return option === "medium" ? "Default" : "Small";
+                }
+                if (isButtonIconMode) {
+                  return option === "true"
+                    ? "Default"
+                    : toSentenceCaseLabel(option);
+                }
+                if (
+                  isDefaultLargeSizeControl(target.controlTag) &&
+                  name === "size"
+                ) {
+                  return option === ""
+                    ? "Default"
+                    : toSentenceCaseLabel(option);
+                }
+                if (target.controlTag === "fig-handle" && name === "drag-axes") {
+                  return option === "x,y" ? "X & Y" : option.toUpperCase();
+                }
+                if (
+                  target.controlTag === "fig-handle" &&
+                  name === "drag-snapping"
+                ) {
+                  return option === "modifier"
+                    ? "Shift"
+                    : option === "true"
+                      ? "On"
+                      : "Off";
+                }
+                return toSentenceCaseLabel(option);
+              };
+              const handleOptionSelect = (option: string) => {
+                if (isCheckRadioLabel) {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "none" ? null : "Label",
+                  );
+                  return;
+                }
+                if (isButtonIconMode) {
+                  const enabled = option !== "none";
+                  const updated = applyButtonIconMutation(
+                    markup,
+                    target.fieldIndex,
+                    option === "compact" ? "compact" : enabled,
+                  );
+                  onMarkupChange(updated);
+                  return;
+                }
+                if (
+                  target.controlTag === "fig-handle" &&
+                  name === "tip"
+                ) {
+                  let updated = applyAttributeMutation(markup, {
+                    fieldIndex: target.fieldIndex,
+                    target: "control",
+                    name: "tip",
+                    value: option || null,
+                  });
+                  if (option === "color") {
+                    updated = applyAttributeMutation(updated, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "type",
+                      value: "color",
+                    });
+                    updated = applyAttributeMutation(updated, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "color",
+                      value: target.controlAttributes.color || "#FF0FDF",
+                    });
+                  } else if (option === "add" || option === "remove") {
+                    updated = applyAttributeMutation(updated, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "type",
+                      value: null,
+                    });
+                    updated = applyAttributeMutation(updated, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "color",
+                      value: null,
+                    });
+                  }
+                  onMarkupChange(updated);
+                  return;
+                }
+                if (target.controlTag === "fig-handle" && name === "size") {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "" ? null : option,
+                  );
+                  return;
+                }
+                if (target.controlTag === "fig-icon" && name === "size") {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "medium" ? null : option,
+                  );
+                  return;
+                }
+                if (
+                  isDefaultLargeSizeControl(target.controlTag) &&
+                  name === "size"
+                ) {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "" ? null : option,
+                  );
+                  return;
+                }
+                if (target.controlTag === "fig-spinner" && name === "size") {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "default" ? null : option,
+                  );
+                  return;
+                }
+                if (target.controlTag === "fig-handle" && name === "type") {
+                  let updated = applyAttributeMutation(markup, {
+                    fieldIndex: target.fieldIndex,
+                    target: "control",
+                    name: "type",
+                    value: option === "default" ? null : option,
+                  });
+                  updated = applyAttributeMutation(updated, {
+                    fieldIndex: target.fieldIndex,
+                    target: "control",
+                    name: "color",
+                    value:
+                      option === "color"
+                        ? target.controlAttributes.color || "#FF0FDF"
+                        : null,
+                  });
+                  onMarkupChange(updated);
+                  return;
+                }
+                if (
+                  target.controlTag === "fig-color-tip" &&
+                  name === "control"
+                ) {
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    option === "color" ? null : option,
+                  );
+                  return;
+                }
+                if (
+                  target.controlTag === "fig-tooltip" &&
+                  name === "action"
+                ) {
+                  if (option !== "manual") {
+                    const el = document.querySelector(
+                      `fig-tooltip[action="manual"]`,
+                    ) as any;
+                    el?.hidePopup?.();
+                  }
+                  onMarkupChange(
+                    applyTooltipActionMutation(
+                      markup,
+                      target.fieldIndex,
+                      option,
+                    ),
+                  );
+                  return;
+                }
+                applyChange(target.fieldIndex, scope, name, option);
+              };
+              const optionsStr = options
+                .map((o) => labelForOption(o))
+                .join(",");
+              const currentLabel = labelForOption(current);
+              return (
+                <fig-options
+                  full
+                  options={optionsStr}
+                  value={currentLabel}
+                  onChange={(e: any) => {
+                    const nextLabel =
+                      (e as CustomEvent).detail ?? e.target?.value;
+                    if (typeof nextLabel !== "string") return;
+                    const match = options.find(
+                      (o) => labelForOption(o) === nextLabel,
+                    );
+                    if (match === undefined) return;
+                    handleOptionSelect(match);
+                  }}
+                ></fig-options>
+              );
+            }
+
+            const needsCustomHandler =
+              (target.controlTag === "fig-button" && name === "type") ||
+              (target.controlTag === "fig-chooser" && name === "layout") ||
+              (target.controlTag === "fig-handle" && name === "tip") ||
+              (target.controlTag === "fig-color-tip" && name === "control") ||
+              options.includes("");
+
+            if (needsCustomHandler) {
+              const enumOptionLabel = (option: string): string => {
+                if (option === "") {
+                  if (
+                    target.controlTag === "fig-property" &&
+                    (name === "show-leading" || name === "show-trailing")
+                  ) {
+                    return "Always";
+                  }
+                  if (isShimmerLikeControl && name === "direction") return "Default";
+                  if (
+                    (target.controlTag === "fig-button" ||
+                      target.controlTag === "fig-button-combo") &&
+                    name === "variant"
+                  ) {
+                    return "Default (primary)";
+                  }
+                  if (target.controlTag === "fig-button" && name === "size") {
+                    return "Default";
+                  }
+                  if (target.controlTag === "fig-avatar" && name === "size") {
+                    return "Default";
+                  }
+                  if (target.controlTag === "fig-icon" && name === "color") {
+                    return "Default";
+                  }
+                  if (
+                    target.controlTag === "fig-segmented-control" &&
+                    name === "size"
+                  ) {
+                    return "Default (small)";
+                  }
+                  if (
+                    target.controlTag === "fig-input-gradient" &&
+                    name === "size"
+                  ) {
+                    return "Default";
+                  }
+                  if (
+                    target.controlTag === "fig-dialog" &&
+                    name === "position"
+                  ) {
+                    return "Default";
+                  }
+                  if (
+                    target.controlTag === "fig-select" &&
+                    name === "position"
+                  ) {
+                    return "Default (overlay)";
+                  }
+                  return "None";
+                }
+                if (
+                  (target.controlTag === "fig-button" ||
+                    target.controlTag === "fig-button-combo") &&
+                  name === "variant" &&
+                  option === "destructiveSecondary"
+                ) {
+                  return "Destructive (secondary)";
+                }
+                if (
+                  (target.controlTag === "fig-button" ||
+                    target.controlTag === "fig-button-combo") &&
+                  name === "variant" &&
+                  option === "destructiveGhost"
+                ) {
+                  return "Destructive (ghost)";
+                }
+                if (
+                  (target.controlTag === "fig-button" ||
+                    target.controlTag === "fig-button-combo") &&
+                  name === "variant" &&
+                  option === "destructiveLink"
+                ) {
+                  return "Destructive (link)";
+                }
+                if (name === "units") return option;
+                if (name === "fields") return toFieldsLabel(option);
+                return toSentenceCaseLabel(option);
+              };
+
+              return (
+                <fig-dropdown
+                  full
+                  label={rule.label}
+                  value={current}
+                  onChange={(e: any) => {
+                    const host = e.currentTarget as HTMLElement & {
+                      value?: string;
+                    };
+                    const detail = (e as CustomEvent).detail;
+                    const nextValue =
+                      (typeof detail === "string" ? detail : detail?.value) ??
+                      host.value;
+                    if (typeof nextValue !== "string") return;
+                    const resolvedValue = resolveEnumOption(options, nextValue);
+                    if (target.controlTag === "fig-button" && name === "type") {
+                      onMarkupChange(
+                        applyButtonTypeMutation(
+                          markup,
+                          target.fieldIndex,
+                          resolvedValue,
+                        ),
+                      );
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-button" &&
+                      name === "variant"
+                    ) {
+                      onMarkupChange(
+                        applyButtonVariantMutation(
+                          markup,
+                          target.fieldIndex,
+                          resolvedValue,
+                        ),
+                      );
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-button-combo" &&
+                      name === "variant"
+                    ) {
+                      onMarkupChange(
+                        applyButtonComboVariantMutation(
+                          markup,
+                          target.fieldIndex,
+                          resolvedValue,
+                        ),
+                      );
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-dialog" &&
+                      name === "position" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-select" &&
+                      name === "position" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-button" &&
+                      name === "size" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-icon" &&
+                      name === "color" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      isShimmerLikeControl &&
+                      name === "direction" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (isMediaLikeControl && name === "aspect-ratio" && resolvedValue === "") {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (isMediaLikeControl && name === "fit" && resolvedValue === "auto") {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-3d-rotate" &&
+                      name === "fields" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-chooser" &&
+                      name === "layout"
+                    ) {
+                      const nextIsHorizontal = resolvedValue === "horizontal";
+                      const nextProp = nextIsHorizontal
+                        ? "max-width"
+                        : "max-height";
+                      const nextDefault = nextIsHorizontal ? "100%" : "240px";
+                      let updated = applyAttributeMutation(markup, {
+                        fieldIndex: target.fieldIndex,
+                        target: "control",
+                        name: "layout",
+                        value: resolvedValue,
+                      });
+                      updated = applyChooserMaxSizeMutation(
+                        updated,
+                        target.fieldIndex,
+                        `${nextProp}: ${nextDefault}`,
+                      );
+                      onMarkupChange(updated);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-input-gradient" &&
+                      name === "size" &&
+                      resolvedValue === ""
+                    ) {
+                      applyChange(target.fieldIndex, scope, name, null);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-handle" &&
+                      name === "tip"
+                    ) {
+                      let updated = applyAttributeMutation(markup, {
+                        fieldIndex: target.fieldIndex,
+                        target: "control",
+                        name: "tip",
+                        value: resolvedValue || null,
+                      });
+                      if (resolvedValue === "color") {
+                        updated = applyAttributeMutation(updated, {
+                          fieldIndex: target.fieldIndex,
+                          target: "control",
+                          name: "type",
+                          value: "color",
+                        });
+                        updated = applyAttributeMutation(updated, {
+                          fieldIndex: target.fieldIndex,
+                          target: "control",
+                          name: "color",
+                          value: target.controlAttributes.color || "#FF0FDF",
+                        });
+                      } else if (resolvedValue === "add" || resolvedValue === "remove") {
+                        updated = applyAttributeMutation(updated, {
+                          fieldIndex: target.fieldIndex,
+                          target: "control",
+                          name: "type",
+                          value: null,
+                        });
+                        updated = applyAttributeMutation(updated, {
+                          fieldIndex: target.fieldIndex,
+                          target: "control",
+                          name: "color",
+                          value: null,
+                        });
+                      }
+                      onMarkupChange(updated);
+                      return;
+                    }
+                    if (
+                      target.controlTag === "fig-color-tip" &&
+                      name === "control"
+                    ) {
+                      applyChange(
+                        target.fieldIndex,
+                        scope,
+                        name,
+                        resolvedValue === "color" ? null : resolvedValue,
+                      );
+                      return;
+                    }
+                    applyChange(target.fieldIndex, scope, name, resolvedValue);
+                  }}
+                >
+                  {options.map((option) => (
+                    <option key={option || "__empty"} value={option}>
+                      {enumOptionLabel(option)}
+                    </option>
+                  ))}
+                </fig-dropdown>
+              );
+            }
+
+            const optionsStr = options.map((o) => toSentenceCaseLabel(o)).join(",");
+            return (
+              <fig-options
+                full
+                options={optionsStr}
+                value={toSentenceCaseLabel(current)}
+                onChange={(e: any) => {
+                  const nextLabel = (e as CustomEvent).detail ?? e.target?.value;
+                  if (typeof nextLabel !== "string") return;
+                  const match = options.find(
+                    (o) => toSentenceCaseLabel(o) === nextLabel,
+                  );
+                  if (
+                    target.controlTag === "fig-truncate" &&
+                    name === "overflow" &&
+                    match === "fade" &&
+                    target.controlAttributes.position === "middle"
+                  ) {
+                    let updated = applyAttributeMutation(markup, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "overflow",
+                      value: "fade",
+                    });
+                    updated = applyAttributeMutation(updated, {
+                      fieldIndex: target.fieldIndex,
+                      target: "control",
+                      name: "position",
+                      value: "right",
+                    });
+                    onMarkupChange(updated);
+                    return;
+                  }
+                  applyChange(
+                    target.fieldIndex,
+                    scope,
+                    name,
+                    ((target.controlTag === "fig-slider" &&
+                      name === "variant") ||
+                      (target.controlTag === "fig-popup" &&
+                        name === "theme")) &&
+                      (match ?? nextLabel) === "default"
+                      ? null
+                      : match ?? nextLabel,
+                  );
+                }}
+              ></fig-options>
+            );
+          }
+
+          if (
+            target.controlTag === "fig-popup" &&
+            scope === "control" &&
+            name === "offset"
+          ) {
+            const rawOffset = (value ?? "0 0").trim();
+            const offsetParts = rawOffset.split(/\s+/).filter(Boolean);
+            const currentX = offsetParts[0] ?? "0";
+            const currentY = offsetParts[1] ?? offsetParts[0] ?? "0";
+
+            const applyOffsetPart = (axis: "x" | "y", nextPart: string) => {
+              const nextX = axis === "x" ? nextPart : currentX;
+              const nextY = axis === "y" ? nextPart : currentY;
+              applyChange(target.fieldIndex, scope, name, `${nextX} ${nextY}`);
+            };
+
+            const handleOffsetInput = (axis: "x" | "y") => (e: any) => {
+              const host = e.currentTarget as HTMLElement & { value?: string };
+              const nextValue = host.value ?? (e as CustomEvent).detail?.value;
+              if (typeof nextValue === "number") {
+                applyOffsetPart(axis, String(nextValue));
+                return;
+              }
+              if (typeof nextValue === "string") {
+                applyOffsetPart(axis, nextValue.trim() || "0");
+              }
+            };
+
+            return (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "var(--spacer-2)",
+                  width: "100%",
+                }}
+              >
+                <fig-input-number
+                  value={currentX}
+                  step="1"
+                  steppers="false"
+                  full
+                  onInput={handleOffsetInput("x")}
+                  onChange={handleOffsetInput("x")}
+                >
+                  <fig-icon slot="prepend">X</fig-icon>
+                </fig-input-number>
+                <fig-input-number
+                  value={currentY}
+                  step="1"
+                  steppers="false"
+                  full
+                  onInput={handleOffsetInput("y")}
+                  onChange={handleOffsetInput("y")}
+                >
+                  <fig-icon slot="prepend">Y</fig-icon>
+                </fig-input-number>
+              </div>
+            );
+          }
+
+          if (
+            target.controlTag === "fig-popup" &&
+            scope === "control" &&
+            name === "viewport-margin"
+          ) {
+            const currentMargin = (value ?? "8").trim() || "8";
+            const handleMarginInput = (e: any) => {
+              const host = e.currentTarget as HTMLElement & { value?: string };
+              const nextValue = host.value ?? (e as CustomEvent).detail?.value;
+              if (typeof nextValue === "number") {
+                applyChange(target.fieldIndex, scope, name, String(nextValue));
+                return;
+              }
+              if (typeof nextValue === "string") {
+                applyChange(
+                  target.fieldIndex,
+                  scope,
+                  name,
+                  nextValue.trim() || "0",
+                );
+              }
+            };
+            return (
+              <fig-input-number
+                value={currentMargin}
+                step="1"
+                full
+                onInput={handleMarginInput}
+                onChange={handleMarginInput}
+              ></fig-input-number>
+            );
+          }
+
+
+          if (
+            target.controlTag === "fig-color-tip" &&
+            scope === "control" &&
+            name === "value"
+          ) {
+            const colorValue = value || "#0D99FF";
+            const handleColorChange = (e: any) => {
+              const nextValue = readColorInputEventValue(e);
+              if (typeof nextValue !== "string") return;
+              applyChange(target.fieldIndex, scope, name, nextValue || null);
+            };
+            return (
+              <fig-input-color
+                value={colorValue}
+                text="true"
+                alpha="true"
+               
+               
+                full
+                onInput={handleColorChange}
+                onChange={handleColorChange}
+              ></fig-input-color>
+            );
+          }
+
+          if (
+            target.controlTag === "fig-audio-waveform" &&
+            scope === "control" &&
+            name === "url"
+          ) {
+            const handleAudioFileChange = (e: any) => {
+              if (e.target !== e.currentTarget) return;
+              const detail = (e as CustomEvent<{
+                files?: FileList | null;
+                cleared?: boolean;
+              }>).detail;
+              if (detail?.cleared) {
+                if (audioObjectUrlRef.current) {
+                  URL.revokeObjectURL(audioObjectUrlRef.current);
+                  audioObjectUrlRef.current = null;
+                }
+                applyChange(target.fieldIndex, scope, name, null);
+                return;
+              }
+              const host = e.currentTarget as HTMLElement & {
+                files?: FileList | null;
+              };
+              const file = detail?.files?.[0] ?? host.files?.[0];
+              if (!file) return;
+              if (audioObjectUrlRef.current) {
+                URL.revokeObjectURL(audioObjectUrlRef.current);
+              }
+              const objectUrl = URL.createObjectURL(file);
+              audioObjectUrlRef.current = objectUrl;
+              applyChange(target.fieldIndex, scope, name, objectUrl);
+            };
+            return (
+              <fig-input-file
+                accepts="audio/*"
+                full
+                onChange={handleAudioFileChange}
+              ></fig-input-file>
+            );
+          }
+
+          const handleTextInput = (e: any) => {
+            const host = e.currentTarget as HTMLElement & { value?: string };
+            const nextValue = host.value ?? (e as CustomEvent).detail?.value;
+            if (typeof nextValue !== "string") return;
+            applyChange(target.fieldIndex, scope, name, nextValue);
+          };
+          if (rule.type === "string" && rule.options?.length) {
+            return (
+              <fig-split-input
+                key={`${scope}-${name}`}
+                value={value ?? rule.defaultValue ?? ""}
+                options={rule.options.join(",")}
+                placeholder={rule.placeholder}
+                full
+                onInput={handleTextInput}
+                onChange={handleTextInput}
+              ></fig-split-input>
+            );
+          }
+          return (
+            <fig-input-text
+              key={`${scope}-${name}`}
+              value={value ?? ""}
+              full
+              onInput={handleTextInput}
+              onChange={handleTextInput}
+            ></fig-input-text>
+          );
+        };
+
+        return (
+          <Fragment key={`${resetKey}/${target.fieldIndex}`}>
+            {showFieldControls && target.hasField && target.controlTag !== "fig-group" && !("data-playground-hide-field" in target.controlAttributes) && (
+              <div className="propkit-attributes-view">
+                <fig-header borderless>
+                  <h3>Field</h3>
+                </fig-header>
+                <section className="propkit-attributes-content">
+                  <AttributePropertyGroup>
+                    <fig-field
+                      columns="2/5"
+                      key={`field-label-${target.fieldIndex}`}
+                    >
+                      <label>Label</label>
+                      <fig-switch
+                        checked={target.hasLabel ? "true" : undefined}
+                        onInput={(e: any) => {
+                          const customEvent = e as CustomEvent<{
+                            checked?: boolean;
+                          }>;
+                          const host = e.currentTarget as HTMLElement & {
+                            checked?: boolean;
+                          };
+                          const next =
+                            typeof customEvent.detail?.checked === "boolean"
+                              ? customEvent.detail.checked
+                              : Boolean(
+                                  host.checked ?? host.hasAttribute("checked"),
+                                );
+                          if (!next) {
+                            applyLabelChange(target.fieldIndex, false);
+                            return;
+                          }
+
+                          const rememberedLabel =
+                            labelMemoryRef.current[target.fieldIndex] ??
+                            target.label.trim() ??
+                            "";
+                          applyLabelChange(
+                            target.fieldIndex,
+                            true,
+                            rememberedLabel || "Label",
+                          );
+                        }}
+                      ></fig-switch>
+                    </fig-field>
+                    {target.hasLabel && (
+                      <fig-field
+                        columns="2/5"
+                        key={`field-label-text-${target.fieldIndex}`}
+                      >
+                        <label>Field label</label>
+                        <fig-input-text
+                          key={`field-label-input-${target.fieldIndex}`}
+                          value={target.label}
+                          full
+                          onInput={(e: any) => {
+                            const host = e.currentTarget as HTMLElement & {
+                              value?: string;
+                            };
+                            const nextValue =
+                              host.value ?? (e as CustomEvent).detail?.value;
+                            if (typeof nextValue !== "string") return;
+                            applyLabelChange(
+                              target.fieldIndex,
+                              true,
+                              nextValue,
+                            );
+                          }}
+                          onChange={(e: any) => {
+                            const host = e.currentTarget as HTMLElement & {
+                              value?: string;
+                            };
+                            const nextValue =
+                              host.value ?? (e as CustomEvent).detail?.value;
+                            if (typeof nextValue !== "string") return;
+                            applyLabelChange(
+                              target.fieldIndex,
+                              true,
+                              nextValue,
+                            );
+                          }}
+                        ></fig-input-text>
+                      </fig-field>
+                    )}
+                    {fieldEntries.map((entry) => (
+                      <fig-field
+                        columns="2/5"
+                        key={`field-${entry.name}`}
+                      >
+                        <label>{sentenceCase(entry.rule.label)}</label>
+                        {renderControl(entry, "field")}
+                      </fig-field>
+                    ))}
+                    {showFieldInputSelector && (
+                      <fig-field
+                        columns="2/5"
+                        key={`field-input-${target.fieldIndex}`}
+                      >
+                        <label>Input</label>
+                        <fig-dropdown
+                          key={`field-input-dropdown-${target.fieldIndex}-${currentFieldInputTag}`}
+                          full
+                          label="Input"
+                          value={currentFieldInputTag}
+                          onChange={(e: any) => {
+                            const host = e.currentTarget as HTMLElement & {
+                              value?: string;
+                            };
+                            const detail = (e as CustomEvent).detail;
+                            const nextValue =
+                              (typeof detail === "string"
+                                ? detail
+                                : detail?.value) ?? host.value;
+                            if (typeof nextValue !== "string") return;
+                            const nextTag = resolveFieldInputTag(nextValue);
+                            if (!nextTag) return;
+                            applyFieldInputChange(target.fieldIndex, nextTag);
+                          }}
+                        >
+                          {FIELD_INPUT_OPTIONS.map((option) => (
+                            <option key={option.tag} value={option.tag}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </fig-dropdown>
+                      </fig-field>
+                    )}
+                  </AttributePropertyGroup>
+                </section>
+              </div>
+            )}
+
+            {(visibleControlEntries.length > 0 ||
+              target.controlTag === "fig-interpolation-swatch" ||
+              target.controlTag === "fig-overflow-fade" ||
+              (target.controlTag === "fig-icon" &&
+                (target.controlAttributes["data-playground-icon-set"] === "16" ||
+                  target.controlAttributes["data-playground-icon-set"] === "24"))) && (
+              <div className="propkit-attributes-view">
+                <fig-header borderless>
+                  <h3>{getInputPanelTitle(target.controlTag)}</h3>
+                </fig-header>
+                <section className="propkit-attributes-content">
+                  <AttributePropertyGroup>
+                    {target.controlTag === "fig-group" &&
+                      (() => {
+                        const currentControl = getGroupHeaderControl(
+                          markup,
+                          target.fieldIndex,
+                        );
+                        if (!currentControl) return null;
+                        return (
+                          <fig-field
+                            columns="2/5"
+                            key={`group-header-control-${target.fieldIndex}`}
+                          >
+                            <label>Control</label>
+                            <fig-dropdown
+                              full
+                              label="Control"
+                              value={currentControl}
+                              onChange={(e: any) => {
+                                const detail = (e as CustomEvent).detail;
+                                const value =
+                                  (typeof detail === "string"
+                                    ? detail
+                                    : detail?.value) ??
+                                  (e.currentTarget as HTMLElement & {
+                                    value?: string;
+                                  }).value;
+                                if (
+                                  value !== "button" &&
+                                  value !== "switch" &&
+                                  value !== "select"
+                                ) {
+                                  return;
+                                }
+                                onMarkupChange(
+                                  applyGroupHeaderControlMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    value,
+                                  ),
+                                );
+                              }}
+                            >
+                              <option value="button">Button</option>
+                              <option value="switch">Switch</option>
+                              <option value="select">Select</option>
+                            </fig-dropdown>
+                          </fig-field>
+                        );
+                      })()}
+                    {target.controlTag === "fig-property" &&
+                      (() => {
+                        const propertyControlTag = getPropertyControlTag(
+                          markup,
+                          target.fieldIndex,
+                        );
+                        const currentTag =
+                          propertyControlTag === "fig-input-slider"
+                            ? "fig-slider"
+                            : propertyControlTag;
+                        const rotateVariant =
+                          getPropertyControlAttribute(
+                            markup,
+                            target.fieldIndex,
+                            "variant",
+                          ) === "simple"
+                            ? "simple"
+                            : "default";
+                        return (
+                          <>
+                            <fig-field
+                              columns="2/5"
+                              key={`property-control-${target.fieldIndex}-${currentTag}`}
+                            >
+                              <label>Control</label>
+                              <fig-dropdown
+                                full
+                                label="Control"
+                                value={currentTag}
+                                onChange={(e: any) => {
+                                  const detail = (e as CustomEvent).detail;
+                                  const value =
+                                    (typeof detail === "string"
+                                      ? detail
+                                      : detail?.value) ??
+                                    (e.currentTarget as HTMLElement & {
+                                      value?: string;
+                                    }).value;
+                                  const selectedOption =
+                                    PROPERTY_CONTROL_OPTIONS.find(
+                                      (option) => option.tag === value,
+                                    );
+                                  if (!selectedOption) return;
+                                  const controlTag =
+                                    selectedOption.tag === "fig-slider" &&
+                                    target.controlAttributes.activation === "row"
+                                      ? "fig-input-slider"
+                                      : selectedOption.tag;
+                                  const nextMarkup =
+                                    applyPropertyControlMutation(
+                                      markup,
+                                      target.fieldIndex,
+                                      controlTag,
+                                    );
+                                  onMarkupChange(
+                                    applyAttributeMutation(nextMarkup, {
+                                      fieldIndex: target.fieldIndex,
+                                      target: "control",
+                                      name: "label",
+                                      value: selectedOption.label,
+                                    }),
+                                  );
+                                }}
+                              >
+                                {PROPERTY_CONTROL_OPTIONS.map((option) => (
+                                  <option key={option.tag} value={option.tag}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </fig-dropdown>
+                            </fig-field>
+                            {propertyControlTag === "fig-input-rotate" && (
+                              <fig-field
+                                columns="2/5"
+                                key={`property-rotate-variant-${target.fieldIndex}`}
+                              >
+                                <label>Variant</label>
+                                <fig-dropdown
+                                  full
+                                  label="Variant"
+                                  value={rotateVariant}
+                                  onChange={(e: any) => {
+                                    const detail = (e as CustomEvent).detail;
+                                    const value =
+                                      (typeof detail === "string"
+                                        ? detail
+                                        : detail?.value) ??
+                                      (e.currentTarget as HTMLElement & {
+                                        value?: string;
+                                      }).value;
+                                    if (
+                                      value !== "default" &&
+                                      value !== "simple"
+                                    ) {
+                                      return;
+                                    }
+                                    onMarkupChange(
+                                      applyPropertyControlAttributeMutation(
+                                        markup,
+                                        target.fieldIndex,
+                                        "variant",
+                                        value,
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <option value="default">Default</option>
+                                  <option value="simple">Simple</option>
+                                </fig-dropdown>
+                              </fig-field>
+                            )}
+                          </>
+                        );
+                      })()}
+                    {target.controlTag === "fig-overflow-fade" &&
+                      (() => {
+                        const classes = new Set(
+                          (target.controlAttributes.class ?? "")
+                            .split(/\s+/)
+                            .filter(Boolean),
+                        );
+                        const horizontal =
+                          classes.has("fig-overflow-fade-horizontal") ||
+                          classes.has("fig-overflow-fade-left") ||
+                          classes.has("fig-overflow-fade-right");
+                        const edgeOptions = horizontal
+                          ? (["both", "left", "right"] as const)
+                          : (["both", "top", "bottom"] as const);
+                        const currentEdge = edgeOptions.find((edge) =>
+                          edge === "both"
+                            ? !classes.has("fig-overflow-fade-left") &&
+                              !classes.has("fig-overflow-fade-right") &&
+                              !classes.has("fig-overflow-fade-top") &&
+                              !classes.has("fig-overflow-fade-bottom")
+                            : classes.has(`fig-overflow-fade-${edge}`),
+                        ) ?? "both";
+                        return (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-overflow-fade-edge-${target.fieldIndex}`}
+                          >
+                            <label>Fade</label>
+                            <fig-options
+                              full
+                              options={edgeOptions
+                                .map((edge) => sentenceCase(edge))
+                                .join(",")}
+                              value={sentenceCase(currentEdge)}
+                              onChange={(e: any) => {
+                                const label =
+                                  (e as CustomEvent).detail ?? e.target?.value;
+                                const edge = edgeOptions.find(
+                                  (option) =>
+                                    sentenceCase(option) === label,
+                                );
+                                if (!edge) return;
+                                onMarkupChange(
+                                  applyOverflowFadeEdgeMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    edge,
+                                  ),
+                                );
+                              }}
+                            ></fig-options>
+                          </fig-field>
+                        );
+                      })()}
+                    {target.controlTag === "fig-interpolation-swatch" &&
+                      (() => {
+                        const valueAttr = target.controlAttributes.value;
+                        const parsedValue = parseInterpolationSwatchValue(valueAttr);
+                        const gradientControlValue = JSON.stringify(parsedValue);
+                        const applyInterpValue = (nextValue: string) => {
+                          let updated = applyAttributeMutation(markup, {
+                            fieldIndex: target.fieldIndex,
+                            target: "control",
+                            name: "value",
+                            value: nextValue,
+                          });
+                          updated = withGradientPreviewBackground(
+                            updated,
+                            gradientValueToCss(nextValue),
+                          );
+                          onMarkupChange(updated);
+                        };
+                        const handleGradientInput = (e: any) => {
+                          const host = e.currentTarget as HTMLElement & {
+                            value?: unknown;
+                          };
+                          const detail = (e as CustomEvent).detail;
+                          const eventValue =
+                            detail && typeof detail === "object"
+                              ? detail
+                              : host.value;
+                          const next =
+                            typeof detail === "string"
+                              ? detail
+                              : typeof eventValue === "string"
+                                ? eventValue
+                                : typeof eventValue === "object" && eventValue
+                                  ? JSON.stringify(eventValue)
+                                  : null;
+                          if (typeof next !== "string" || !next) return;
+                          applyInterpValue(
+                            withInterpolationSwatchGradientValue(next),
+                          );
+                        };
+                        return (
+                          <>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-interp-swatch-gradient-${target.fieldIndex}`}
+                            >
+                              <label>Gradient</label>
+                              <fig-input-fill
+                                picker-mode="gradient"
+                                full
+                                value={gradientControlValue}
+                                onInput={handleGradientInput}
+                                onChange={handleGradientInput}
+                              ></fig-input-fill>
+                            </fig-field>
+                          </>
+                        );
+                      })()}
+                    {target.controlTag === "fig-icon" &&
+                      target.controlAttributes.name === undefined &&
+                      target.controlAttributes["data-playground-icon-set"] ===
+                        undefined && (
+                        <fig-field
+                          columns="2/5"
+                          key={`control-icon-character-${target.fieldIndex}`}
+                        >
+                          <label>Character</label>
+                          <fig-input-text
+                            full
+                            value={getIconCharacter(
+                              markup,
+                              target.fieldIndex,
+                            )}
+                            onInput={(e: any) => {
+                              const host = e.currentTarget as HTMLElement & {
+                                value?: string;
+                              };
+                              const nextValue =
+                                host.value ??
+                                (e as CustomEvent).detail?.value;
+                              if (typeof nextValue !== "string") return;
+                              onMarkupChange(
+                                applyIconCharacterMutation(
+                                  markup,
+                                  target.fieldIndex,
+                                  nextValue,
+                                ),
+                              );
+                            }}
+                          ></fig-input-text>
+                        </fig-field>
+                      )}
+                    {target.controlTag === "fig-icon" &&
+                      (() => {
+                        const set = target.controlAttributes[
+                          "data-playground-icon-set"
+                        ] as FigIconPlaygroundSet | undefined;
+                        if (set !== "16" && set !== "24") return null;
+                        const names = getFigIconPlaygroundNames(set);
+                        const currentName =
+                          target.controlAttributes.name ?? names[0];
+                        const currentSize =
+                          target.controlAttributes.size === "small"
+                            ? "Small"
+                            : "Default";
+                        const currentColorLabel = getFigIconColorOptionLabel(
+                          target.controlAttributes.color,
+                        );
+                        const nameOptionsStr = names
+                          .map((name) => toSentenceCaseLabel(name))
+                          .join(",");
+                        const colorOptionsStr = FIG_ICON_COLOR_OPTIONS.map(
+                          (option) => option.label,
+                        ).join(",");
+                        return (
+                          <>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-icon-size-${target.fieldIndex}`}
+                            >
+                              <label>Size</label>
+                              <fig-options
+                                full
+                                options="Default,Small"
+                                value={currentSize}
+                                onChange={(e: any) => {
+                                  const nextLabel =
+                                    (e as CustomEvent).detail ?? e.target?.value;
+                                  if (
+                                    nextLabel !== "Default" &&
+                                    nextLabel !== "Small"
+                                  ) {
+                                    return;
+                                  }
+                                  const nextSet: FigIconPlaygroundSet =
+                                    nextLabel === "Small" ? "16" : "24";
+                                  const nextNames =
+                                    getFigIconPlaygroundNames(nextSet);
+                                  let updated = applyAttributeMutation(markup, {
+                                    fieldIndex: target.fieldIndex,
+                                    target: "control",
+                                    name: "size",
+                                    value:
+                                      nextLabel === "Small" ? "small" : null,
+                                  });
+                                  updated = applyAttributeMutation(updated, {
+                                    fieldIndex: target.fieldIndex,
+                                    target: "control",
+                                    name: "data-playground-icon-set",
+                                    value: nextSet,
+                                  });
+                                  if (!nextNames.includes(currentName)) {
+                                    updated = applyAttributeMutation(updated, {
+                                      fieldIndex: target.fieldIndex,
+                                      target: "control",
+                                      name: "name",
+                                      value: nextNames[0],
+                                    });
+                                  }
+                                  onMarkupChange(updated);
+                                }}
+                              ></fig-options>
+                            </fig-field>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-icon-name-${target.fieldIndex}`}
+                            >
+                              <label>Name</label>
+                              <fig-options
+                                full
+                                options={nameOptionsStr}
+                                value={toSentenceCaseLabel(currentName)}
+                                onChange={(e: any) => {
+                                  const nextLabel =
+                                    (e as CustomEvent).detail ?? e.target?.value;
+                                  if (typeof nextLabel !== "string") return;
+                                  const match = names.find(
+                                    (name) =>
+                                      toSentenceCaseLabel(name) === nextLabel,
+                                  );
+                                  if (!match) return;
+                                  applyChange(
+                                    target.fieldIndex,
+                                    "control",
+                                    "name",
+                                    match,
+                                  );
+                                }}
+                              ></fig-options>
+                            </fig-field>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-icon-color-${target.fieldIndex}`}
+                            >
+                              <label>Color</label>
+                              <fig-options
+                                full
+                                options={colorOptionsStr}
+                                value={currentColorLabel}
+                                onChange={(e: any) => {
+                                  const nextLabel =
+                                    (e as CustomEvent).detail ?? e.target?.value;
+                                  if (typeof nextLabel !== "string") return;
+                                  const match = FIG_ICON_COLOR_OPTIONS.find(
+                                    (option) => option.label === nextLabel,
+                                  );
+                                  if (!match) return;
+                                  applyChange(
+                                    target.fieldIndex,
+                                    "control",
+                                    "color",
+                                    match.value || null,
+                                  );
+                                }}
+                              ></fig-options>
+                            </fig-field>
+                          </>
+                        );
+                      })()}
+                    {target.controlTag === "fig-header" &&
+                      (() => {
+                        const iconEnabled = getHeaderIconEnabled(
+                          markup,
+                          target.fieldIndex,
+                        );
+                        return (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-header-icon-${target.fieldIndex}`}
+                          >
+                            <label>Button</label>
+                            <fig-switch
+                              checked={iconEnabled ? "true" : undefined}
+                              onChange={() =>
+                                onMarkupChange(
+                                  applyHeaderIconMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    !iconEnabled,
+                                  ),
+                                )
+                              }
+                            />
+                          </fig-field>
+                        );
+                      })()}
+                    {target.controlTag === "fig-toast" &&
+                      (() => {
+                        const iconRule = mergedControlRules.icon;
+                        if (!iconRule || iconRule.type !== "enum") return null;
+                        return (
+                          <>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-toast-icon-${target.fieldIndex}`}
+                            >
+                              <label>Icon</label>
+                              <fig-switch
+                                checked={toastIconEnabled ? "true" : undefined}
+                                onChange={() =>
+                                  applyChange(
+                                    target.fieldIndex,
+                                    "control",
+                                    "icon",
+                                    toastIconEnabled ? null : "warning",
+                                  )
+                                }
+                              />
+                            </fig-field>
+                            {toastIconEnabled ? (
+                              <fig-field
+                                columns="2/5"
+                                key={`control-toast-icon-name-${target.fieldIndex}`}
+                              >
+                                <label>{sentenceCase(iconRule.label)}</label>
+                                {renderControl(
+                                  {
+                                    name: "icon",
+                                    value: target.controlAttributes.icon,
+                                    rule: iconRule,
+                                  },
+                                  "control",
+                                )}
+                              </fig-field>
+                            ) : null}
+                          </>
+                        );
+                      })()}
+                    {target.controlTag === "fig-swatch" &&
+                      (() => {
+                        const alphaEntry = controlEntries.find(
+                          (entry) => entry.name === "alpha",
+                        );
+                        return (
+                          <>
+                            <fig-field
+                              columns="2/5"
+                              key={`control-swatch-fill-${target.fieldIndex}`}
+                            >
+                              <label>Fill</label>
+                              <fig-options
+                                full
+                                options="Solid,Gradient,Palette,Image"
+                                value={swatchFill ?? "Solid"}
+                                onChange={(e: any) => {
+                                  const val =
+                                    (e as CustomEvent).detail ?? e.target?.value;
+                                  let background = "#0D99FF";
+                                  if (val === "Gradient") {
+                                    background =
+                                      "linear-gradient(135deg, rgba(0, 229, 255, 0.5), #7A00FF 50%, #FF007A)";
+                                  } else if (val === "Palette") {
+                                    background = SWATCH_PALETTE_BACKGROUND;
+                                  } else if (val === "Image") {
+                                    background = `url("${landscapeUrl()}")`;
+                                  }
+                                  applyChange(
+                                    target.fieldIndex,
+                                    "control",
+                                    "background",
+                                    background,
+                                  );
+                                }}
+                              ></fig-options>
+                            </fig-field>
+                            {swatchFill === "Solid" && alphaEntry ? (
+                              <fig-field
+                                columns="2/5"
+                                key={`control-swatch-alpha-${target.fieldIndex}`}
+                              >
+                                <label>
+                                  {sentenceCase(alphaEntry.rule.label)}
+                                </label>
+                                {renderControl(alphaEntry, "control")}
+                              </fig-field>
+                            ) : null}
+                          </>
+                        );
+                      })()}
+                    {visibleControlEntries.flatMap((entry) => {
+                      const field = (
+                        <fig-field
+                          columns="2/5"
+                          key={`control-${entry.name}`}
+                        >
+                          <label>{sentenceCase(entry.rule.label)}</label>
+                          {renderControl(entry, "control")}
+                        </fig-field>
+                      );
+
+                      const maxSizeAfterLayout =
+                        target.controlTag === "fig-chooser" &&
+                        entry.name === "layout";
+
+                      if (
+                        target.controlTag === "fig-carousel" &&
+                        entry.name === "progress"
+                      ) {
+                        const variableName = "--fig-carousel-page-duration";
+                        const styleValue =
+                          target.controlAttributes.style ?? "";
+                        const durationMatch = styleValue.match(
+                          /--fig-carousel-(?:page|indicator)-duration:\s*([\d.]+)ms/i,
+                        );
+                        const duration = durationMatch
+                          ? Number(durationMatch[1])
+                          : 300;
+                        const durationField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-carousel-transition-duration-${target.fieldIndex}`}
+                          >
+                            <label>Transition duration</label>
+                            <fig-slider
+                              full
+                              text="true"
+                              value={String(duration)}
+                              min="0"
+                              max="1000"
+                              step="10"
+                              units="ms"
+                              onInput={(e: any) => {
+                                const nextDuration = Number(
+                                  e.currentTarget?.value ??
+                                    (e as CustomEvent).detail?.value,
+                                );
+                                if (!Number.isFinite(nextDuration)) return;
+                                const cleaned = styleValue
+                                  .replace(
+                                    /--fig-carousel-(?:page|indicator)-duration:\s*[^;]+;?/gi,
+                                    "",
+                                  )
+                                  .trim()
+                                  .replace(/;$/, "");
+                                applyChange(
+                                  target.fieldIndex,
+                                  "control",
+                                  "style",
+                                  `${cleaned ? `${cleaned}; ` : ""}${variableName}: ${nextDuration}ms`,
+                                );
+                              }}
+                            ></fig-slider>
+                          </fig-field>
+                        );
+                        return [field, durationField];
+                      }
+
+                      if (maxSizeAfterLayout) {
+                        const currentLayout =
+                          target.controlAttributes.layout ?? "vertical";
+                        const isHorizontal = currentLayout === "horizontal";
+                        const columnsRule = mergedControlRules.columns;
+                        const columnsField =
+                          currentLayout === "grid" &&
+                          columnsRule &&
+                          !hiddenControlAttrs.has("columns") ? (
+                            <fig-field
+                              columns="2/5"
+                              key={`control-chooser-columns-${target.fieldIndex}`}
+                            >
+                              <label>{sentenceCase(columnsRule.label)}</label>
+                              {renderControl(
+                                {
+                                  name: "columns",
+                                  value: target.controlAttributes.columns,
+                                  rule: columnsRule,
+                                },
+                                "control",
+                              )}
+                            </fig-field>
+                          ) : null;
+
+                        const currentOverflow =
+                          target.controlAttributes.overflow ?? "buttons";
+                        const overflowOptions = ["buttons", "scrollbar"];
+                        const overflowField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-chooser-overflow-${target.fieldIndex}`}
+                          >
+                            <label>{sentenceCase("Overflow")}</label>
+                            <fig-options
+                              full
+                              options="Buttons,Scrollbar"
+                              value={sentenceCase(currentOverflow)}
+                              onChange={(e: any) => {
+                                const val = (e as CustomEvent).detail ?? e.target?.value;
+                                if (!val) return;
+                                applyChange(
+                                  target.fieldIndex,
+                                  "control",
+                                  "overflow",
+                                  val === "Buttons" ? null : val.toLowerCase(),
+                                );
+                              }}
+                            ></fig-options>
+                          </fig-field>
+                        );
+
+                        const maxSizeUnits = isHorizontal ? "%" : "px";
+                        const maxSizeDefault = isHorizontal ? 100 : 240;
+                        const styleProp = isHorizontal
+                          ? "max-width"
+                          : "max-height";
+                        const styleStr = target.controlAttributes.style ?? "";
+                        const match = styleStr.match(
+                          /max-(?:width|height):\s*([\d.]+)/,
+                        );
+                        const maxSizeNum = match
+                          ? parseFloat(match[1])
+                          : maxSizeDefault;
+                        const maxSizeField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-chooser-maxsize-${target.fieldIndex}-${currentLayout}`}
+                          >
+                            <label>{sentenceCase("Max size")}</label>
+                            <fig-slider
+                              full
+                              text="true"
+                              value={maxSizeNum}
+                              min={isHorizontal ? 10 : 60}
+                              max={isHorizontal ? 100 : 600}
+                              step={isHorizontal ? 5 : 10}
+                              units={maxSizeUnits}
+                              onInput={(e: any) => {
+                                const val = parseFloat(
+                                  e.target?.value ?? e.detail,
+                                );
+                                if (isNaN(val)) return;
+                                onMarkupChange(
+                                  applyChooserMaxSizeMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    `${styleProp}: ${val}${maxSizeUnits}`,
+                                  ),
+                                );
+                              }}
+                            />
+                          </fig-field>
+                        );
+                        const hasPalettes = markup.includes("fig-input-palette");
+                        if (!hasPalettes) {
+                          return [
+                            field,
+                            columnsField,
+                            overflowField,
+                            maxSizeField,
+                          ].filter(Boolean);
+                        }
+
+                        const paletteLabelsEnabled = getChooserPaletteLabelsEnabled(markup, target.fieldIndex);
+                        const paletteLabelsField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-chooser-palette-labels-${target.fieldIndex}`}
+                          >
+                            <label>Labels</label>
+                            <fig-switch
+                              checked={paletteLabelsEnabled ? "true" : undefined}
+                              onInput={(e: any) => {
+                                const customEvent = e as CustomEvent<{ checked?: boolean }>;
+                                const host = e.currentTarget as HTMLElement & { checked?: boolean };
+                                const next =
+                                  typeof customEvent.detail?.checked === "boolean"
+                                    ? customEvent.detail.checked
+                                    : Boolean(host.checked ?? host.hasAttribute("checked"));
+                                onMarkupChange(
+                                  applyChooserPaletteLabelsMutation(markup, target.fieldIndex, next),
+                                );
+                              }}
+                            />
+                          </fig-field>
+                        );
+                        return [
+                          field,
+                          columnsField,
+                          overflowField,
+                          maxSizeField,
+                          paletteLabelsField,
+                        ].filter(Boolean);
+                      }
+
+                      if (
+                        target.controlTag === "fig-handle" &&
+                        entry.name === "type" &&
+                        (target.controlAttributes.type ?? "default") === "color"
+                      ) {
+                        const colorValue = target.controlAttributes.color || "#FF0FDF";
+                        const handleColorInput = (e: unknown) => {
+                          const nextValue = readColorInputEventValue(e);
+                          if (!nextValue) return;
+                          applyChange(target.fieldIndex, "control", "color", nextValue);
+                        };
+                        const colorPickerField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-handle-color-picker-${target.fieldIndex}`}
+                          >
+                            <label>Color</label>
+                            <fig-input-color
+                              value={colorValue}
+                              text="true"
+                              alpha="true"
+                              full
+                              onInput={handleColorInput}
+                              onChange={handleColorInput}
+                            ></fig-input-color>
+                          </fig-field>
+                        );
+                        return [field, colorPickerField];
+                      }
+
+                      if (
+                        target.controlTag === "fig-handle" &&
+                        entry.name === "precision"
+                      ) {
+                        const hitArea = getHandleHitArea(markup, target.fieldIndex);
+                        const hitAreaMode = (() => {
+                          const root = document.createElement("div");
+                          root.innerHTML = markup;
+                          const ctrl = root.querySelector("fig-handle");
+                          return ctrl?.getAttribute("hit-area-mode") || "handle";
+                        })();
+                        const hitAreaSeparator = (
+                          <hr
+                            key={`control-handle-hit-area-sep-${target.fieldIndex}`}
+                            style={{
+                              border: "none",
+                              borderTop: "1px solid var(--figma-color-border)",
+                              margin: "4px 0",
+                            }}
+                          />
+                        );
+                        const hitAreaLabel = (
+                          <fig-field
+                            key={`control-handle-hit-area-label-${target.fieldIndex}`}
+                          >
+                            <label style={{ fontWeight: 600, fontSize: "11px" }}>Hit area</label>
+                          </fig-field>
+                        );
+                        const hitAreaSizeField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-handle-hit-area-size-${target.fieldIndex}`}
+                          >
+                            <label>Size</label>
+                            <fig-slider
+                              value={String(hitArea.size)}
+                              min="0"
+                              max="48"
+                              units="px"
+                              text="true"
+                              onInput={(e: any) => {
+                                const val = parseFloat(e.currentTarget?.value ?? "0") || 0;
+                                onMarkupChange(
+                                  applyHandleHitAreaMutation(markup, target.fieldIndex, val, hitArea.circle),
+                                );
+                              }}
+                            />
+                          </fig-field>
+                        );
+                        const hitAreaShapeField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-handle-hit-area-shape-${target.fieldIndex}`}
+                          >
+                            <label>Shape</label>
+                            <fig-options
+                              full
+                              options="Rect,Circle"
+                              value={hitArea.circle ? "Circle" : "Rect"}
+                              onChange={(e: any) => {
+                                const val = (e as CustomEvent).detail ?? e.target?.value;
+                                onMarkupChange(
+                                  applyHandleHitAreaMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    hitArea.size || 8,
+                                    val === "Circle",
+                                  ),
+                                );
+                              }}
+                            ></fig-options>
+                          </fig-field>
+                        );
+                        const hitAreaDebugValue = getHandleHitAreaDebug(markup, target.fieldIndex);
+                        const hitAreaDebugField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-handle-hit-area-debug-${target.fieldIndex}`}
+                          >
+                            <label>Debug</label>
+                            <fig-slider
+                              value={String(Math.round(hitAreaDebugValue))}
+                              min="0"
+                              max="100"
+                              units="%"
+                              text="true"
+                              onInput={(e: any) => {
+                                const pct = parseFloat(e.currentTarget?.value ?? "0") || 0;
+                                onMarkupChange(
+                                  applyHandleHitAreaDebugMutation(markup, target.fieldIndex, pct),
+                                );
+                              }}
+                            />
+                          </fig-field>
+                        );
+                        const hitAreaModeField = (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-handle-hit-area-mode-${target.fieldIndex}`}
+                          >
+                            <label>Mode</label>
+                            <fig-options
+                              full
+                              options="Handle,Delegate"
+                              value={hitAreaMode === "delegate" ? "Delegate" : "Handle"}
+                              onChange={(e: any) => {
+                                const val = (e as CustomEvent).detail ?? e.target?.value;
+                                applyChange(target.fieldIndex, "control", "hit-area-mode", val.toLowerCase());
+                              }}
+                            ></fig-options>
+                          </fig-field>
+                        );
+                        return [field, hitAreaSeparator, hitAreaLabel, hitAreaModeField, hitAreaSizeField, hitAreaShapeField, hitAreaDebugField];
+                      }
+
+                      return [field];
+                    })}
+                    {target.controlTag === "fig-select" &&
+                      markup.includes("<fig-separator") &&
+                      (() => {
+                        const stickyEnabled = getSelectSeparatorStickyEnabled(
+                          markup,
+                          target.fieldIndex,
+                        );
+                        return (
+                          <fig-field
+                            columns="2/5"
+                            key={`control-select-separator-sticky-${target.fieldIndex}`}
+                          >
+                            <label>Sticky</label>
+                            <fig-switch
+                              checked={stickyEnabled ? "true" : undefined}
+                              onInput={(e: any) => {
+                                const customEvent = e as CustomEvent<{
+                                  checked?: boolean;
+                                }>;
+                                const host = e.currentTarget as HTMLElement & {
+                                  checked?: boolean;
+                                };
+                                const next =
+                                  typeof customEvent.detail?.checked ===
+                                  "boolean"
+                                    ? customEvent.detail.checked
+                                    : Boolean(
+                                        host.checked ??
+                                          host.hasAttribute("checked"),
+                                      );
+                                onMarkupChange(
+                                  applySelectSeparatorStickyMutation(
+                                    markup,
+                                    target.fieldIndex,
+                                    next,
+                                  ),
+                                );
+                              }}
+                            />
+                          </fig-field>
+                        );
+                      })()}
+                    {target.controlTag === "fig-truncate" && (() => {
+                      const styleAttr = target.controlAttributes.style || "";
+                      const match = styleAttr.match(/max-width:\s*([\d.]+)%/);
+                      const currentPct = match ? parseFloat(match[1]) : 50;
+                      return (
+                        <fig-field
+                          columns="2/5"
+                          key={`control-truncate-maxwidth-${target.fieldIndex}`}
+                        >
+                          <label>Max width</label>
+                          <fig-slider
+                            value={String(currentPct)}
+                            min="10"
+                            max="100"
+                            step="1"
+                            units="%"
+                            text="true"
+                            full
+                            onInput={(e: any) => {
+                              const host = e.currentTarget as HTMLElement & { value?: string };
+                              const nextValue = host.value ?? (e as CustomEvent).detail?.value;
+                              if (nextValue === undefined || nextValue === null) return;
+                              const newStyle = `max-width: ${nextValue}%;`;
+                              applyChange(target.fieldIndex, "control", "style", newStyle);
+                            }}
+                          ></fig-slider>
+                        </fig-field>
+                      );
+                    })()}
+                    {(target.controlTag === "fig-input-number" ||
+                      target.controlTag === "fig-input-text") &&
+                      (["prepend", "append"] as InputAdornmentSlot[])
+                        .filter((slot) => !hiddenControlAttrs.has(slot))
+                        .map((slot) => {
+                          const mode = getInputAdornmentSlotMode(
+                            markup,
+                            target.fieldIndex,
+                            slot,
+                          );
+                          const options: {
+                            value: InputAdornmentSlotMode;
+                            label: string;
+                          }[] = [
+                            { value: "none", label: "None" },
+                            { value: "label", label: "Label" },
+                            { value: "icon", label: "Icon" },
+                          ];
+                          return (
+                            <fig-field
+                              columns="2/5"
+                              key={`control-${slot}-${target.fieldIndex}`}
+                            >
+                              <label>
+                                {slot === "prepend" ? "Prepend" : "Append"}
+                              </label>
+                              <fig-options
+                                full
+                                options={options
+                                  .map((option) => option.label)
+                                  .join(",")}
+                                value={
+                                  options.find(
+                                    (option) => option.value === mode,
+                                  )?.label ?? "None"
+                                }
+                                onChange={(e: any) => {
+                                  const label =
+                                    (e as CustomEvent).detail ??
+                                    e.target?.value;
+                                  const match = options.find(
+                                    (option) => option.label === label,
+                                  );
+                                  if (match) {
+                                    onMarkupChange(
+                                      applyInputAdornmentSlotMutation(
+                                        markup,
+                                        target.fieldIndex,
+                                        slot,
+                                        match.value,
+                                      ),
+                                    );
+                                  }
+                                }}
+                              ></fig-options>
+                            </fig-field>
+                          );
+                        })}
+                  </AttributePropertyGroup>
+                </section>
+              </div>
+            )}
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}

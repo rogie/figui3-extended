@@ -1,0 +1,3170 @@
+import {
+  imageUrl,
+  portraitUrl,
+  landscapeUrl,
+  squareUrl,
+  variedAspectRatioUrl,
+} from "../lib/images";
+import { videoExampleAttrs, videoSrc } from "../lib/videos";
+
+export interface Example {
+  id: string;
+  name: string;
+  markup: string;
+  title?: string;
+  description?: string;
+  fieldControls?: boolean;
+}
+
+export interface Section {
+  id: string;
+  name: string;
+  description: string;
+  examples: Example[];
+  group?: string;
+}
+
+export const legacyPropsKitSections: Section[] = [
+  {
+    id: "atom-tabs",
+    name: "Tabs",
+    group: "Containers & navigation",
+    description:
+      "Tabs at the top of a panel for navigation and grouping related settings into separate views.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<fig-tabs>
+  <fig-tab selected>General</fig-tab>
+  <fig-tab>Advanced</fig-tab>
+  <fig-tab>Export</fig-tab>
+</fig-tabs>`,
+      },
+      {
+        id: "tab-content",
+        name: "With content",
+        markup: `<fig-tabs>
+  <fig-tab selected content="#atom-tabs-general">General</fig-tab>
+  <fig-tab content="#atom-tabs-export">Export</fig-tab>
+</fig-tabs>
+<fig-tab-content id="atom-tabs-general">
+  <fig-group>
+    <fig-field>
+      <label>Name</label>
+      <fig-input-text value="Hero Card" full></fig-input-text>
+    </fig-field>
+    <fig-field>
+      <label>Visible</label>
+      <fig-switch checked></fig-switch>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-tabs-export">
+  <fig-group>
+    <fig-field>
+      <label>Format</label>
+      <fig-options options="PNG,SVG,PDF" value="PNG" full></fig-options>
+    </fig-field>
+    <fig-field>
+      <label>Scale</label>
+      <fig-options options="1x,2x,3x" value="2x" full></fig-options>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>`,
+      },
+      {
+        id: "overflow",
+        name: "Overflow",
+        markup: `<fig-tabs>
+  <fig-tab value="all" selected>All</fig-tab>
+  <fig-tab value="ascii">ASCII</fig-tab>
+  <fig-tab value="latin">Latin</fig-tab>
+  <fig-tab value="punctuation">Punctuation</fig-tab>
+  <fig-tab value="math">Math</fig-tab>
+  <fig-tab value="arrows">Arrows</fig-tab>
+  <fig-tab value="currency">Currency</fig-tab>
+  <fig-tab value="symbols">Symbols</fig-tab>
+  <fig-tab value="emoji">Emoji</fig-tab>
+</fig-tabs>`,
+      },
+      {
+        id: "overflow-content",
+        name: "Overflow with content",
+        markup: `<fig-tabs>
+  <fig-tab value="all" content="#atom-overflow-tabs-all" selected>All</fig-tab>
+  <fig-tab value="ascii" content="#atom-overflow-tabs-ascii">ASCII</fig-tab>
+  <fig-tab value="latin" content="#atom-overflow-tabs-latin">Latin</fig-tab>
+  <fig-tab value="punctuation" content="#atom-overflow-tabs-punctuation">Punctuation</fig-tab>
+  <fig-tab value="math" content="#atom-overflow-tabs-math">Math</fig-tab>
+  <fig-tab value="arrows" content="#atom-overflow-tabs-arrows">Arrows</fig-tab>
+  <fig-tab value="currency" content="#atom-overflow-tabs-currency">Currency</fig-tab>
+  <fig-tab value="symbols" content="#atom-overflow-tabs-symbols">Symbols</fig-tab>
+  <fig-tab value="emoji" content="#atom-overflow-tabs-emoji">Emoji</fig-tab>
+</fig-tabs>
+<fig-tab-content id="atom-overflow-tabs-all">
+  <fig-group>
+    <fig-field>
+      <label>Characters</label>
+      <fig-input-text value="All character sets" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-ascii">
+  <fig-group>
+    <fig-field>
+      <label>Range</label>
+      <fig-input-text value="U+0000-007F" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-latin">
+  <fig-group>
+    <fig-field>
+      <label>Range</label>
+      <fig-input-text value="Latin Extended" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-punctuation">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value=".,!?;:" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-math">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value="+ − × ÷ =" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-arrows">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value="← ↑ → ↓" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-currency">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value="$ € ¥ £" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-symbols">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value="★ ◆ ● ■" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>
+<fig-tab-content id="atom-overflow-tabs-emoji">
+  <fig-group>
+    <fig-field>
+      <label>Preview</label>
+      <fig-input-text value="😀 🎉 🚀" full></fig-input-text>
+    </fig-field>
+  </fig-group>
+</fig-tab-content>`,
+      },
+    ],
+  },
+  {
+    id: "group",
+    name: "Group",
+    group: "Containers & navigation",
+    description:
+      "A collapsible group container with an optional named header and sibling border separators.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-group name="Layout">
+    <fig-field>
+      <label>Direction</label>
+      <fig-dropdown full>
+        <option selected>Horizontal</option>
+        <option>Vertical</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Spacing</label>
+      <fig-slider value="8" min="0" max="64" text="true" units="px"></fig-slider>
+    </fig-field>
+  </fig-group>
+  <fig-group name="Fill">
+    <fig-field>
+      <label>Background</label>
+      <fig-input-color value="#FFFFFF" text="true" full></fig-input-color>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "no-names",
+        name: "No names",
+        title: "Groups without names",
+        description:
+          "Groups can omit the name attribute entirely. They provide visual separation between groups without a header.",
+        markup: `<div class="prop-panel">
+  <fig-group>
+    <fig-field>
+      <label>Direction</label>
+      <fig-dropdown full>
+        <option selected>Horizontal</option>
+        <option>Vertical</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Spacing</label>
+      <fig-slider value="8" min="0" max="64" text="true"></fig-slider>
+    </fig-field>
+  </fig-group>
+  <fig-group>
+    <fig-field>
+      <label>Background</label>
+      <fig-input-color value="#FFFFFF"></fig-input-color>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "collapsible",
+        name: "Collapsible",
+        markup: `<div class="prop-panel">
+  <fig-group name="Appearance" collapsible open>
+    <fig-field>
+      <label>Color</label>
+      <fig-input-color value="#0D99FF" text="true" full></fig-input-color>
+    </fig-field>
+    <fig-field>
+      <label>Image</label>
+      <fig-image full="true" upload="true" label="Upload" alt="" size="auto"></fig-image>
+    </fig-field>
+    <fig-field>
+      <label>Blend Mode</label>
+      <fig-dropdown full>
+        <option selected>Normal</option>
+        <option>Multiply</option>
+        <option>Screen</option>
+        <option>Overlay</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Opacity</label>
+      <fig-slider value="100" min="0" max="100" text="true" units="%"></fig-slider>
+    </fig-field>
+    <fig-field>
+      <label>Palette</label>
+      <fig-input-palette value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full></fig-input-palette>
+    </fig-field>
+  </fig-group>
+  <fig-group name="Advanced" collapsible>
+    <fig-field>
+      <label>Noise</label>
+      <fig-switch checked></fig-switch>
+    </fig-field>
+    <fig-field>
+      <label>Clip alpha</label>
+      <fig-switch checked></fig-switch>
+    </fig-field>
+  </fig-group>
+  <fig-group name="Misc" collapsible>
+    <fig-field>
+      <label>Visible</label>
+      <fig-switch></fig-switch>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "content",
+    name: "Content",
+    group: "Containers & navigation",
+    description:
+      "A scrollable content container for dialog and panel bodies.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel" style="height: 220px; display: flex; flex-direction: column;">
+  <fig-header>
+    <h3>Content</h3>
+  </fig-header>
+  <fig-content>
+    <p>Use fig-content for the primary body region of a dialog or panel.</p>
+    <fig-group name="Settings">
+      <fig-field>
+        <label>Density</label>
+        <fig-slider value="60" min="0" max="100" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field>
+        <label>Preview</label>
+        <fig-switch checked></fig-switch>
+      </fig-field>
+    </fig-group>
+  </fig-content>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "header",
+    name: "Header",
+    group: "Containers & navigation",
+    description:
+      "A top bar container for titles, actions, and dialog drag handles.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <h3>Layer options</h3>
+    <fig-button variant="ghost" icon="true" aria-label="Close">
+      <fig-icon name="close"></fig-icon>
+    </fig-button>
+  </fig-header>
+</div>`,
+      },
+      {
+        id: "long-title",
+        name: "Long title",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <h3>Manage advanced layer export options</h3>
+    <fig-button variant="ghost" icon="true" aria-label="Close">
+      <fig-icon name="close"></fig-icon>
+    </fig-button>
+  </fig-header>
+</div>`,
+      },
+      {
+        id: "accessory-text",
+        name: "Accessory text",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <h3>Characters</h3>
+    <span>352 characters</span>
+  </fig-header>
+</div>`,
+      },
+      {
+        id: "dropdown",
+        name: "Dropdown",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <fig-dropdown aria-label="Content type">
+      <option value="characters" selected>Characters</option>
+      <option value="words">Words</option>
+      <option value="lines">Lines</option>
+    </fig-dropdown>
+    <fig-button variant="ghost" icon="true" aria-label="Close">
+      <fig-icon name="close"></fig-icon>
+    </fig-button>
+  </fig-header>
+</div>`,
+      },
+      {
+        id: "ghost-dropdown",
+        name: "Ghost dropdown",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <fig-dropdown variant="ghost" aria-label="Content type">
+      <option value="characters" selected>Characters</option>
+      <option value="words">Words</option>
+      <option value="lines">Lines</option>
+    </fig-dropdown>
+    <fig-button variant="ghost" icon="true" aria-label="Close">
+      <fig-icon name="close"></fig-icon>
+    </fig-button>
+  </fig-header>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "footer",
+    name: "Footer",
+    group: "Containers & navigation",
+    description:
+      "A bottom action bar container for secondary and primary actions.",
+    examples: [
+      {
+        id: "waiting",
+        name: "Waiting",
+        description:
+          "A label-only footer for idle states. With no buttons, the message is centered.",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>Select text, or click to copy</label>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <fig-button variant="secondary">Cancel</fig-button>
+    <fig-button>Apply</fig-button>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "label-button",
+        name: "Waiting for selection",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>Select a layer</label>
+    <fig-button disabled>Apply</fig-button>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "long-label",
+        name: "Long label",
+        description:
+          "A footer label with more instructional text beside a disabled action.",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>In order to run this tool, you will need to select at least one layer selected</label>
+    <fig-button disabled>Apply</fig-button>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "selected-layer",
+        name: "Has selection",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>3 selected</label>
+    <fig-button>Apply</fig-button>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "long-label-many-actions",
+        name: "Long label/many actions",
+        description:
+          "A long instructional label above a vertical stack of actions.",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>In order to run this tool, you will need to select at least one layer selected</label>
+    <fig-tooltip text="Select at least one layer to reset">
+      <span class="fig-footer-action">
+        <fig-button variant="secondary" disabled full>Reset</fig-button>
+      </span>
+    </fig-tooltip>
+    <fig-tooltip text="Close without applying changes">
+      <span class="fig-footer-action">
+        <fig-button variant="secondary" full>Cancel</fig-button>
+      </span>
+    </fig-tooltip>
+    <fig-tooltip text="Select at least one layer to apply">
+      <span class="fig-footer-action">
+        <fig-button disabled full>Apply</fig-button>
+      </span>
+    </fig-tooltip>
+  </fig-footer>
+</div>`,
+      },
+      {
+        id: "lots-of-things",
+        name: "Lots of things",
+        markup: `<div class="prop-panel">
+  <fig-footer>
+    <label>Make a selection</label>
+    <fig-button variant="secondary" disabled>Reset</fig-button>
+    <fig-button variant="secondary" disabled>Cancel</fig-button>
+    <fig-button disabled>Apply</fig-button>
+  </fig-footer>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "3d-rotate",
+    name: "3D Rotate",
+    group: "Field controls",
+    description:
+      "An interactive 3D rotation control with a draggable cube preview.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Rotation</label>
+    <fig-3d-rotate value="rotateX(0deg) rotateY(0deg) rotateZ(0deg)"></fig-3d-rotate>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "angle",
+    name: "Angle",
+    group: "Field controls",
+    description:
+      "An instrument-style angle dial with multi-unit values, continuous winding, and precise snapping.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Rotation</label>
+    <fig-angle value="15"></fig-angle>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "chooser",
+    name: "Chooser",
+    group: "Field controls",
+    description:
+      "A selection list for picking from a set of rich choice options.",
+    examples: [
+      {
+        id: "text",
+        name: "Text",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Style</label>
+    <fig-chooser layout="vertical" value="option-a" full drag style="max-height: 240px">
+      <fig-choice value="option-a" selected>Option A</fig-choice>
+      <fig-choice value="option-b">Option B</fig-choice>
+      <fig-choice value="option-c">Option C</fig-choice>
+      <fig-choice value="option-d">Option D</fig-choice>
+      <fig-choice value="option-e">Option E</fig-choice>
+      <fig-choice value="option-f">Option F</fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "empty",
+        name: "No selection",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Style</label>
+    <fig-chooser layout="vertical" value="" full drag style="max-height: 240px">
+      <fig-choice value="option-a">Option A</fig-choice>
+      <fig-choice value="option-b">Option B</fig-choice>
+      <fig-choice value="option-c">Option C</fig-choice>
+      <fig-choice value="option-d">Option D</fig-choice>
+      <fig-choice value="option-e">Option E</fig-choice>
+      <fig-choice value="option-f">Option F</fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "manual-scroll",
+        name: "Manual scroll",
+        description:
+          "Select independently, then bring the current selection into view on demand.",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Style</label>
+    <fig-chooser layout="horizontal" value="option-a" auto-scroll="false" scroll-behavior="smooth" full style="max-width: 100%">
+      <fig-choice value="option-a" padding selected>Option A</fig-choice>
+      <fig-choice value="option-b" padding>Option B</fig-choice>
+      <fig-choice value="option-c" padding>Option C</fig-choice>
+      <fig-choice value="option-d" padding>Option D</fig-choice>
+      <fig-choice value="option-e" padding>Option E</fig-choice>
+      <fig-choice value="option-f" padding>Option F</fig-choice>
+      <fig-choice value="option-g" padding>Option G</fig-choice>
+      <fig-choice value="option-h" padding>Option H</fig-choice>
+    </fig-chooser>
+  </fig-field>
+  <div data-playground-ignore-controls="true" style="display: flex; gap: var(--spacer-2)">
+    <fig-button variant="secondary" data-playground-ignore-controls="true" onclick="const r=this.closest('.prop-panel')||this.closest('.propkit-example');r.querySelector('fig-chooser').value='option-h'">Select last</fig-button>
+    <fig-button data-playground-ignore-controls="true" onclick="const r=this.closest('.prop-panel')||this.closest('.propkit-example');r.querySelector('fig-chooser').scrollSelectionIntoView()">Scroll to selection</fig-button>
+  </div>
+</div>`,
+      },
+      {
+        id: "grid",
+        name: "Grid",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Alignment</label>
+    <fig-chooser layout="grid" columns="3" value="top-left" full>
+      <fig-choice value="top-left" padding selected>Top left</fig-choice>
+      <fig-choice value="top" padding>Top</fig-choice>
+      <fig-choice value="top-right" padding>Top right</fig-choice>
+      <fig-choice value="left" padding>Left</fig-choice>
+      <fig-choice value="center" padding>Center</fig-choice>
+      <fig-choice value="right" padding>Right</fig-choice>
+      <fig-choice value="bottom-left" padding>Bottom left</fig-choice>
+      <fig-choice value="bottom" padding>Bottom</fig-choice>
+      <fig-choice value="bottom-right" padding>Bottom right</fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "images",
+        name: "Images",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Style</label>
+    <fig-chooser layout="horizontal" value="img-a" full drag style="max-width: 100%">
+      <fig-choice value="img-a" aria-label="Image A" selected padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-b" aria-label="Image B" padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-c" aria-label="Image C" padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-d" aria-label="Image D" padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-e" aria-label="Image E" padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-f" aria-label="Image F" padding><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "cards",
+        name: "Cards",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Style</label>
+    <fig-chooser choice-element="fig-card" layout="horizontal" value="amber-dusk" full drag style="max-width: 100%">
+      <fig-card value="amber-dusk" selected src="${landscapeUrl()}" label="Amber dusk" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+      <fig-card value="soft-fog" src="${landscapeUrl()}" label="Soft fog" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+      <fig-card value="salt-light" src="${landscapeUrl()}" label="Salt light" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+      <fig-card value="pine-glow" src="${landscapeUrl()}" label="Pine glow" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+      <fig-card value="river-glass" src="${landscapeUrl()}" label="River glass" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+      <fig-card value="quiet-cove" src="${landscapeUrl()}" label="Quiet cove" aspect-ratio="1/1" fit="fill" style="width: 5.5rem"></fig-card>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "colors",
+        name: "Colors",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Color</label>
+    <fig-chooser choice-element="fig-swatch" layout="horizontal" value="red" full drag style="max-width: 100%">
+      <fig-swatch value="red" selected background="linear-gradient(#FF0000, #FF0000)" size="large" aria-label="Red"></fig-swatch>
+      <fig-swatch value="blue" background="linear-gradient(#0D99FF, #0D99FF)" size="large" aria-label="Blue"></fig-swatch>
+      <fig-swatch value="green" background="linear-gradient(#14AE5C, #14AE5C)" size="large" aria-label="Green"></fig-swatch>
+      <fig-swatch value="orange" background="linear-gradient(#FF8C00, #FF8C00)" size="large" aria-label="Orange"></fig-swatch>
+      <fig-swatch value="purple" background="linear-gradient(#9747FF, #9747FF)" size="large" aria-label="Purple"></fig-swatch>
+      <fig-swatch value="pink" background="linear-gradient(#E84BA5, #E84BA5)" size="large" aria-label="Pink"></fig-swatch>
+      <fig-swatch value="teal" background="linear-gradient(#24B5A8, #24B5A8)" size="large" aria-label="Teal"></fig-swatch>
+      <fig-swatch value="yellow" background="linear-gradient(#FFCD29, #FFCD29)" size="large" aria-label="Yellow"></fig-swatch>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "palettes",
+        name: "Palettes",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Palettes</label>
+    <fig-chooser layout="vertical" value="sunset" full drag style="max-height: 240px">
+      <fig-choice value="sunset" selected><fig-input-palette value="#FF6B6B,#FFA07A,#FFD700,#FF4500" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="ocean"><fig-input-palette value="#0D99FF,#00CEC9,#6C5CE7,#0984E3" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="forest"><fig-input-palette value="#00B894,#55E6C1,#2D6A4F,#95D5B2" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="berry"><fig-input-palette value="#E84393,#A855F7,#6D28D9,#FD79A8" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="mono"><fig-input-palette value="#000000,#3A3A3A,#CFCFCF,#FFFFFF" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="desert"><fig-input-palette value="#7C2D12,#C2410C,#FDBA74,#FEF3C7" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="candy"><fig-input-palette value="#FF2E88,#FF9F1C,#FFF275,#00F5D4" fixed disabled full></fig-input-palette></fig-choice>
+      <fig-choice value="midnight"><fig-input-palette value="#020617,#1E1B4B,#312E81,#38BDF8" fixed disabled full></fig-input-palette></fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "gradients",
+        name: "Gradients",
+        markup: `<div class="prop-panel">
+  <fig-field direction="vertical">
+    <label>Gradients</label>
+    <fig-chooser layout="vertical" value="sunset-glow" full drag style="max-height: 240px">
+      <fig-choice value="sunset-glow" selected><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#FFB347","opacity":100},{"position":50,"color":"#FF5E78","opacity":100},{"position":100,"color":"#7A2BD9","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="aurora"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":135,"stops":[{"position":0,"color":"#00F5A0","opacity":100},{"position":45,"color":"#00D4FF","opacity":100},{"position":100,"color":"#4B00E0","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="bubblegum"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":45,"stops":[{"position":0,"color":"#FFC2E2","opacity":100},{"position":48,"color":"#FF4FA2","opacity":100},{"position":52,"color":"#7DF3D4","opacity":100},{"position":100,"color":"#2EB39A","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="holographic"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#FF6EC7","opacity":100},{"position":25,"color":"#FFD86E","opacity":100},{"position":50,"color":"#6EE7FF","opacity":100},{"position":75,"color":"#A06EFF","opacity":100},{"position":100,"color":"#FF6E9A","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="chrome"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#111827","opacity":100},{"position":18,"color":"#F8FAFC","opacity":100},{"position":34,"color":"#94A3B8","opacity":100},{"position":52,"color":"#FFFFFF","opacity":100},{"position":70,"color":"#475569","opacity":100},{"position":100,"color":"#E2E8F0","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="black-white"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":135,"stops":[{"position":0,"color":"#000000","opacity":100},{"position":28,"color":"#FFFFFF","opacity":100},{"position":50,"color":"#1F2937","opacity":100},{"position":72,"color":"#FFFFFF","opacity":100},{"position":100,"color":"#000000","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="laser-lemonade"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":25,"stops":[{"position":0,"color":"#FFF700","opacity":100},{"position":30,"color":"#00FF85","opacity":100},{"position":64,"color":"#00D4FF","opacity":100},{"position":100,"color":"#FF00E5","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+      <fig-choice value="cosmic-sorbet"><fig-input-gradient edit="false" value='{"type":"gradient","gradient":{"type":"linear","angle":155,"stops":[{"position":0,"color":"#2B0B5A","opacity":100},{"position":24,"color":"#7C3AED","opacity":100},{"position":48,"color":"#F97316","opacity":100},{"position":72,"color":"#FDE68A","opacity":100},{"position":100,"color":"#22D3EE","opacity":100}]}}' disabled full></fig-input-gradient></fig-choice>
+    </fig-chooser>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "button",
+    name: "Button",
+    group: "Field controls",
+    description:
+      "A property row action button for applying, resetting, or opening a related workflow.",
+    examples: [
+      {
+        id: "pill",
+        name: "Pill",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Action</label>
+    <fig-button pill>Continue</fig-button>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "color",
+    name: "Color",
+    group: "Field controls",
+    description:
+      "A solid color picker field with hex input and optional alpha.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Color</label>
+    <fig-input-color value="#0D99FF" text="true" full></fig-input-color>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "with-alpha",
+        name: "With Alpha",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Color</label>
+    <fig-input-color value="#0D99FF80" text="true" alpha="true" full></fig-input-color>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dropdown",
+    name: "Dropdown",
+    group: "Field controls",
+    description: "A dropdown select field that uses a native dropdown menu.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Blend Mode</label>
+    <fig-dropdown full>
+      <option selected>Normal</option>
+      <option>Multiply</option>
+      <option>Screen</option>
+      <option>Overlay</option>
+      <option>Darken</option>
+      <option>Lighten</option>
+    </fig-dropdown>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "groups",
+        name: "Groups",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Blend Mode</label>
+    <fig-dropdown full>
+      <optgroup label="Normal">
+        <option selected>Normal</option>
+        <option>Pass through</option>
+      </optgroup>
+      <optgroup label="Darken">
+        <option>Darken</option>
+        <option>Multiply</option>
+        <option>Color burn</option>
+      </optgroup>
+      <optgroup label="Lighten">
+        <option>Lighten</option>
+        <option>Screen</option>
+        <option>Color dodge</option>
+      </optgroup>
+    </fig-dropdown>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "labelled-groups",
+        name: "Labelled groups",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Blend Mode</label>
+    <fig-dropdown full>
+      <optgroup label="Basic">
+        <option selected>Normal</option>
+        <option>Multiply</option>
+        <option>Screen</option>
+      </optgroup>
+      <optgroup label="Advanced">
+        <option>Overlay</option>
+        <option>Darken</option>
+        <option>Lighten</option>
+      </optgroup>
+    </fig-dropdown>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "easing",
+    name: "Easing Curve",
+    group: "Field controls",
+    description:
+      "A bezier curve editor for animation easing with preset dropdown.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Easing</label>
+    <fig-easing-curve value="0.42, 0, 0.58, 1"></fig-easing-curve>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "preset-only",
+        name: "Preset only",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Easing</label>
+    <fig-easing-curve value="0, 0, 0.58, 1" edit="false"></fig-easing-curve>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "editor-only",
+        name: "Editor only",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Easing</label>
+    <fig-easing-curve value="0.42, 0, 0.58, 1" presets="false" text="false"></fig-easing-curve>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "popup",
+        name: "Popup",
+        markup: `<fig-button id="easing-popup-anchor">Easing</fig-button>
+<dialog
+  is="fig-popup-easing"
+  anchor="#easing-popup-anchor"
+  value="0.42, 0, 0.58, 1"
+  open
+></dialog>`,
+      },
+    ],
+  },
+  {
+    id: "fill",
+    name: "Fill",
+    group: "Field controls",
+    description:
+      "A multi-mode fill field supporting solid, gradient, and image fills.",
+    examples: [
+      {
+        id: "solid-alpha",
+        name: "Solid",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"solid","color":"#667eea"}'></fig-input-fill>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "with-toggle",
+        name: "With toggle",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"solid","color":"#667eea"}' full></fig-input-fill>
+    <fig-button variant="ghost" type="toggle" icon aria-label="Hide fill" data-playground-ignore-controls="true" data-playground-show-source="true" onclick="const b=this,f=b.previousElementSibling,i=b.querySelector('fig-icon'),h=i.getAttribute('name')==='hidden';i.setAttribute('name',h?'visible':'hidden');b.setAttribute('aria-label',h?'Hide fill':'Show fill');b.toggleAttribute('selected',!h);f.toggleAttribute('disabled',!h);">
+      <fig-icon name="visible" size="small"></fig-icon>
+    </fig-button>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "linear-gradient-cool",
+        name: "Linear Gradient",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"gradient","gradient":{"type":"linear","angle":135,"stops":[{"position":0,"color":"#667eea","opacity":100},{"position":100,"color":"#764ba2","opacity":100}]}}'></fig-input-fill>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "radial-gradient-coral",
+        name: "Radial Gradient",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"gradient","gradient":{"type":"radial","centerX":50,"centerY":50,"stops":[{"position":0,"color":"#ff6b6b","opacity":100},{"position":100,"color":"#4ecdc4","opacity":100}]}}'></fig-input-fill>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "angular-gradient-rainbow",
+        name: "Angular Gradient",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"gradient","gradient":{"type":"angular","stops":[{"position":0,"color":"#ff0000","opacity":100},{"position":33,"color":"#00ff00","opacity":100},{"position":66,"color":"#0000ff","opacity":100},{"position":100,"color":"#ff0000","opacity":100}]}}'></fig-input-fill>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "image",
+        name: "Image",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Fill</label>
+    <fig-input-fill value='{"type":"image","image":{"url":"${squareUrl()}","scaleMode":"fill","scale":50,"opacity":1}}'></fig-input-fill>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "gradient",
+    name: "Gradient",
+    group: "Field controls",
+    description:
+      "A gradient stop editor with draggable color handles. Click empty space to add a stop, click a handle to edit its color.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Gradient</label>
+    <fig-input-gradient value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#7AEA66","opacity":100},{"position":67,"color":"#4700FF","opacity":53},{"position":100,"color":"#FF00BF","opacity":100}]}}'></fig-input-gradient>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "image",
+    name: "Image",
+    group: "Field controls",
+    description:
+      "An accessible image field that renders media inside a fig-preview and keeps upload actions keyboard reachable.",
+    examples: [
+      {
+        id: "plain-image",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-image full="true" src="${portraitUrl()}" alt="Image preview" fit="cover" size="auto" checkerboard="true"></fig-image>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "upload-empty",
+        name: "Upload (Empty)",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-image full="true" upload="true" label="Upload" alt="" fit="cover" size="auto" checkerboard="true"></fig-image>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "loading",
+        name: "Loading",
+        description:
+          "fig-image automatically shows a spinner when a generated image takes longer than 150ms to load, then removes it on load or error.",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-image
+      full="true"
+      src="${portraitUrl(1920)}"
+      alt="Image preview"
+      fit="cover"
+      size="auto"
+      checkerboard="true"
+    ></fig-image>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "upload-with-image",
+        name: "Upload (With Image)",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-image full="true" upload="true" src="${portraitUrl()}" alt="Uploaded image preview" fit="cover" size="auto" checkerboard="true"></fig-image>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "custom-buttons",
+        name: "Custom Buttons",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-image full="true" src="${portraitUrl()}" alt="Image preview" fit="cover" size="auto" checkerboard="true">
+      <fig-input-file slot="overlay" accepts="image/*" label="Change" variant="overlay"></fig-input-file>
+    </fig-image>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "video",
+    name: "Video",
+    group: "Field controls",
+    description:
+      "An accessible video field with a fig-preview media surface and playback controls that attach below the preview.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Video</label>
+    <fig-video ${videoExampleAttrs('aria-label="Video preview" autoplay="true" controls muted fit="cover" size="auto" full checkerboard="true"')}></fig-video>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "poster-only",
+        name: "Poster",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Video</label>
+    <fig-video poster="${landscapeUrl()}" aria-label="Poster-only video preview" muted fit="cover" size="auto" full checkerboard="true"></fig-video>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "upload",
+        name: "Upload",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Video</label>
+    <fig-video upload="true" aria-label="Uploaded video preview" controls muted fit="cover" size="auto" full checkerboard="true"></fig-video>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "media",
+    name: "Media",
+    group: "Field controls",
+    description:
+      "A media field using the PropKit row pattern with image/video support, a fig-preview surface, keyboard-reachable upload, and bottom playback controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Preview</label>
+    <fig-media type="video" ${videoExampleAttrs('aria-label="Media preview" autoplay="true" controls muted="true" upload="true" fit="contain" size="auto" full checkerboard="true"')}></fig-media>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "preview",
+    name: "Preview",
+    group: "Field controls",
+    description:
+      "A thin visual surface for showing arbitrary rendered content like images, canvas, SVG, or generated previews.",
+    examples: [
+      {
+        id: "image",
+        name: "Image",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <fig-preview full checkerboard>
+      <img src="${variedAspectRatioUrl()}" alt="Landscape preview">
+    </fig-preview>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "canvas",
+        name: "Canvas",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <fig-preview full style="height: 96px">
+      <canvas width="320" height="180" aria-label="Generated shader preview" style="width: 100%; height: 100%; background: radial-gradient(circle at 20% 25%, #FFFFFFAA 0 8%, transparent 20%), radial-gradient(circle at 78% 35%, #7AEA66 0 12%, transparent 32%), radial-gradient(circle at 42% 72%, #FFCD29 0 10%, transparent 30%), conic-gradient(from 210deg at 52% 48%, #0D99FF, #9747FF, #FF00BF, #FF7262, #7AEA66, #0D99FF); filter: saturate(1.35) contrast(1.1);"></canvas>
+    </fig-preview>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "joystick",
+    name: "Joystick",
+    group: "Field controls",
+    description: "A 2D position control with optional coordinate modes.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Position</label>
+    <fig-joystick value="50% 50%" axis-labels="X Y"></fig-joystick>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "number",
+    name: "Number",
+    group: "Field controls",
+    description:
+      "A numeric input field for precise typed values with optional units and bounds.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Amount</label>
+    <fig-input-number value="50" min="0" max="100" step="0.5" steppers></fig-input-number>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "ghost",
+        name: "Ghost",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Amount</label>
+    <fig-input-number variant="ghost" value="50" min="0" max="100" step="0.5" steppers></fig-input-number>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "tabular",
+        name: "Tabular",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Amount</label>
+    <fig-input-number tabular value="1111" min="0" max="9999" step="1"></fig-input-number>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "origin-grid",
+    name: "Origin Grid",
+    group: "Field controls",
+    description:
+      "A 3x3 transform-origin selector with draggable point selection and XY values.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Origin</label>
+    <fig-origin-grid value="50% 50%" drag="true" fields="true"></fig-origin-grid>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "palette",
+    name: "Palette",
+    group: "Field controls",
+    description:
+      "A color palette field for managing a list of solid colors.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Palette</label>
+    <fig-input-palette edit="true" value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full></fig-input-palette>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "preview",
+        name: "Preview",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Palette</label>
+    <fig-input-palette edit="false" value='["#94BD00","#83AD00","#1A632A","#003905"]' full></fig-input-palette>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "picker",
+        name: "Picker",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Palette</label>
+    <fig-input-palette edit="picker" value='["#94BD00","#83AD00","#1A632A","#003905"]' full></fig-input-palette>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "segment",
+    name: "Segmented control",
+    group: "Field controls",
+    description: "A segmented control for mutually exclusive choices.",
+    examples: [
+      {
+        id: "default",
+        name: "Text",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Align</label>
+    <fig-segmented-control sizing="equal" full data-playground-hide-attrs="value,name">
+      <fig-segment value="left" selected>Left</fig-segment>
+      <fig-segment value="center">Center</fig-segment>
+      <fig-segment value="right">Right</fig-segment>
+    </fig-segmented-control>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "icons",
+        name: "Icons",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Theme</label>
+    <fig-segmented-control sizing="equal" full data-playground-hide-attrs="value,name">
+      <fig-segment value="light" selected>
+        <fig-icon name="sun"></fig-icon>
+      </fig-segment>
+      <fig-segment value="dark">
+        <fig-icon name="moon"></fig-icon>
+      </fig-segment>
+    </fig-segmented-control>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "options",
+    name: "Options",
+    group: "Field controls",
+    description:
+      "A responsive option picker that shows a segmented control by default, swapping to a dropdown when labels overflow.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Size</label>
+    <fig-options options="Small,Large" value="Small"></fig-options>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "many-options",
+        name: "Many options",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Size</label>
+    <fig-options options="Extra Small,Small,Medium,Large,Extra Large" value="Medium"></fig-options>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "narrow",
+        name: "Narrow container",
+        markup: `<div class="prop-panel" style="max-width: 140px;">
+  <fig-field>
+    <label>Align</label>
+    <fig-options options="Left,Center,Right" value="Left"></fig-options>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "skeleton",
+    name: "Skeleton",
+    group: "Field controls",
+    description:
+      "A skeleton loading placeholder that wraps property fields with a shimmer effect.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-skeleton duration="1.5s">
+    <fig-field>
+      <fig-preview full checkerboard style="height: 96px">
+        <img src="${landscapeUrl()}" alt="Landscape preview">
+      </fig-preview>
+    </fig-field>
+    <fig-field>
+      <label>Name</label>
+      <fig-input-text value="Loading..." readonly></fig-input-text>
+    </fig-field>
+    <fig-field>
+      <label>Description</label>
+      <fig-input-text multiline placeholder="Enter description…" full></fig-input-text>
+    </fig-field>
+    <fig-field>
+      <label>Color</label>
+      <fig-input-color value="#0D99FF" text="true" full></fig-input-color>
+    </fig-field>
+    <fig-field>
+      <label>Published</label>
+      <fig-switch checked="true"></fig-switch>
+    </fig-field>
+    <fig-field>
+      <label>Visible</label>
+      <fig-switch checked="true"></fig-switch>
+    </fig-field>
+    <fig-field>
+      <label>Role</label>
+      <fig-dropdown value="designer">
+        <option value="designer">Designer</option>
+        <option value="developer">Developer</option>
+        <option value="manager">Manager</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Align</label>
+      <fig-segmented-control sizing="equal" full>
+        <fig-segment value="left" selected>Left</fig-segment>
+        <fig-segment value="center">Center</fig-segment>
+        <fig-segment value="right">Right</fig-segment>
+      </fig-segmented-control>
+    </fig-field>
+    <fig-field>
+      <label>Opacity</label>
+      <fig-slider value="75" min="0" max="100"></fig-slider>
+    </fig-field>
+    <fig-field>
+      <label>Position</label>
+      <fig-joystick value="50% 50%" axis-labels="X Y"></fig-joystick>
+    </fig-field>
+  </fig-skeleton>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "slider",
+    name: "Slider",
+    group: "Field controls",
+    description:
+      "A range slider with optional text input for precise numeric values.",
+    examples: [
+      {
+        id: "range",
+        name: "Range",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Amount</label>
+    <fig-slider value="50" default="50" min="0" max="100" full></fig-slider>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "opacity-with-text",
+        name: "Opacity",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Opacity</label>
+    <fig-slider type="opacity" value="75" default="100" color="#ff0000" units="%" full></fig-slider>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "hue-with-text",
+        name: "Hue",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Hue</label>
+    <fig-slider type="hue" value="180" default="180" units="°" full></fig-slider>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "stepper-with-text",
+        name: "Stepper",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Steps</label>
+    <fig-slider type="stepper" value="50" default="50" step="25" full>
+      <datalist>
+        <option value="0"></option>
+        <option value="25"></option>
+        <option value="50"></option>
+        <option value="75"></option>
+        <option value="100"></option>
+      </datalist>
+    </fig-slider>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "delta-with-text",
+        name: "Delta",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Offset</label>
+    <fig-slider type="delta" value="0" default="0" step="0.25" min="-5" max="5" full>
+      <datalist>
+        <option value="0"></option>
+      </datalist>
+    </fig-slider>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "switch",
+    name: "Switch",
+    group: "Field controls",
+    description: "A toggle switch for boolean on/off properties.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Visible</label>
+    <fig-switch checked="true"></fig-switch>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "indeterminate",
+        name: "Indeterminate",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Visible</label>
+    <fig-switch indeterminate="true"></fig-switch>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "text",
+    name: "Text",
+    group: "Field controls",
+    description:
+      "A text input field for entering and editing string values with optional slots.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Name</label>
+    <fig-input-text value="Layer 1" placeholder="Enter name…" full></fig-input-text>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "multiline",
+        name: "Multiline",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Description</label>
+    <fig-input-text multiline autoresize placeholder="Enter description…" full></fig-input-text>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "file",
+    name: "File",
+    group: "Field controls",
+    description:
+      "A file upload input with filename display, clear button, accepted types tooltip, and drag-and-drop support.",
+    examples: [
+      {
+        id: "audio",
+        name: "Audio",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Audio</label>
+    <fig-input-file accepts="audio/*" preview full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "video",
+        name: "Video",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Video</label>
+    <fig-input-file label="Upload video" accepts="video/*" preview full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "spreadsheet",
+        name: "Spreadsheet",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>CSV</label>
+    <fig-input-file label="Upload spreadsheet" accepts=".xls,.xlsx,.csv" full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-no-fields",
+    name: "No fields",
+    group: "Controls in dialogs",
+    description:
+      "A dialog footer with primary and secondary actions.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Dialog</fig-button>
+  <dialog is="fig-dialog" title="Continue?" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content></fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Continue</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-about",
+    name: "About",
+    group: "Controls in dialogs",
+    description:
+      "A simple informational dialog with text content and no controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open About</fig-button>
+  <dialog is="fig-dialog" title="About PropsKit" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <p>PropsKit is a collection of composable property controls for building compact, Figma-style interfaces with FigUI3.</p>
+    </fig-content>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-column-fields",
+    name: "Column fields",
+    group: "Controls in dialogs",
+    description:
+      "A dialog with vertically stacked field labels and inputs.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Column Fields</fig-button>
+  <dialog is="fig-dialog" title="Contact details" open handle="fig-header" position="center center" data-playground-hide-field style="width: 360px;">
+    <fig-content>
+      <fig-stack align="stretch" style="width: 100%;">
+        <fig-field direction="vertical" style="flex: 1; min-width: 0;">
+          <label>First name</label>
+          <fig-input-text value="Rogie" full></fig-input-text>
+        </fig-field>
+        <fig-field direction="vertical" style="flex: 1; min-width: 0;">
+          <label>Last name</label>
+          <fig-input-text value="King" full></fig-input-text>
+        </fig-field>
+      </fig-stack>
+      <fig-stack align="stretch" style="width: 100%;">
+        <fig-field direction="vertical" style="flex: 1; min-width: 0;">
+          <label>City</label>
+          <fig-input-text value="Austin" full></fig-input-text>
+        </fig-field>
+        <fig-field direction="vertical" style="flex: 1; min-width: 0;">
+          <label>State</label>
+          <fig-dropdown full>
+            <option selected>Texas</option>
+            <option>California</option>
+            <option>New York</option>
+          </fig-dropdown>
+        </fig-field>
+      </fig-stack>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-rename",
+    name: "Rename Layer",
+    group: "Controls in dialogs",
+    description:
+      "A minimal rename dialog with a single text input and confirm action.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Rename</fig-button>
+  <dialog is="fig-dialog" title="Rename Layer" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-field columns="half">
+        <label>Name</label>
+        <fig-input-text value="Frame 1" full></fig-input-text>
+      </fig-field>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Rename</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-all-fields",
+    name: "All Fields",
+    group: "Controls in dialogs",
+    description:
+      "A reference dialog containing every PropKit field control using plain fig-field rows.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button id="all-fields-anchor" data-playground-ignore-controls="true" aria-haspopup="dialog" aria-expanded="true" aria-controls="all-fields-popup" onclick="const p=document.getElementById('all-fields-popup');p.open=!p.open;this.setAttribute('aria-expanded',String(p.open));">Open All Fields</fig-button>
+  <dialog is="fig-popup" id="all-fields-popup" title="All Fields" open anchor="#all-fields-anchor" position="left" offset="8 8" viewport-margin="8" onclose="document.getElementById('all-fields-anchor')?.setAttribute('aria-expanded','false')" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-group name="Inputs" collapsible open>
+        <fig-field>
+          <label>Text</label>
+          <fig-input-text value="Layer 1" placeholder="Enter name…" full></fig-input-text>
+        </fig-field>
+        <fig-field>
+          <label>Number</label>
+          <fig-input-number value="50" min="0" max="100" step="0.5" steppers full></fig-input-number>
+        </fig-field>
+        <fig-field>
+          <label>File</label>
+          <fig-input-file label="Upload file" full></fig-input-file>
+        </fig-field>
+        <fig-field>
+          <label>Color</label>
+          <fig-input-color value="#0D99FF" text="true" alpha="true" full></fig-input-color>
+        </fig-field>
+        <fig-field>
+          <label>Fill</label>
+          <fig-input-fill value='{"type":"solid","color":"#0D99FF","opacity":0.8}' full></fig-input-fill>
+        </fig-field>
+        <fig-field>
+          <label>Gradient</label>
+          <fig-input-gradient edit="picker" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#7AEA66","opacity":100},{"position":67,"color":"#4700FF","opacity":53},{"position":100,"color":"#FF00BF","opacity":100}]}}'></fig-input-gradient>
+        </fig-field>
+        <fig-field>
+          <label>Palette</label>
+          <fig-input-palette edit="picker" value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full></fig-input-palette>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Choices" collapsible open>
+        <fig-field>
+          <label>Dropdown</label>
+          <fig-dropdown full>
+            <option selected>Auto</option>
+            <option>Light</option>
+            <option>Dark</option>
+          </fig-dropdown>
+        </fig-field>
+        <fig-field>
+          <label>Segment</label>
+          <fig-segmented-control sizing="equal" full>
+            <fig-segment value="left" selected>Left</fig-segment>
+            <fig-segment value="center">Center</fig-segment>
+            <fig-segment value="right">Right</fig-segment>
+          </fig-segmented-control>
+        </fig-field>
+        <fig-field>
+          <label>Options</label>
+          <fig-options options="Small,Medium,Large" value="Medium"></fig-options>
+        </fig-field>
+        <fig-field>
+          <label>Switch</label>
+          <fig-switch checked="true"></fig-switch>
+        </fig-field>
+        <fig-field>
+          <label>Button</label>
+          <fig-button full>Apply</fig-button>
+        </fig-field>
+        <fig-field>
+          <label>Chooser</label>
+          <fig-chooser layout="horizontal" value="img-a" full drag style="max-width: 100%">
+            <fig-choice value="img-a" aria-label="Image A" selected><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+            <fig-choice value="img-b" aria-label="Image B"><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+            <fig-choice value="img-c" aria-label="Image C"><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+          </fig-chooser>
+        </fig-field>
+        <fig-field>
+          <label>Grid</label>
+          <fig-chooser layout="grid" columns="3" value="top-left" full>
+            <fig-choice value="top-left" padding selected>Top left</fig-choice>
+            <fig-choice value="top" padding>Top</fig-choice>
+            <fig-choice value="top-right" padding>Top right</fig-choice>
+            <fig-choice value="left" padding>Left</fig-choice>
+            <fig-choice value="center" padding>Center</fig-choice>
+            <fig-choice value="right" padding>Right</fig-choice>
+            <fig-choice value="bottom-left" padding>Bottom left</fig-choice>
+            <fig-choice value="bottom" padding>Bottom</fig-choice>
+            <fig-choice value="bottom-right" padding>Bottom right</fig-choice>
+          </fig-chooser>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Visuals" collapsible open>
+        <fig-field>
+          <label>Image</label>
+          <fig-image full="true" src="${portraitUrl()}" alt="Image preview" size="auto" checkerboard="true"></fig-image>
+        </fig-field>
+        <fig-field>
+          <label>Media</label>
+          <fig-media type="video" ${videoExampleAttrs('aria-label="Media preview" autoplay="true" controls muted="true" fit="contain" size="auto" full checkerboard="true"')}></fig-media>
+        </fig-field>
+        <fig-field>
+          <label>Preview</label>
+          <fig-preview full checkerboard style="height: 96px">
+            <img src="${landscapeUrl()}" alt="Landscape preview">
+          </fig-preview>
+        </fig-field>
+        <fig-skeleton duration="1.5s">
+          <fig-field>
+            <label>Skeleton</label>
+            <fig-input-text value="Loading..." readonly full></fig-input-text>
+          </fig-field>
+        </fig-skeleton>
+      </fig-group>
+      <fig-group name="Spatial" collapsible open>
+        <fig-field>
+          <label>Slider</label>
+          <fig-slider value="50" min="0" max="100" full></fig-slider>
+        </fig-field>
+        <fig-field>
+          <label>Easing</label>
+          <fig-easing-curve value="0, 0, 0.58, 1"></fig-easing-curve>
+        </fig-field>
+        <fig-field>
+          <label>Joystick</label>
+          <fig-joystick value="50% 50%" axis-labels="X Y"></fig-joystick>
+        </fig-field>
+        <fig-field>
+          <label>Origin</label>
+          <fig-origin-grid value="50% 50%" drag="true" fields="true"></fig-origin-grid>
+        </fig-field>
+        <fig-field>
+          <label>3D Rotate</label>
+          <fig-3d-rotate value="rotateX(0deg) rotateY(0deg) rotateZ(0deg)"></fig-3d-rotate>
+        </fig-field>
+      </fig-group>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-horizontal-fields-stress-test",
+    name: "Horizontal fields stress test",
+    group: "Controls in dialogs",
+    description:
+      "A stress test dialog based on All Fields, with every PropKit field rendered as a horizontal row with realistic property labels.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Stress Test</fig-button>
+  <dialog is="fig-dialog" title="Horizontal Fields" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-group name="Inputs" collapsible open>
+        <fig-field direction="horizontal">
+          <label>Layer Name</label>
+          <fig-input-text value="Hero Card" placeholder="Enter name…" full></fig-input-text>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Width</label>
+          <fig-input-number value="240" min="0" max="1920" step="1" steppers full></fig-input-number>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Corner Radius</label>
+          <fig-slider type="range" value="12" min="0" max="64" step="1" units="px" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Stroke Weight</label>
+          <fig-slider type="range" value="2" min="0" max="12" step="0.5" units="px" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Glow Opacity</label>
+          <fig-slider type="opacity" value="75" min="0" max="100" step="1" units="%" color="#0D99FF" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Brand Hue</label>
+          <fig-slider type="hue" value="210" min="0" max="360" step="1" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>X Offset</label>
+          <fig-slider type="delta" value="0" default="0" min="-100" max="100" step="1" units="px" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Letter Spacing</label>
+          <fig-slider type="delta" value="0" default="0" min="-5" max="20" step="0.25" units="%" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Grid Size</label>
+          <fig-slider type="stepper" value="16" min="4" max="64" step="4" units="px" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Motion Speed</label>
+          <fig-slider type="stepper" value="300" min="100" max="1000" step="100" units="ms" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Blur Amount</label>
+          <fig-slider type="range" value="8" min="0" max="40" step="1" units="px" variant="classic" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Source File</label>
+          <fig-input-file label="Upload file" full></fig-input-file>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Accent Color</label>
+          <fig-input-color value="#0D99FF" text="true" alpha="true" full></fig-input-color>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Background</label>
+          <fig-input-fill value='{"type":"solid","color":"#0D99FF","opacity":0.8}' full></fig-input-fill>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Brand Fade</label>
+          <fig-input-gradient value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#7AEA66","opacity":100},{"position":67,"color":"#4700FF","opacity":53},{"position":100,"color":"#FF00BF","opacity":100}]}}'></fig-input-gradient>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Swatches</label>
+          <fig-input-palette value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full></fig-input-palette>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Choices" collapsible open>
+        <fig-field direction="horizontal">
+          <label>Theme</label>
+          <fig-dropdown full>
+            <option selected>Auto</option>
+            <option>Light</option>
+            <option>Dark</option>
+          </fig-dropdown>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Alignment</label>
+          <fig-segmented-control sizing="equal" full>
+            <fig-segment value="left" selected>Left</fig-segment>
+            <fig-segment value="center">Center</fig-segment>
+            <fig-segment value="right">Right</fig-segment>
+          </fig-segmented-control>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Density</label>
+          <fig-options options="Compact,Regular,Spacious" value="Regular"></fig-options>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Visible</label>
+          <fig-switch checked="true"></fig-switch>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Quick Action</label>
+          <fig-button full>Generate</fig-button>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Cover Image</label>
+          <fig-chooser layout="horizontal" value="img-a" full drag style="max-width: 100%">
+            <fig-choice value="img-a" aria-label="Cover image A" selected><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+            <fig-choice value="img-b" aria-label="Cover image B"><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+            <fig-choice value="img-c" aria-label="Cover image C"><fig-image src="${landscapeUrl()}" alt="" size="small" aspect-ratio="1/1" full></fig-image></fig-choice>
+          </fig-chooser>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Visuals" collapsible open>
+        <fig-field direction="horizontal">
+          <label>Avatar</label>
+          <fig-image full="true" src="${portraitUrl()}" alt="Avatar preview" size="auto" checkerboard="true"></fig-image>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Demo Video</label>
+          <fig-media type="video" ${videoExampleAttrs('aria-label="Demo video" autoplay="true" controls muted="true" fit="contain" size="auto" full checkerboard="true"')}></fig-media>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Card Preview</label>
+          <fig-preview full checkerboard style="height: 96px">
+            <img src="${landscapeUrl()}" alt="Card preview">
+          </fig-preview>
+        </fig-field>
+        <fig-skeleton duration="1.5s">
+          <fig-field direction="horizontal">
+            <label>Loading State</label>
+            <fig-input-text value="Loading..." readonly full></fig-input-text>
+          </fig-field>
+        </fig-skeleton>
+      </fig-group>
+      <fig-group name="Spatial" collapsible open>
+        <fig-field direction="horizontal">
+          <label>Opacity</label>
+          <fig-slider value="50" min="0" max="100" units="%" full></fig-slider>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Motion</label>
+          <fig-easing-curve value="0, 0, 0.58, 1"></fig-easing-curve>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Anchor Point</label>
+          <fig-joystick value="50% 50%" axis-labels="X Y"></fig-joystick>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Transform Origin</label>
+          <fig-origin-grid value="50% 50%" drag="true" fields="true"></fig-origin-grid>
+        </fig-field>
+        <fig-field direction="horizontal">
+          <label>Tilt</label>
+          <fig-3d-rotate value="rotateX(0deg) rotateY(0deg) rotateZ(0deg)"></fig-3d-rotate>
+        </fig-field>
+      </fig-group>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-shadow",
+    name: "Shadow",
+    group: "Controls in dialogs",
+    description:
+      "A drop shadow editor with color, offset, blur, and spread controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Shadow</fig-button>
+  <dialog is="fig-dialog" title="Shadow" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-field columns="half">
+        <label>X</label>
+        <fig-input-number value="0" steppers="true" full></fig-input-number>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Y</label>
+        <fig-input-number value="4" steppers="true" full></fig-input-number>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Color</label>
+        <fig-input-color value="#000000" text="true" alpha="true" full></fig-input-color>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Blur</label>
+        <fig-slider value="8" min="0" max="64" text="true" units="px" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Spread</label>
+        <fig-slider value="0" min="-32" max="32" text="true" units="px" full></fig-slider>
+      </fig-field>
+    </fig-content>
+    <fig-footer>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-blur",
+    name: "Progressive Blur",
+    group: "Controls in dialogs",
+    description:
+      "A progressive blur settings dialog with amount, fade range, and direction controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Blur</fig-button>
+  <dialog is="fig-dialog" title="Progressive Blur" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-field columns="half">
+        <label>Amount</label>
+        <fig-slider value="12" min="0" max="64" text="true" units="px" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Fade start</label>
+        <fig-slider value="20" min="0" max="100" text="true" units="%" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Fade end</label>
+        <fig-slider value="80" min="0" max="100" text="true" units="%" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Direction</label>
+        <fig-dropdown full>
+          <option selected>Top to bottom</option>
+          <option>Bottom to top</option>
+          <option>Left to right</option>
+          <option>Right to left</option>
+        </fig-dropdown>
+      </fig-field>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-photo-stack",
+    name: "Photo Stack",
+    group: "Controls in dialogs",
+    description:
+      "A photo composition plugin dialog with text, color, shape, offset, transition, and dark mode controls across multiple collapsible groups.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Photo Stack</fig-button>
+  <dialog is="fig-dialog" title="Photo Stack" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+      <fig-group>
+      <fig-field columns="half">
+        <label>Title</label>
+        <fig-input-text value="Japan" full></fig-input-text>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Subtitle</label>
+        <fig-input-text value="December 2025" full></fig-input-text>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Shadow Tint</label>
+        <fig-input-color value="#000000" text="true" full></fig-input-color>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Photo Shape</label>
+        <fig-dropdown full>
+          <option selected>Portrait</option>
+          <option>Landscape</option>
+          <option>Square</option>
+        </fig-dropdown>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Back Photo" collapsible open>
+      <fig-field columns="half">
+        <label>Offset X</label>
+        <fig-slider type="delta" value="239" default="0" min="-500" max="500" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Offset Y</label>
+        <fig-slider type="delta" value="0" default="0" min="-500" max="500" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Scale</label>
+        <fig-slider value="0.70" step="0.01" min="0" max="2" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Overlay Opacity</label>
+        <fig-slider type="opacity" value="0.60" color="#000000" text="true" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Shadow" collapsible open>
+      <fig-field columns="half">
+        <label>Scale</label>
+        <fig-slider value="1.03" step="0.01" min="0" max="2" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Opacity</label>
+        <fig-slider type="opacity" value="0.25" color="#000000" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Blur</label>
+        <fig-slider value="14" min="0" max="64" text="true" units="px" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Y Offset</label>
+        <fig-slider type="delta" value="8" default="0" min="-50" max="50" text="true" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Transition Spring" collapsible open>
+      <fig-field columns="half">
+        <label>Type</label>
+        <fig-segmented-control full>
+          <fig-segment value="time" selected>Time</fig-segment>
+          <fig-segment value="physics">Physics</fig-segment>
+        </fig-segmented-control>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Duration</label>
+        <fig-slider value="0.50" step="0.01" min="0" max="2" text="true" units="s" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Bounce</label>
+        <fig-slider value="0.04" step="0.01" min="0" max="1" text="true" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-field columns="half">
+      <label>Dark Mode</label>
+      <fig-switch checked></fig-switch>
+    </fig-field>
+    </fig-content>
+    <fig-footer>
+      <fig-button>Next</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-iframe",
+    name: "Plugin",
+    group: "Controls in dialogs",
+    description:
+      "A plugin dialog hosting its contents inside an iframe that broadcasts height changes to the parent.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Plugin</fig-button>
+  <dialog is="fig-dialog" title="Plugin" open handle="fig-header" position="center center" autoresize data-playground-hide-field style="width: 300px;">
+    <iframe src="/propkit/iframe.html"></iframe>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-iframe-alt",
+    name: "Plugin (alt)",
+    group: "Controls in dialogs",
+    description:
+      "A plugin dialog hosting a character-finder style panel inside an iframe (static UI demo).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Plugin (alt)</fig-button>
+  <dialog is="fig-dialog" title="Plugin (alt)" open handle="fig-header" position="center center" autoresize data-playground-hide-field style="width: 280px;">
+    <iframe src="/propkit/plugin-alt.html"></iframe>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-export",
+    name: "Export Settings",
+    group: "Controls in dialogs",
+    description:
+      "An export dialog with format, quality, scale, filename, and metadata controls across grouped sections.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Export</fig-button>
+  <dialog is="fig-dialog" title="Export Settings" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+    <fig-group name="Format">
+      <fig-field columns="half">
+        <label>Format</label>
+        <fig-segmented-control full>
+          <fig-segment value="png" selected>PNG</fig-segment>
+          <fig-segment value="svg">SVG</fig-segment>
+          <fig-segment value="pdf">PDF</fig-segment>
+        </fig-segmented-control>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Quality</label>
+        <fig-dropdown full>
+          <option>Low</option>
+          <option selected>Medium</option>
+          <option>High</option>
+          <option>Maximum</option>
+        </fig-dropdown>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Scale</label>
+        <fig-slider value="2" min="1" max="4" step="0.5" text="true" units="x" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Output">
+      <fig-field columns="half">
+        <label>Filename</label>
+        <fig-input-text value="design-export" full></fig-input-text>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Metadata</label>
+        <fig-switch checked></fig-switch>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Flatten layers</label>
+        <fig-switch></fig-switch>
+      </fig-field>
+    </fig-group>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Export</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-token-editor",
+    name: "Design Token Editor",
+    group: "Controls in dialogs",
+    description:
+      "A complex multi-group dialog for editing design tokens with identity, value, variant, and usage sections.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Token Editor</fig-button>
+  <dialog is="fig-dialog" title="Design Token Editor" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+    <fig-group name="Token">
+      <fig-field>
+        <label>Name</label>
+        <fig-input-text value="color-primary" full></fig-input-text>
+      </fig-field>
+      <fig-field>
+        <label>Description</label>
+        <fig-input-text value="Primary brand color" full></fig-input-text>
+      </fig-field>
+      <fig-field>
+        <label>Type</label>
+        <fig-dropdown full>
+          <option selected>Color</option>
+          <option>Spacing</option>
+          <option>Typography</option>
+          <option>Border radius</option>
+        </fig-dropdown>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Value">
+      <fig-field>
+        <label>Color</label>
+        <fig-input-color value="#0D99FF" text="true" alpha="true" full></fig-input-color>
+      </fig-field>
+      <fig-field>
+        <label>Opacity</label>
+        <fig-slider type="opacity" value="1" color="#0D99FF" units="%" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field>
+        <label>CSS variable</label>
+        <fig-input-text value="--color-primary" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Variants" collapsible open>
+      <fig-field>
+        <label>Palette</label>
+        <fig-input-palette value='["#0D99FF","#0B7FD4","#0966AA","#074D80"]' full></fig-input-palette>
+      </fig-field>
+      <fig-field>
+        <label>Mode</label>
+        <fig-segmented-control full>
+          <fig-segment value="light" selected>Light</fig-segment>
+          <fig-segment value="dark">Dark</fig-segment>
+        </fig-segmented-control>
+      </fig-field>
+      <fig-field>
+        <label>Auto-generate</label>
+        <fig-switch checked></fig-switch>
+      </fig-field>
+    </fig-group>
+    <fig-group name="Usage" collapsible open>
+      <fig-field>
+        <label>Preview</label>
+        <fig-image full upload="true" alt="" size="auto"></fig-image>
+      </fig-field>
+      <fig-field>
+        <label>Publish</label>
+        <fig-switch></fig-switch>
+      </fig-field>
+    </fig-group>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Discard</fig-button>
+      <fig-button>Save Token</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-prepress",
+    name: "Prepress",
+    group: "Controls in dialogs",
+    description:
+      "A print production tools dialog with tabbed sections for setup, guides, CMYK, preflight, and export settings.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Prepress</fig-button>
+  <dialog is="fig-dialog" title="Prepress" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+    <fig-tabs>
+      <fig-tab selected content="#prepress-setup">Setup</fig-tab>
+      <fig-tab content="#prepress-guides">Guides</fig-tab>
+      <fig-tab content="#prepress-cmyk">CMYK</fig-tab>
+      <fig-tab content="#prepress-preflight">Preflight</fig-tab>
+      <fig-tab content="#prepress-export">Export</fig-tab>
+    </fig-tabs>
+    <fig-tab-content id="prepress-setup">
+      <fig-group name="Project Type">
+        <fig-field columns="half">
+          <fig-segmented-control full>
+            <fig-segment value="editorial" selected>Editorial</fig-segment>
+            <fig-segment value="packaging">Packaging</fig-segment>
+            <fig-segment value="general">General</fig-segment>
+          </fig-segmented-control>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Trim Size">
+        <fig-field columns="half">
+          <fig-dropdown full>
+            <option selected>US Letter (8.5×11in)</option>
+            <option>A4 (210×297mm)</option>
+            <option>A5 (148×210mm)</option>
+            <option>Tabloid (11×17in)</option>
+            <option>Custom</option>
+          </fig-dropdown>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Width</label>
+          <fig-input-number value="8.5" min="0" step="0.25" suffix="in" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Height</label>
+          <fig-input-number value="11" min="0" step="0.25" suffix="in" full></fig-input-number>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Print Margins">
+        <fig-field columns="half">
+          <label>Bleed</label>
+          <fig-input-number value="0.125" min="0" step="0.0625" suffix="in" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Safe Area</label>
+          <fig-input-number value="0.25" min="0" step="0.0625" suffix="in" full></fig-input-number>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Apply To">
+        <fig-field columns="half">
+          <fig-options options="Current Frame,Selection,All Frames" value="Current Frame" full></fig-options>
+        </fig-field>
+      </fig-group>
+    </fig-tab-content>
+    <fig-tab-content id="prepress-guides">
+      <fig-group name="Guide Style">
+        <fig-field columns="half">
+          <label>Color</label>
+          <fig-input-color value="#FF00FF" text="true" full></fig-input-color>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Opacity</label>
+          <fig-slider type="opacity" value="0.5" color="#FF00FF" units="%" text="true" full></fig-slider>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Stroke</label>
+          <fig-dropdown full>
+            <option selected>Dashed</option>
+            <option>Solid</option>
+            <option>Dotted</option>
+          </fig-dropdown>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Margins">
+        <fig-field columns="half">
+          <label>Top</label>
+          <fig-input-number value="0.5" min="0" step="0.125" suffix="in" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Bottom</label>
+          <fig-input-number value="0.5" min="0" step="0.125" suffix="in" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Left</label>
+          <fig-input-number value="0.75" min="0" step="0.125" suffix="in" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Right</label>
+          <fig-input-number value="0.75" min="0" step="0.125" suffix="in" full></fig-input-number>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Columns">
+        <fig-field columns="half">
+          <label>Count</label>
+          <fig-input-number value="1" min="1" max="12" step="1" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Gutter</label>
+          <fig-input-number value="0.1667" min="0" step="0.0625" suffix="in" full></fig-input-number>
+        </fig-field>
+      </fig-group>
+    </fig-tab-content>
+    <fig-tab-content id="prepress-cmyk">
+      <fig-group name="Color Profile">
+        <fig-field columns="half">
+          <label>Profile</label>
+          <fig-dropdown full>
+            <option selected>SWOP (Coated)</option>
+            <option>GRACoL 2006</option>
+            <option>Fogra39</option>
+            <option>Japan Color 2001</option>
+          </fig-dropdown>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Intent</label>
+          <fig-dropdown full>
+            <option>Perceptual</option>
+            <option selected>Relative</option>
+            <option>Saturation</option>
+            <option>Absolute</option>
+          </fig-dropdown>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Ink Limits">
+        <fig-field columns="half">
+          <label>Total ink</label>
+          <fig-slider value="300" min="200" max="400" step="5" text="true" units="%" full></fig-slider>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Black limit</label>
+          <fig-slider value="100" min="0" max="100" step="5" text="true" units="%" full></fig-slider>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Overprint">
+        <fig-field columns="half">
+          <label>Simulate</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Black overprint</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+      </fig-group>
+    </fig-tab-content>
+    <fig-tab-content id="prepress-preflight">
+      <fig-group name="Checks">
+        <fig-field columns="half">
+          <label>Resolution</label>
+          <fig-segmented-control full>
+            <fig-segment value="150">150 dpi</fig-segment>
+            <fig-segment value="300" selected>300 dpi</fig-segment>
+            <fig-segment value="600">600 dpi</fig-segment>
+          </fig-segmented-control>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Bleed check</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Trim marks</label>
+          <fig-switch></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Overprint preview</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Text">
+        <fig-field columns="half">
+          <label>Min font size</label>
+          <fig-input-number value="6" min="1" max="72" step="1" suffix="pt" full></fig-input-number>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Outline text</label>
+          <fig-switch></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Embed fonts</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+      </fig-group>
+    </fig-tab-content>
+    <fig-tab-content id="prepress-export">
+      <fig-group name="Format">
+        <fig-field columns="half">
+          <label>Output</label>
+          <fig-dropdown full>
+            <option selected>PDF/X-1a</option>
+            <option>PDF/X-3</option>
+            <option>PDF/X-4</option>
+            <option>High Quality Print</option>
+          </fig-dropdown>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Compression</label>
+          <fig-dropdown full>
+            <option>None</option>
+            <option selected>JPEG (Medium)</option>
+            <option>JPEG (Maximum)</option>
+            <option>ZIP</option>
+          </fig-dropdown>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Marks">
+        <fig-field columns="half">
+          <label>Crop marks</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Bleed marks</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Registration</label>
+          <fig-switch checked></fig-switch>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Color bars</label>
+          <fig-switch></fig-switch>
+        </fig-field>
+      </fig-group>
+      <fig-group name="Pages">
+        <fig-field columns="half">
+          <label>Range</label>
+          <fig-segmented-control full>
+            <fig-segment value="all" selected>All</fig-segment>
+            <fig-segment value="current">Current</fig-segment>
+            <fig-segment value="custom">Custom</fig-segment>
+          </fig-segmented-control>
+        </fig-field>
+        <fig-field columns="half">
+          <label>Spreads</label>
+          <fig-switch></fig-switch>
+        </fig-field>
+      </fig-group>
+    </fig-tab-content>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Apply</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog-melty-gif",
+    name: "Animated Melty Gif",
+    group: "Controls in dialogs",
+    description:
+      "An animated melty gif generator dialog with image preview, animation controls, and turbulence effect parameters.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Melty Gif</fig-button>
+  <dialog is="fig-dialog" title="Animated Melty Gif" open handle="fig-header" position="center center" data-playground-hide-field style="width: 300px;">
+    <fig-content>
+    <fig-field columns="half">
+      <fig-image full upload="true" alt="" size="auto" aspect-ratio="16/10"></fig-image>
+    </fig-field>
+    <fig-group>
+      <fig-field columns="half">
+        <label>Frames</label>
+        <fig-slider value="6" min="1" max="24" step="1" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Frame rate</label>
+        <fig-slider value="5" min="1" max="30" step="1" text="true" units="fps" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Loop style</label>
+        <fig-dropdown full>
+          <option selected>Forward</option>
+          <option>Reverse</option>
+          <option>Ping-pong</option>
+          <option>None</option>
+        </fig-dropdown>
+      </fig-field>
+    </fig-group>
+    <fig-group>
+      <fig-field columns="half">
+        <label>Scale (displacement)</label>
+        <fig-slider value="14" min="0" max="100" step="0.5" text="true" units="px" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Base freq. X</label>
+        <fig-slider value="0.02" min="0.001" max="0.1" step="0.001" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Base freq. Y</label>
+        <fig-slider value="0.02" min="0.001" max="0.1" step="0.001" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Octaves</label>
+        <fig-slider value="2" min="1" max="8" step="1" text="true" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-group>
+      <fig-field columns="half">
+        <label>Fill holes</label>
+        <fig-slider value="2" min="0" max="10" step="0.5" text="true" units="px" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Solidify edges</label>
+        <fig-slider value="1" min="0" max="2" step="0.01" text="true" full></fig-slider>
+      </fig-field>
+      <fig-field columns="half">
+        <label>Smoothing</label>
+        <fig-slider value="0.5" min="0" max="5" step="0.1" text="true" units="px" full></fig-slider>
+      </fig-field>
+    </fig-group>
+    <fig-group name="About this tool" collapsible>
+      <p>Animated Melty GIF is a tiny goo machine for turning perfectly respectable artwork into wobbly little puddles. Drop in a frame from <a href="https://www.figma.com/" target="_blank" rel="noreferrer">Figma</a>, crank the wobble, and watch it drip like it just heard a really good bass line.</p>
+      <p>It is best for reaction stickers, fake loading states, and sending your design system on a quick vacation to <a href="https://giphy.com/" target="_blank" rel="noreferrer">GIPHY</a>. For maximum scientific accuracy, adjust the slime until it feels like warm cheese but still respects the grid.</p>
+      <p>
+        <fig-stack>
+          <fig-avatar name="Mina Melt"></fig-avatar>
+          <span>Made by Mina Melt</span>
+        </fig-stack>
+      </p>
+    </fig-group>
+    </fig-content>
+    <fig-footer>
+      <label>Upload an image</label>
+      <fig-button disabled>Place in Figma</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-position",
+    name: "Position",
+    group: "Atoms",
+    description:
+      "XY coordinate fields as paired percentage number inputs with axis prepend labels.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Position</label>
+    <fig-stack style="width: 100%;">
+      <fig-input-number value="50" min="0" max="100" step="1" units="%">
+        <fig-icon slot="prepend">X</fig-icon>
+      </fig-input-number>
+      <fig-input-number value="50" min="0" max="100" step="1" units="%">
+        <fig-icon slot="prepend">Y</fig-icon>
+      </fig-input-number>
+    </fig-stack>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-grouped-inputs",
+    name: "Grouped inputs",
+    group: "Atoms",
+    description:
+      "Related fields collected in a named fig-group for visual separation and optional collapse.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-group name="Layout">
+    <fig-field>
+      <label>Direction</label>
+      <fig-dropdown full>
+        <option selected>Horizontal</option>
+        <option>Vertical</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Spacing</label>
+      <fig-slider value="8" min="0" max="64" text="true" units="px" full></fig-slider>
+    </fig-field>
+    <fig-field>
+      <label>Padding</label>
+      <fig-slider value="16" min="0" max="64" text="true" units="px" full></fig-slider>
+    </fig-field>
+  </fig-group>
+  <fig-group name="Fill">
+    <fig-field>
+      <label>Background</label>
+      <fig-input-color value="#FFFFFF" text="true" full></fig-input-color>
+    </fig-field>
+    <fig-field>
+      <label>Opacity</label>
+      <fig-slider value="100" min="0" max="100" text="true" units="%" full></fig-slider>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-segmented-control",
+    name: "Segmented control",
+    group: "Atoms",
+    description:
+      "Short mutually exclusive choices with a few compact segment labels. Prefer fig-dropdown or fig-options when labels are long or numerous.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Align</label>
+    <fig-segmented-control sizing="equal" full>
+      <fig-segment value="left" selected>Left</fig-segment>
+      <fig-segment value="right">Right</fig-segment>
+    </fig-segmented-control>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-dropdown",
+    name: "Dropdown",
+    group: "Atoms",
+    description:
+      "Text-only option lists with many or longer labels. Use instead of segmented controls when choices do not fit compact segments.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Font family</label>
+    <fig-dropdown full>
+      <option selected>Inter</option>
+      <option>SF Pro Display</option>
+      <option>Roboto</option>
+      <option>Helvetica Neue</option>
+      <option>Source Sans 3</option>
+      <option>IBM Plex Sans</option>
+      <option>Noto Sans</option>
+      <option>Work Sans</option>
+    </fig-dropdown>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-menu",
+    name: "Menu",
+    group: "Atoms",
+    description:
+      "Text-based action menus launched from a button trigger.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Actions</fig-button>
+    <fig-menu-item value="duplicate">Duplicate</fig-menu-item>
+    <fig-menu-item value="rename">Rename</fig-menu-item>
+    <fig-menu-item value="copy-link">Copy link</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete">Delete</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "icons",
+        name: "With icons",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Actions</fig-button>
+    <fig-menu-item value="duplicate">
+      <fig-icon name="copy" slot="prepend"></fig-icon>
+      Duplicate
+    </fig-menu-item>
+    <fig-menu-item value="rename">
+      <fig-icon name="edit" slot="prepend"></fig-icon>
+      Rename
+    </fig-menu-item>
+    <fig-menu-item value="settings">
+      <fig-icon name="settings" slot="prepend"></fig-icon>
+      Settings
+    </fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete">
+      <fig-icon name="trash" slot="prepend"></fig-icon>
+      Delete
+    </fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "filter",
+        name: "Filter",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left" onchange="const item=event.detail.item;const role=item.getAttribute('role');if(role==='menuitemradio'){this.querySelectorAll('[role=menuitemradio]').forEach((candidate)=>{const selected=candidate===item;candidate.setAttribute('aria-checked',String(selected));candidate.querySelector('fig-icon').style.visibility=selected?'':'hidden';});}else if(role==='menuitemcheckbox'){const checked=item.getAttribute('aria-checked')!=='true';item.setAttribute('aria-checked',String(checked));item.querySelector('fig-checkbox').checked=checked;}">
+    <fig-button variant="secondary" fig-menu-trigger>Filter</fig-button>
+    <fig-separator label="Source"></fig-separator>
+    <fig-menu-item value="all-sources" role="menuitemradio" aria-checked="true">
+      <fig-icon name="checkmark" slot="prepend"></fig-icon>
+      All sources
+    </fig-menu-item>
+    <fig-menu-item value="created-by-you" role="menuitemradio" aria-checked="false">
+      <fig-icon name="checkmark" slot="prepend" aria-hidden="true" style="visibility: hidden;"></fig-icon>
+      Created by you
+    </fig-menu-item>
+    <fig-menu-item value="in-this-file" role="menuitemradio" aria-checked="false">
+      <fig-icon name="checkmark" slot="prepend" aria-hidden="true" style="visibility: hidden;"></fig-icon>
+      In this file
+    </fig-menu-item>
+    <fig-menu-item value="from-figma" role="menuitemradio" aria-checked="false">
+      <fig-icon name="checkmark" slot="prepend" aria-hidden="true" style="visibility: hidden;"></fig-icon>
+      From Figma
+    </fig-menu-item>
+    <fig-menu-item value="from-weyland-yutani" role="menuitemradio" aria-checked="false">
+      <fig-icon name="checkmark" slot="prepend" aria-hidden="true" style="visibility: hidden;"></fig-icon>
+      From Weyland Yutani
+    </fig-menu-item>
+    <fig-separator label="Features"></fig-separator>
+    <fig-menu-item value="animated" role="menuitemcheckbox" aria-checked="true">
+      Animated
+      <span slot="append" style="display: flex; justify-content: flex-end;">
+        <fig-checkbox checked tabindex="-1" aria-hidden="true" style="pointer-events: none;"></fig-checkbox>
+      </span>
+    </fig-menu-item>
+    <fig-menu-item value="interactive" role="menuitemcheckbox" aria-checked="false">
+      Interactive
+      <span slot="append" style="display: flex; justify-content: flex-end;">
+        <fig-checkbox tabindex="-1" aria-hidden="true" style="pointer-events: none;"></fig-checkbox>
+      </span>
+    </fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-helper-text",
+    name: "Helper text",
+    group: "Atoms",
+    description:
+      "Supplementary guidance below fields using fig-content for readable helper copy.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Characters</label>
+    <fig-input-text value="!@#abc123" full></fig-input-text>
+  </fig-field>
+  <fig-content padding>Some helper text here</fig-content>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "atom-more-info",
+    name: "More info",
+    group: "Atoms",
+    description:
+      "Collapsible supplementary copy placed at the end of fig-content, before fig-footer.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<fig-group name="More info" collapsible open="false">
+  <p>Exports use the current selection bounds. PNG keeps transparency; SVG flattens effects that Figma cannot represent as vectors.</p>
+  <p>Need batch export? Run this plugin once per page or use the desktop app for <a href="https://figma.com">multi-file</a> output.</p>
+</fig-group>
+
+<fig-footer>
+  <fig-button variant="secondary">Cancel</fig-button>
+  <fig-button>Export</fig-button>
+</fig-footer>`,
+      },
+    ],
+  },
+  {
+    id: "atom-footer",
+    name: "Footer",
+    group: "Atoms",
+    description:
+      "Bottom action bar anchored at the end of a panel for labels, primary actions, and disabled states.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<fig-footer>
+  <fig-button>Apply</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "two-buttons",
+        name: "Two buttons",
+        markup: `<fig-footer>
+  <fig-button variant="secondary">Cancel</fig-button>
+  <fig-button>Apply</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "waiting",
+        name: "Waiting",
+        description:
+          "A label-only footer for idle states. With no buttons, the message is centered.",
+        markup: `<fig-footer>
+  <label>Select text, or click to copy</label>
+</fig-footer>`,
+      },
+      {
+        id: "label-button",
+        name: "Waiting for selection",
+        markup: `<fig-footer>
+  <label>Select a layer</label>
+  <fig-button disabled>Apply</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "long-label",
+        name: "Long label",
+        description:
+          "A footer label with more instructional text beside a disabled action.",
+        markup: `<fig-footer>
+  <label>In order to run this tool, you will need to select at least one layer selected</label>
+  <fig-button disabled>Apply</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "selected-layer",
+        name: "Has selection",
+        markup: `<fig-footer>
+  <label>3 selected</label>
+  <fig-button>Apply</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "working",
+        name: "Working...",
+        markup: `<fig-footer>
+  <label><fig-spinner></fig-spinner> <strong>2 of 10 layers</strong></label>
+  <fig-button disabled>Run</fig-button>
+</fig-footer>`,
+      },
+      {
+        id: "long-label-many-actions",
+        name: "Long label/many actions",
+        description:
+          "A long instructional label above a vertical stack of actions.",
+        markup: `<fig-footer>
+  <label>In order to run this tool, you will need to select at least one layer selected</label>
+  <fig-tooltip text="Select at least one layer to reset">
+    <span class="fig-footer-action">
+      <fig-button variant="secondary" disabled full>Reset</fig-button>
+    </span>
+  </fig-tooltip>
+  <fig-tooltip text="Close without applying changes">
+    <span class="fig-footer-action">
+      <fig-button variant="secondary" full>Cancel</fig-button>
+    </span>
+  </fig-tooltip>
+  <fig-tooltip text="Select at least one layer to apply">
+    <span class="fig-footer-action">
+      <fig-button disabled full>Apply</fig-button>
+    </span>
+  </fig-tooltip>
+</fig-footer>`,
+      },
+      {
+        id: "lots-of-things",
+        name: "Lots of things",
+        markup: `<fig-footer>
+  <label>Make a selection</label>
+  <fig-button variant="secondary" disabled>Reset</fig-button>
+  <fig-button variant="secondary" disabled>Cancel</fig-button>
+  <fig-button disabled>Apply</fig-button>
+</fig-footer>`,
+      },
+    ],
+  },
+  {
+    id: "atom-preview",
+    name: "Preview",
+    group: "Atoms",
+    description:
+      "Media preview surfaces for images and video inside fig-content.",
+    examples: [
+      {
+        id: "default",
+        name: "Image",
+        markup: `<fig-content>
+  <fig-image src="${landscapeUrl()}" alt="Landscape preview" full fit="cover" size="auto" checkerboard="true"></fig-image>
+</fig-content>`,
+      },
+      {
+        id: "video",
+        name: "Video",
+        markup: `<fig-content>
+  <fig-video ${videoExampleAttrs('aria-label="Video preview" controls muted fit="cover" size="auto" full checkerboard="true"')}></fig-video>
+</fig-content>`,
+      },
+    ],
+  },
+  {
+    id: "atom-search",
+    name: "Search",
+    group: "Atoms",
+    description:
+      "Plugin search patterns for filtering local content or fetching remote results.",
+    examples: [
+      {
+        id: "live-results",
+        name: "Live results",
+        description:
+          "Search header for filtering content that is already loaded in the panel.",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <fig-input-text type="search" placeholder="Search layers..." full></fig-input-text>
+  </fig-header>
+</div>`,
+      },
+      {
+        id: "fetch-results",
+        name: "Fetch results",
+        description:
+          "Search header with a submit action and a fetched result grid.",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <fig-input-text type="search" placeholder="Search characters..." full></fig-input-text>
+    <fig-button>Go</fig-button>
+  </fig-header>
+  <fig-content>
+    <fig-chooser layout="grid" columns="3" value="img-1" full>
+      <fig-choice value="img-1" aria-label="Image A" selected><fig-image src="${imageUrl(320, 320, 0)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-2" aria-label="Image B"><fig-image src="${imageUrl(320, 320, 1)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-3" aria-label="Image C"><fig-image src="${imageUrl(320, 320, 2)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-4" aria-label="Image D"><fig-image src="${imageUrl(320, 320, 3)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-5" aria-label="Image E"><fig-image src="${imageUrl(320, 320, 4)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-6" aria-label="Image F"><fig-image src="${imageUrl(320, 320, 5)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-7" aria-label="Image G"><fig-image src="${imageUrl(320, 320, 6)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-8" aria-label="Image H"><fig-image src="${imageUrl(320, 320, 7)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-9" aria-label="Image I"><fig-image src="${imageUrl(320, 320, 8)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      <fig-choice value="img-10" aria-label="Image J"><fig-image src="${imageUrl(320, 320, 9)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+    </fig-chooser>
+  </fig-content>
+</div>`,
+      },
+      {
+        id: "fetch-results-loading",
+        name: "Fetch results (loading)",
+        description:
+          "Search header with a submit action while fetched results shimmer in a skeleton placeholder.",
+        markup: `<div class="prop-panel">
+  <fig-header>
+    <fig-input-text type="search" placeholder="Search characters..." full></fig-input-text>
+    <fig-button>Go</fig-button>
+  </fig-header>
+  <fig-content>
+    <fig-skeleton duration="1.5s">
+      <fig-chooser layout="grid" columns="3" value="img-1" full>
+        <fig-choice value="img-1" aria-label="Image A" selected><fig-image src="${imageUrl(320, 320, 0)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-2" aria-label="Image B"><fig-image src="${imageUrl(320, 320, 1)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-3" aria-label="Image C"><fig-image src="${imageUrl(320, 320, 2)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-4" aria-label="Image D"><fig-image src="${imageUrl(320, 320, 3)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-5" aria-label="Image E"><fig-image src="${imageUrl(320, 320, 4)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-6" aria-label="Image F"><fig-image src="${imageUrl(320, 320, 5)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-7" aria-label="Image G"><fig-image src="${imageUrl(320, 320, 6)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-8" aria-label="Image H"><fig-image src="${imageUrl(320, 320, 7)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-9" aria-label="Image I"><fig-image src="${imageUrl(320, 320, 8)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+        <fig-choice value="img-10" aria-label="Image J"><fig-image src="${imageUrl(320, 320, 9)}" alt aspect-ratio="1/1" full></fig-image></fig-choice>
+      </fig-chooser>
+    </fig-skeleton>
+  </fig-content>
+</div>`,
+      },
+    ],
+  },
+];

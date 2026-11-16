@@ -1,0 +1,3609 @@
+import {
+  legacyPropsKitSections,
+  type Example,
+  type Section,
+} from "./sections";
+import { mergePropsKitSections } from "./propkitMigration";
+import { imageUrl, landscapeUrl } from "../lib/images";
+import { DEMO_FILL_VIDEO, videoExampleAttrs } from "../lib/videos";
+
+const randomAvatarId = Math.floor(Math.random() * 70) + 1;
+
+function avatarServiceUrl(size: number): string {
+  return `https://i.pravatar.cc/${size}?img=${randomAvatarId}`;
+}
+
+function buildFigIconExampleMarkup(
+  set: "16" | "24",
+  name = set === "16" ? "chevron" : "add",
+): string {
+  const sizeAttr = set === "16" ? ' size="small"' : "";
+  return `<div class="prop-panel">
+  <fig-icon name="${name}"${sizeAttr} data-playground-hide-field data-playground-hide-attrs="name,size,color" data-playground-icon-set="${set}"></fig-icon>
+</div>`;
+}
+
+function fillPickerShaderSlotMarkup(): string {
+  return `<div slot="mode-shader" label="Shader" data-playground-ignore-controls="true" data-playground-show-source="true">
+      <fig-content>
+        <fig-field>
+          <fig-preview full aspect-ratio="16/9">
+            <canvas width="640" height="360" aria-label="Live WebGPU shader preview" data-playground-webgpu-shader style="display: block; width: 100%; height: 100%;"></canvas>
+          </fig-preview>
+        </fig-field>
+        <fig-field>
+          <label>Source</label>
+          <fig-input-text multiline data-playground-shader-source></fig-input-text>
+        </fig-field>
+      </fig-content>
+    </div>`;
+}
+
+function fillPickerShaderValue(): string {
+  return JSON.stringify({
+    type: "shader",
+    language: "wgsl",
+  }).replace(/'/g, "&#39;");
+}
+
+function fillPickerShaderMarkup(): string {
+  return `<div class="prop-panel">
+  <fig-input-fill mode="solid,gradient,image,video,webcam,shader" value='${fillPickerShaderValue()}' full data-playground-shader-fill>
+    ${fillPickerShaderSlotMarkup()}
+  </fig-input-fill>
+</div>`;
+}
+
+function standaloneFillPickerShaderMarkup(): string {
+  return `<div class="prop-panel">
+  <fig-fill-picker mode="solid,gradient,image,video,webcam,shader" value='${fillPickerShaderValue()}' dialog-position="left" data-playground-shader-fill>
+    ${fillPickerShaderSlotMarkup()}
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`;
+}
+
+function versionHistoryRow(value: string, title: string, label: string): string {
+  return `    <fig-menu-item value="${value}" size="large" subtle>
+      <div>
+        <h3>${title}</h3>
+        <label>${label}</label>
+      </div>
+      <fig-menu position="bottom right">
+        <fig-button fig-menu-trigger variant="ghost" icon aria-label="More" data-playground-ignore-controls="true">
+          <fig-icon name="more"></fig-icon>
+        </fig-button>
+        <fig-menu-item value="restore">Restore this version</fig-menu-item>
+      </fig-menu>
+    </fig-menu-item>`;
+}
+
+function versionHistoryGroup(
+  heading: string,
+  rows: Array<[value: string, title: string, label: string]>,
+): string {
+  return `    <fig-separator sticky label="${heading}"></fig-separator>
+${rows.map(([value, title, label]) => versionHistoryRow(value, title, label)).join("\n")}`;
+}
+
+function unwrapChooserField(markup: string): string {
+  return markup
+    .replace(
+      /\n  <fig-field direction="vertical">\n    <label>[^<]*<\/label>\n    <fig-chooser/g,
+      "\n  <fig-chooser",
+    )
+    .replace(/\n    <\/fig-chooser>\n  <\/fig-field>/g, "\n  </fig-chooser")
+    .replace(/\n      /g, "\n    ");
+}
+
+function toolbeltSplitTool(
+  value: string,
+  icon: string,
+  label: string,
+  options: Array<[value: string, label: string]>,
+  selected = false,
+): string {
+  const selectedAttr = selected ? " selected" : "";
+  const items = options
+    .map(
+      ([optionValue, optionLabel]) =>
+        `        <fig-menu-item value="${optionValue}">${optionLabel}</fig-menu-item>`,
+    )
+    .join("\n");
+  return `    <fig-toolbelt-item value="${value}" aria-label="${label}"${selectedAttr}>
+      <fig-tooltip text="${label}">
+        <fig-button value="${value}" size="large" variant="ghost" icon aria-label="${label}" tabindex="-1"><fig-icon name="${icon}"></fig-icon></fig-button>
+      </fig-tooltip>
+      <fig-menu position="bottom left">
+        <fig-button icon="compact" aria-label="${label} menu" variant="ghost" size="large" fig-menu-trigger tabindex="-1"><fig-icon name="chevron" size="small"></fig-icon></fig-button>
+${items}
+      </fig-menu>
+    </fig-toolbelt-item>`;
+}
+
+function figui3ChooserGridMarkup(): string {
+  const images = Array.from({ length: 10 }, (_, index) => {
+    const label = `Image ${String.fromCharCode(65 + index)}`;
+    const value = `img-${index + 1}`;
+    return `    <fig-choice value="${value}" aria-label="${label}"${index === 0 ? " selected" : ""}><fig-image src="${landscapeUrl()}" alt="" aspect-ratio="1/1" full></fig-image></fig-choice>`;
+  }).join("\n");
+
+  return `<div class="prop-panel">
+  <fig-chooser layout="grid" columns="3" value="img-1" full>
+${images}
+  </fig-chooser>
+</div>`;
+}
+
+const propkitChooserSection = legacyPropsKitSections.find(
+  (section) => section.id === "chooser",
+);
+const propkitColorSection = legacyPropsKitSections.find(
+  (section) => section.id === "color",
+);
+const propkitPaletteSection = legacyPropsKitSections.find(
+  (section) => section.id === "palette",
+);
+const propkitGradientSection = legacyPropsKitSections.find(
+  (section) => section.id === "gradient",
+);
+const INPUT_GROUP_NAME = "Inputs";
+const MEDIA_GROUP_NAME = "Media";
+
+function clusterGroup(
+  sections: Section[],
+  groupName: string,
+  afterGroup = "Core components",
+): Section[] {
+  const grouped = sections.filter((section) => section.group === groupName);
+  if (!grouped.length) return sections;
+  const rest = sections.filter((section) => section.group !== groupName);
+  const insertAt =
+    rest.reduce(
+      (last, section, index) => (section.group === afterGroup ? index : last),
+      -1,
+    ) + 1;
+  return [...rest.slice(0, insertAt), ...grouped, ...rest.slice(insertAt)];
+}
+
+function clusterPlaygroundGroups(sections: Section[]): Section[] {
+  const inputs = sections.filter((section) => section.group === INPUT_GROUP_NAME);
+  const rest = sections.filter((section) => section.group !== INPUT_GROUP_NAME);
+  return [...inputs, ...clusterGroup(rest, MEDIA_GROUP_NAME)];
+}
+
+const figui3ChooserSections: Section[] = propkitChooserSection
+  ? [
+      {
+        ...propkitChooserSection,
+        group: INPUT_GROUP_NAME,
+        examples: propkitChooserSection.examples.map((example) => ({
+          ...example,
+          markup:
+            example.id === "grid"
+              ? figui3ChooserGridMarkup()
+              : unwrapChooserField(example.markup),
+        })),
+      },
+    ]
+  : [];
+
+function aiModelSelectMarkup(): string {
+  const groups: Array<{ label: string; models: Array<[string, string]> }> = [
+    {
+      label: "OpenAI",
+      models: [
+        ["gpt-5.6-sol", "GPT-5.6 Sol"],
+        ["gpt-5.6-terra", "GPT-5.6 Terra"],
+        ["gpt-5.5", "GPT-5.5"],
+        ["gpt-5.3-codex", "GPT-5.3 Codex"],
+        ["gpt-5.2", "GPT-5.2"],
+        ["gpt-5.1", "GPT-5.1"],
+        ["gpt-5", "GPT-5"],
+        ["gpt-4.1", "GPT-4.1"],
+        ["gpt-4o", "GPT-4o"],
+        ["o4-mini", "o4-mini"],
+        ["o3", "o3"],
+        ["o3-mini", "o3-mini"],
+        ["o1", "o1"],
+      ],
+    },
+    {
+      label: "Anthropic",
+      models: [
+        ["claude-opus-5", "Claude Opus 5"],
+        ["claude-sonnet-5", "Claude Sonnet 5"],
+        ["claude-fable-5", "Claude Fable 5"],
+        ["claude-opus-4.7", "Claude Opus 4.7"],
+        ["claude-opus-4.6", "Claude Opus 4.6"],
+        ["claude-sonnet-4.6", "Claude Sonnet 4.6"],
+        ["claude-opus-4.5", "Claude Opus 4.5"],
+        ["claude-sonnet-4", "Claude Sonnet 4"],
+        ["claude-3.7-sonnet", "Claude 3.7 Sonnet"],
+        ["claude-3.5-sonnet", "Claude 3.5 Sonnet"],
+        ["claude-3.5-haiku", "Claude 3.5 Haiku"],
+        ["claude-3-opus", "Claude 3 Opus"],
+        ["claude-3-haiku", "Claude 3 Haiku"],
+      ],
+    },
+    {
+      label: "Google",
+      models: [
+        ["gemini-3.6-flash", "Gemini 3.6 Flash"],
+        ["gemini-3.5-flash", "Gemini 3.5 Flash"],
+        ["gemini-3.1-pro", "Gemini 3.1 Pro"],
+        ["gemini-3-flash", "Gemini 3 Flash"],
+        ["gemini-2.5-pro", "Gemini 2.5 Pro"],
+        ["gemini-2.5-flash", "Gemini 2.5 Flash"],
+        ["gemini-2.0-flash", "Gemini 2.0 Flash"],
+        ["gemini-1.5-pro", "Gemini 1.5 Pro"],
+        ["gemini-1.5-flash", "Gemini 1.5 Flash"],
+      ],
+    },
+    {
+      label: "Cursor",
+      models: [
+        ["composer-2.5-fast", "Composer 2.5 Fast"],
+        ["composer", "Composer"],
+        ["cursor-grok-4.6", "Grok 4.6"],
+        ["cursor-grok-4.5", "Grok 4.5"],
+      ],
+    },
+    {
+      label: "xAI",
+      models: [
+        ["grok-4", "Grok 4"],
+        ["grok-3", "Grok 3"],
+        ["grok-3-mini", "Grok 3 Mini"],
+        ["grok-2", "Grok 2"],
+      ],
+    },
+    {
+      label: "Meta",
+      models: [
+        ["llama-4-maverick", "Llama 4 Maverick"],
+        ["llama-4-scout", "Llama 4 Scout"],
+        ["llama-3.3-70b", "Llama 3.3 70B"],
+        ["llama-3.1-405b", "Llama 3.1 405B"],
+        ["llama-3.1-70b", "Llama 3.1 70B"],
+        ["llama-3.1-8b", "Llama 3.1 8B"],
+      ],
+    },
+    {
+      label: "DeepSeek",
+      models: [
+        ["deepseek-v3", "DeepSeek V3"],
+        ["deepseek-r1", "DeepSeek R1"],
+        ["deepseek-r1-distill", "DeepSeek R1 Distill"],
+        ["deepseek-coder", "DeepSeek Coder"],
+      ],
+    },
+    {
+      label: "Mistral",
+      models: [
+        ["mistral-large", "Mistral Large"],
+        ["mistral-medium", "Mistral Medium"],
+        ["mistral-small", "Mistral Small"],
+        ["codestral", "Codestral"],
+        ["pixtral-large", "Pixtral Large"],
+      ],
+    },
+    {
+      label: "Others",
+      models: [
+        ["qwen-3", "Qwen 3"],
+        ["qwen-2.5-coder", "Qwen 2.5 Coder"],
+        ["kimi-k2", "Kimi K2"],
+        ["command-a", "Command A"],
+        ["command-r-plus", "Command R+"],
+      ],
+    },
+  ];
+  const body = groups
+    .flatMap((group) => [
+      `      <fig-separator label="${group.label}"></fig-separator>`,
+      ...group.models.map(
+        ([value, name]) =>
+          `      <fig-select-option value="${value}">${name}</fig-select-option>`,
+      ),
+    ])
+    .join("\n");
+  return `<div class="prop-panel">
+  <fig-select value="claude-opus-5" label="AI model">
+    <fig-select-options slot="panel">
+${body}
+    </fig-select-options>
+  </fig-select>
+</div>`;
+}
+
+const figui3BaseSections: Section[] = clusterPlaygroundGroups([
+  {
+    id: "button",
+    name: "Button",
+    group: INPUT_GROUP_NAME,
+    description:
+      "Buttons with variants and advanced behaviors like select menus.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button>Primary</fig-button>
+</div>`,
+      },
+      {
+        id: "prepend",
+        name: "Prepend",
+        markup: `<div class="prop-panel">
+  <fig-button>
+    <fig-icon name="add" slot="prepend"></fig-icon>
+    Add item
+  </fig-button>
+</div>`,
+      },
+      {
+        id: "alignment",
+        name: "Alignment",
+        markup: `<div class="prop-panel">
+  <fig-stack direction="vertical" style="width: 240px;">
+    <fig-button full align="start">Start</fig-button>
+    <fig-button full align="center">Center</fig-button>
+    <fig-button full align="end">End</fig-button>
+  </fig-stack>
+</div>`,
+      },
+      {
+        id: "property",
+        name: "Property",
+        markup: `<div class="prop-panel">
+  <fig-button
+    id="property-effect-trigger"
+    variant="property"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-controls="property-effect-editor"
+    onclick="const p=document.getElementById('property-effect-editor');p.open=!p.open;this.setAttribute('aria-expanded',String(p.open));this.toggleAttribute('selected',p.open);"
+  >
+    <fig-icon name="settings" slot="prepend"></fig-icon>
+    Drop shadow
+  </fig-button>
+  <dialog
+    is="fig-popup"
+    id="property-effect-editor"
+    title="Drop shadow"
+    anchor="#property-effect-trigger"
+    position="left"
+    offset="0 8"
+    closedby="any"
+    theme="dark"
+    onclose="const t=document.getElementById('property-effect-trigger');t?.setAttribute('aria-expanded','false');t?.removeAttribute('selected')"
+    style="width: 15rem;"
+  >
+    <fig-header dialog-header>
+      <fig-select
+        variant="ghost"
+        value="Drop shadow"
+        label="Effect type"
+        options="Drop shadow,Inner shadow,Layer blur,Background blur"
+      ></fig-select>
+      <fig-button variant="ghost" icon close-dialog aria-label="Close effect editor">
+        <fig-icon name="close"></fig-icon>
+      </fig-button>
+    </fig-header>
+    <fig-content>
+      <fig-field>
+        <label>Position</label>
+        <fig-stack direction="vertical" full>
+          <fig-input-number value="0" full>
+            <fig-icon slot="prepend">X</fig-icon>
+          </fig-input-number>
+          <fig-input-number value="4" full>
+            <fig-icon slot="prepend">Y</fig-icon>
+          </fig-input-number>
+        </fig-stack>
+      </fig-field>
+      <fig-field>
+        <label>Blur</label>
+        <fig-input-number value="4" min="0" full>
+          <fig-icon name="adjust" slot="prepend"></fig-icon>
+        </fig-input-number>
+      </fig-field>
+      <fig-field>
+        <label>Spread</label>
+        <fig-input-number value="0" full>
+          <fig-icon name="sun" slot="prepend"></fig-icon>
+        </fig-input-number>
+      </fig-field>
+      <fig-field>
+        <label>Color</label>
+        <fig-input-color value="#00000040" text="true" alpha="true" full></fig-input-color>
+      </fig-field>
+    </fig-content>
+  </dialog>
+</div>`,
+      },
+      {
+        id: "property-custom-icon",
+        name: "Property custom icon",
+        markup: `<div class="prop-panel">
+  <fig-button variant="property">
+    <fig-icon name="sun" slot="prepend"></fig-icon>
+    Lighting effect
+  </fig-button>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "button-combo",
+    name: "Button Combo",
+    group: INPUT_GROUP_NAME,
+    description: "Visually grouped buttons for related actions.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button-combo>
+    <fig-button>Save</fig-button>
+    <fig-button>Apply</fig-button>
+    <fig-button>Cancel</fig-button>
+  </fig-button-combo>
+</div>`,
+      },
+      {
+        id: "previous-next",
+        name: "Previous and next",
+        markup: `<div class="prop-panel">
+  <fig-button-combo>
+    <fig-button variant="secondary" icon aria-label="Previous">
+      <fig-icon name="chevron" style="transform: rotate(90deg);"></fig-icon>
+    </fig-button>
+    <fig-button variant="secondary" icon aria-label="Next">
+      <fig-icon name="chevron" style="transform: rotate(-90deg);"></fig-icon>
+    </fig-button>
+  </fig-button-combo>
+</div>`,
+      },
+      {
+        id: "button-menu",
+        name: "Button menu",
+        markup: `<div class="prop-panel">
+  <fig-button-combo>
+    <fig-button variant="secondary">Drop shadow</fig-button>
+    <fig-select value="duplicate" icon aria-label="More property actions">
+      <fig-select-options>
+        <fig-select-option value="edit">Edit</fig-select-option>
+        <fig-select-option value="duplicate">Duplicate</fig-select-option>
+        <fig-select-option value="delete">Delete</fig-select-option>
+      </fig-select-options>
+    </fig-select>
+  </fig-button-combo>
+</div>`,
+      },
+      {
+        id: "property-menu",
+        name: "Property menu",
+        markup: `<div class="prop-panel">
+  <fig-button-combo full>
+    <fig-button variant="property">
+      <fig-icon name="settings" slot="prepend"></fig-icon>
+      Drop shadow
+    </fig-button>
+    <fig-select value="duplicate" icon aria-label="More property actions">
+      <fig-select-options>
+        <fig-select-option value="edit">Edit</fig-select-option>
+        <fig-select-option value="duplicate">Duplicate</fig-select-option>
+        <fig-select-option value="delete">Delete</fig-select-option>
+      </fig-select-options>
+    </fig-select>
+  </fig-button-combo>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "avatar",
+    name: "Avatar",
+    group: "Core components",
+    description: "Profile avatar with image source and initials fallback.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-avatar src="${avatarServiceUrl(128)}" name="John Doe"></fig-avatar>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "tooltip",
+    name: "Tooltip",
+    group: "Dialogs, Menus & Popups",
+    description: "Contextual tooltip with hover or click trigger behavior.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-tooltip text="This is helpful info" action="hover">
+    <fig-button>Hover me</fig-button>
+  </fig-tooltip>
+</div>`,
+      },
+      {
+        id: "long-content",
+        name: "Long content",
+        markup: `<div class="prop-panel">
+  <fig-tooltip text="Fear is the path to the dark side. Fear leads to anger, anger leads to hate, hate leads to suffering. I sense much fear in you, young Skywalker." action="hover">
+    <fig-button>Hover me</fig-button>
+  </fig-tooltip>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dialog",
+    name: "Dialog",
+    group: "Dialogs, Menus & Popups",
+    description: "Modal dialog surface with optional drag and positioning.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="const d=this.nextElementSibling; d.hasAttribute('modal') ? d.showModal() : d.show();">Open Dialog</fig-button>
+  <dialog is="fig-dialog" title="A long time ago..." handle="fig-header" position="center center">
+    <fig-content>
+      <p>"I find your lack of faith disturbing." Vader's gloved hand tightened around the Admiral's throat from across the room, the Force crushing his windpipe as the bridge officers studiously avoided looking at the dying man.</p>
+      <p>"The Force is strong with this one," Vader murmured, watching the X-wing skim along the trench. The targeting computer chirped uselessly. He had felt the boy's presence before, on Tatooine, in dreams that smelled of sand and engine grease. The past had a long reach.</p>
+      <p>"You don't know the power of the Dark Side. I must obey my master." The Emperor's lightning arced between his fingers, and Luke convulsed on the metal grating. Somewhere beneath the black mask, beneath thirty years of regret, a father remembered a son.</p>
+      <p>"No. I am your father." The words hung in the cold reactor shaft long after they were spoken, and Luke's scream traveled out into the storm of Bespin, into every quiet moment of every life he had left to live.</p>
+      <p>"Help me, Obi-Wan Kenobi. You're my only hope." The little blue projection flickered in the dust of the Lars homestead, and a farm boy who had never been further than Anchorhead felt the galaxy tilt beneath his boots.</p>
+    </fig-content>
+    <fig-footer>
+      <fig-button variant="secondary" close-dialog>Cancel</fig-button>
+      <fig-button>Confirm</fig-button>
+    </fig-footer>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "dropdown",
+    name: "Dropdown",
+    group: INPUT_GROUP_NAME,
+    description: "Native select controls with FigUI styling.",
+    examples: [
+      {
+        id: "flat-options",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-dropdown>
+    <option value="default" selected>Default</option>
+    <option value="minimal">Minimal</option>
+    <option value="neue">Neue</option>
+  </fig-dropdown>
+</div>`,
+      },
+      {
+        id: "groups",
+        name: "Groups",
+        markup: `<div class="prop-panel">
+  <fig-dropdown>
+    <optgroup label="In progress">
+      <option value="draft" selected>Draft</option>
+      <option value="review">In review</option>
+    </optgroup>
+    <optgroup label="Completed">
+      <option value="approved">Approved</option>
+      <option value="archived">Archived</option>
+    </optgroup>
+  </fig-dropdown>
+</div>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        markup: `<div class="prop-panel">
+  <fig-dropdown size="large">
+    <option value="default" selected>Default</option>
+    <option value="minimal">Minimal</option>
+    <option value="neue">Neue</option>
+  </fig-dropdown>
+</div>`,
+      },
+      {
+        id: "labelled-groups",
+        name: "Labelled groups",
+        markup: `<div class="prop-panel">
+  <fig-dropdown>
+    <optgroup label="Recent files">
+      <option value="landing" selected>Landing page</option>
+      <option value="onboarding">Onboarding</option>
+    </optgroup>
+    <optgroup label="Archived files">
+      <option value="v1">Marketing site v1</option>
+      <option value="legacy">Legacy checkout</option>
+    </optgroup>
+  </fig-dropdown>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "input-rotate",
+    name: "Input Rotate",
+    group: "Editor components",
+    description:
+      "Compact X/Y/Z rotation property button with an anchored 3D editor popup (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+    <fig-input-rotate default-x="0" default-y="0" default-z="0" full></fig-input-rotate>
+</div>`,
+      },
+      {
+        id: "simple",
+        name: "Simple",
+        markup: `<div class="prop-panel">
+    <fig-input-rotate variant="simple" x="10" y="20" z="30" default-x="10" default-y="20" default-z="30" full></fig-input-rotate>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "input-point",
+    name: "Input Point",
+    group: "Editor components",
+    description:
+      "Compact X/Y point trigger with an anchored origin-grid popup (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-input-point x="24" y="16" default-x="0" default-y="0" units="%" full></fig-input-point>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "property",
+    name: "Property",
+    group: "Editor components",
+    description:
+      "A composable property row with named leading, input, and trailing slots plus optional accessory shortcuts (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-property label="Size">
+    <fig-input-number slot="input" value="16" default="0" units="px" steppers="true" full></fig-input-number>
+  </fig-property>
+</div>`,
+      },
+      {
+        id: "multiline",
+        name: "Multiline",
+        markup: `<div class="prop-panel">
+  <fig-property label="Description">
+    <fig-input-text slot="input" multiline autoresize value="Design systems help teams build consistent interfaces." default="" full></fig-input-text>
+  </fig-property>
+</div>`,
+      },
+      {
+        id: "ratio",
+        name: "Ratio",
+        markup: `<div class="prop-panel">
+  <fig-group name="Label / input ratios">
+    <fig-property label="Default 1:2" ratio="1:2">
+      <fig-input-number slot="input" value="16" units="px" full></fig-input-number>
+    </fig-property>
+    <fig-property label="Equal 1:1" ratio="1:1">
+      <fig-input-text slot="input" value="Equal tracks" full></fig-input-text>
+    </fig-property>
+    <fig-property label="Custom 2:3" ratio="2:3">
+      <fig-input-number slot="input" value="40" units="%" full></fig-input-number>
+    </fig-property>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "all-properties",
+        name: "All properties",
+        markup: `<div class="prop-panel">
+  <fig-group name="Values">
+    <fig-property label="Number">
+      <fig-input-number slot="input" value="16" default="0" units="px" steppers="true" full></fig-input-number>
+    </fig-property>
+    <fig-property label="Slider">
+      <fig-slider slot="input" value="75" default="0" min="0" max="100" units="%" text="true" full></fig-slider>
+    </fig-property>
+    <fig-property label="String">
+      <fig-input-text slot="input" value="Hello" default="" full></fig-input-text>
+    </fig-property>
+    <fig-property label="Boolean">
+      <fig-switch slot="input" checked default-checked="false"></fig-switch>
+    </fig-property>
+  </fig-group>
+  <fig-group name="Pickers">
+    <fig-property label="Color">
+      <fig-input-color slot="input" value="#0D99FF" default="#D9D9D9" text="true" full></fig-input-color>
+    </fig-property>
+    <fig-property label="Select">
+      <fig-select slot="input" value="Medium" default="Small" options="Small,Medium,Large" full></fig-select>
+    </fig-property>
+    <fig-property label="Point">
+      <fig-input-point slot="input" x="24" y="16" default-x="0" default-y="0" units="%" full></fig-input-point>
+    </fig-property>
+    <fig-property label="Easing">
+      <fig-easing-curve slot="input" value="0.42, 0, 0.58, 1" default="0.42, 0, 0.58, 1" edit="false"></fig-easing-curve>
+    </fig-property>
+  </fig-group>
+  <fig-group name="Advanced">
+    <fig-property label="Gradient">
+      <fig-input-gradient slot="input" edit="picker" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#0D99FF","opacity":100},{"position":100,"color":"#9747FF","opacity":100}]}}' default='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#D9D9D9","opacity":100},{"position":100,"color":"#737373","opacity":100}]}}' full></fig-input-gradient>
+    </fig-property>
+    <fig-property label="Palette">
+      <fig-input-palette slot="input" edit="picker" value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' default='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full></fig-input-palette>
+    </fig-property>
+    <fig-property label="Transform">
+      <fig-input-rotate slot="input" default-x="0" default-y="0" default-z="0"></fig-input-rotate>
+    </fig-property>
+    <fig-property label="File">
+      <fig-input-file slot="input" label="Choose file" full></fig-input-file>
+    </fig-property>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "custom-accessory",
+        name: "Custom accessory",
+        markup: `<div class="prop-panel">
+  <fig-property label="Opacity" show-trailing>
+    <fig-slider slot="input" value="75" min="0" max="100" units="%" text="true" full></fig-slider>
+    <fig-button slot="trailing" variant="ghost" icon aria-label="Reset opacity">
+      <fig-icon name="reset"></fig-icon>
+    </fig-button>
+  </fig-property>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "reorder",
+    name: "Reorder",
+    group: "Editor components",
+    description:
+      "A display:contents wrapper that drag-reorders direct children. Omit handle to drag whole rows; use handle when rows contain nested controls (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Rows",
+        markup: `<div class="prop-panel">
+  <fig-reorder>
+    <fig-field>
+      <fig-icon slot="leading" name="drag-handle" size="small"></fig-icon>
+      <label>Number</label>
+      <fig-input-number value="16" min="0" max="100" units="px"></fig-input-number>
+    </fig-field>
+    <fig-field>
+      <fig-icon slot="leading" name="drag-handle" size="small"></fig-icon>
+      <label>Text</label>
+      <fig-input-text value="Rows" full></fig-input-text>
+    </fig-field>
+    <fig-field>
+      <fig-icon slot="leading" name="drag-handle" size="small"></fig-icon>
+      <label>Color</label>
+      <fig-input-color value="#0D99FF"></fig-input-color>
+    </fig-field>
+  </fig-reorder>
+</div>`,
+      },
+      {
+        id: "groups",
+        name: "Groups",
+        markup: `<div class="prop-panel">
+  <fig-reorder>
+    <fig-group name="Fill" collapsible open="true">
+      <fig-field><label>Opacity</label><fig-slider type="opacity" value="100" min="0" max="100" units="%" text="true" full></fig-slider></fig-field>
+    </fig-group>
+    <fig-group name="Stroke" collapsible open="false">
+      <fig-field><label>Width</label><fig-slider value="2" min="0" max="24" units="px" text="true" full></fig-slider></fig-field>
+    </fig-group>
+    <fig-group name="Effects" collapsible open="false">
+      <fig-field><label>Blur</label><fig-slider value="4" min="0" max="64" units="px" text="true" full></fig-slider></fig-field>
+    </fig-group>
+  </fig-reorder>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "palette-editor",
+    name: "Palette Editor",
+    group: "Editor components",
+    description:
+      "A reusable ordered palette editor with pointer and keyboard reordering (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-palette-editor value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]'></fig-palette-editor>
+</div>`,
+      },
+      {
+        id: "popup",
+        name: "Popup",
+        markup: `<fig-button id="palette-popup-anchor">Palette</fig-button>
+<dialog
+  is="fig-popup-palette"
+  anchor="#palette-popup-anchor"
+  value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]'
+  open
+></dialog>`,
+      },
+    ],
+  },
+  {
+    id: "gradient-editor",
+    name: "Gradient Editor",
+    group: "Editor components",
+    description:
+      "A reusable full gradient editor with type controls, stop handles, and reorderable stop rows (requires <code>fig-editor.js</code>).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-gradient-editor value='{"type":"linear","angle":90,"stops":[{"position":0,"color":"#0D99FF","opacity":100},{"position":50,"color":"#9747FF","opacity":100},{"position":100,"color":"#FF7262","opacity":100}]}'></fig-gradient-editor>
+</div>`,
+      },
+      {
+        id: "popup",
+        name: "Popup",
+        markup: `<fig-button id="gradient-popup-anchor">Gradient</fig-button>
+<dialog
+  is="fig-popup-gradient"
+  anchor="#gradient-popup-anchor"
+  value='{"type":"linear","angle":90,"stops":[{"position":0,"color":"#0D99FF","opacity":100},{"position":100,"color":"#9747FF","opacity":100}]}'
+  open
+></dialog>`,
+      },
+    ],
+  },
+  {
+    id: "select",
+    name: "Select",
+    group: "Editor components",
+    description:
+      "A dropdown-styled select (requires <code>fig-editor.js</code>). Author options inside fig-select-options, or pass an options attribute (comma / JSON, same as fig-options). Overflow uses top/bottom buttons.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-select value="center" label="Align">
+    <fig-select-options>
+      <fig-select-option value="left">Left</fig-select-option>
+      <fig-select-option value="center">Center</fig-select-option>
+      <fig-select-option value="right">Right</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "primary",
+        name: "Primary",
+        markup: `<div class="prop-panel">
+  <fig-select variant="primary" value="center" label="Align">
+    <fig-select-options>
+      <fig-select-option value="left">Left</fig-select-option>
+      <fig-select-option value="center">Center</fig-select-option>
+      <fig-select-option value="right">Right</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "alternate-menu-anchor",
+        name: "Alternate menu anchor",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Align</label>
+    <fig-select value="center" label="Align" menu-anchor="#select-menu-anchor-target">
+      <fig-select-options>
+        <fig-select-option value="left">Left</fig-select-option>
+        <fig-select-option value="center">Center</fig-select-option>
+        <fig-select-option value="right">Right</fig-select-option>
+      </fig-select-options>
+    </fig-select>
+  </fig-field>
+  <fig-button id="select-menu-anchor-target" style="margin-top: 100px">Anchor</fig-button>
+</div>`,
+      },
+      {
+        id: "options-attr",
+        name: "Options attribute",
+        markup: `<div class="prop-panel">
+  <fig-select label="Align" value="Center" options="Left,Center,Right"></fig-select>
+</div>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        markup: `<div class="prop-panel">
+  <fig-select size="large" value="center" label="Align">
+    <fig-select-options>
+      <fig-select-option value="left">Left</fig-select-option>
+      <fig-select-option value="center">Center</fig-select-option>
+      <fig-select-option value="right">Right</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "subtle",
+        name: "Subtle options",
+        markup: `<div class="prop-panel">
+  <fig-select label="Align" value="Center" options="Left,Center,Right" subtle></fig-select>
+</div>`,
+      },
+      {
+        id: "prepend-icon",
+        name: "Prepend icon",
+        markup: `<div class="prop-panel">
+  <fig-select value="add" label="Action">
+    <fig-icon name="add" slot="prepend-trigger" aria-hidden="true"></fig-icon>
+    <fig-select-options>
+      <fig-select-option value="add">Add item</fig-select-option>
+      <fig-select-option value="duplicate">Duplicate item</fig-select-option>
+      <fig-select-option value="remove">Remove item</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "icon-button",
+        name: "Chevron button",
+        markup: `<div class="prop-panel">
+  <fig-select value="duplicate" variant="ghost" icon aria-label="More actions">
+    <fig-select-options>
+      <fig-select-option value="add">Add item</fig-select-option>
+      <fig-select-option value="duplicate">Duplicate item</fig-select-option>
+      <fig-select-option value="remove">Remove item</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "palette-content",
+        name: "Prepend trigger",
+        markup: `<div class="prop-panel">
+  <fig-select label="Palette" value="ocean-drive" full subtle>
+    <fig-select-options slot="panel">
+      <fig-select-option value="ocean-drive" label="Ocean Drive">
+        <span slot="prepend">
+          <fig-input-palette value='["#0D99FF","#14AE5C"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+        </span>
+        Ocean Drive
+      </fig-select-option>
+      <fig-select-option value="citrus-pop" label="Citrus Pop">
+        <span slot="prepend">
+          <fig-input-palette value='["#FFCD29","#FF7262","#14AE5C"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+        </span>
+        Citrus Pop
+      </fig-select-option>
+      <fig-select-option value="sunset-sorbet" label="Sunset Sorbet">
+        <span slot="prepend">
+          <fig-input-palette value='["#FF7262","#F24822","#9747FF"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+        </span>
+        Sunset Sorbet
+      </fig-select-option>
+      <fig-select-option value="cosmic-grape" label="Cosmic Grape">
+        <span slot="prepend">
+          <fig-input-palette value='["#9747FF","#5C37CC","#0D99FF"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+        </span>
+        Cosmic Grape
+      </fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "visual-trigger",
+        name: "Custom trigger",
+        markup: `<div class="prop-panel">
+  <fig-select aria-label="Palette" value="palette" full subtle>
+    <fig-input-palette slot="trigger" value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+    <fig-select-options slot="panel">
+      <fig-select-option value="palette" label="Palette">
+        <fig-input-palette slot="prepend" value='["#0D99FF","#14AE5C","#FFCD29","#FF7262","#9747FF"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+      </fig-select-option>
+      <fig-select-option value="ocean-drive" label="Ocean Drive">
+        <fig-input-palette slot="prepend" value='["#0D99FF","#14AE5C"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+      </fig-select-option>
+      <fig-select-option value="citrus-pop" label="Citrus Pop">
+        <fig-input-palette slot="prepend" value='["#FFCD29","#FF7262","#14AE5C"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+      </fig-select-option>
+      <fig-select-option value="cosmic-grape" label="Cosmic Grape">
+        <fig-input-palette slot="prepend" value='["#9747FF","#5C37CC","#0D99FF"]' full fixed disabled aria-hidden="true"></fig-input-palette>
+      </fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "verbose-options",
+        name: "Verbose options",
+        markup: `<div class="prop-panel">
+  <fig-select value="ac4b47b8-3692-496b-bab2-1a05beaee2da" label="Version" full>
+    <fig-select-options slot="panel">
+      <fig-select-option value="ac4b47b8-3692-496b-bab2-1a05beaee2da" label="Current (Version 6)">
+        <div>
+          <h3>Current (Version 6)</h3>
+          <label>Aug 17, 5:54 AM</label>
+          <label>Updated shader source (1969 → 1974 lines)</label>
+        </div>
+      </fig-select-option>
+      <fig-select-option value="71b7e332-12d4-4eab-af43-c4f18a21a592" label="Version 5">
+        <div>
+          <h3>Version 5</h3>
+          <label>Aug 17, 5:52 AM</label>
+          <label>Restored · Restored Version 3</label>
+        </div>
+      </fig-select-option>
+      <fig-select-option value="d229a4ef-dd0d-4e1a-82ab-cd0681ed9cd6" label="Version 4">
+        <div>
+          <h3>Version 4</h3>
+          <label>Aug 17, 5:52 AM</label>
+          <label>Safety copy · Before restoring Version 3</label>
+        </div>
+      </fig-select-option>
+      <fig-select-option value="e8324afb-ac2d-430d-ad07-58f7459d0330" label="Version 3">
+        <div>
+          <h3>Version 3</h3>
+          <label>Aug 17, 5:22 AM</label>
+          <label>Updated shader source (1455 → 1969 lines); changed properties: ambient, depth, diffuse, edgeRoundness +8 more</label>
+        </div>
+      </fig-select-option>
+      <fig-select-option value="a40e1781-47f0-47ee-9fdb-5c2c6657b364" label="Version 2">
+        <div>
+          <h3>Version 2</h3>
+          <label>Aug 16, 12:19 PM</label>
+          <label>Updated shader source (2006 → 1455 lines); changed properties: edgeRoundness, rotateY</label>
+        </div>
+      </fig-select-option>
+      <fig-select-option value="b3a5067c-14eb-43ad-8a44-5c6fc0d0ee7d" label="Version 1">
+        <div>
+          <h3>Version 1</h3>
+          <label>Aug 16, 10:04 AM</label>
+          <label>Initial saved version</label>
+        </div>
+      </fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "full",
+        name: "Full width",
+        markup: `<div class="prop-panel">
+  <fig-select value="multiply" full label="Blend">
+    <fig-select-options>
+      <fig-select-option value="normal">Normal</fig-select-option>
+      <fig-select-option value="multiply">Multiply</fig-select-option>
+      <fig-select-option value="screen">Screen</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "many-options",
+        name: "Many options",
+        markup: `<div class="prop-panel">
+  <fig-select value="overlay" label="Blend">
+    <fig-select-options>
+      <fig-select-option value="normal">Normal</fig-select-option>
+      <fig-separator></fig-separator>
+      <fig-select-option value="darken">Darken</fig-select-option>
+      <fig-select-option value="multiply">Multiply</fig-select-option>
+      <fig-select-option value="color-burn">Color burn</fig-select-option>
+      <fig-separator></fig-separator>
+      <fig-select-option value="lighten">Lighten</fig-select-option>
+      <fig-select-option value="screen">Screen</fig-select-option>
+      <fig-select-option value="color-dodge">Color dodge</fig-select-option>
+      <fig-separator></fig-separator>
+      <fig-select-option value="overlay">Overlay</fig-select-option>
+      <fig-select-option value="soft-light">Soft light</fig-select-option>
+      <fig-select-option value="hard-light">Hard light</fig-select-option>
+      <fig-separator></fig-separator>
+      <fig-select-option value="difference">Difference</fig-select-option>
+      <fig-select-option value="exclusion">Exclusion</fig-select-option>
+      <fig-separator></fig-separator>
+      <fig-select-option value="hue">Hue</fig-select-option>
+      <fig-select-option value="saturation">Saturation</fig-select-option>
+      <fig-select-option value="color">Color</fig-select-option>
+      <fig-select-option value="luminosity">Luminosity</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
+        id: "grouped",
+        name: "AI models",
+        markup: aiModelSelectMarkup(),
+      },
+      {
+        id: "disabled",
+        name: "Disabled",
+        markup: `<div class="prop-panel">
+  <fig-select value="center" disabled label="Align">
+    <fig-select-options>
+      <fig-select-option value="left">Left</fig-select-option>
+      <fig-select-option value="center">Center</fig-select-option>
+      <fig-select-option value="right">Right</fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "fill-picker",
+    name: "Fill picker",
+    group: "Core components",
+    description:
+      "Standalone fill picker dialog for solid, gradient, image, video, webcam, and custom slotted modes.",
+    examples: [
+      {
+        id: "all-modes",
+        name: "All modes",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker value='{"type":"solid","color":"#0D99FF","opacity":85}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "solid",
+        name: "Solid",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker mode="solid" value='{"type":"solid","color":"#FF24BD","opacity":72}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "gradient",
+        name: "Gradient",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker mode="gradient" value='{"type":"gradient","gradient":{"type":"linear","angle":135,"stops":[{"position":0,"color":"#00F5A0","opacity":100},{"position":45,"color":"#00D4FF","opacity":100},{"position":100,"color":"#4B00E0","opacity":100}]}}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "image",
+        name: "Image",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker mode="image" value='{"type":"image","image":{"url":"${imageUrl(320, 320, 1)}","scaleMode":"fill","scale":50}}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "video",
+        name: "Video",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker mode="video" default-video="${DEMO_FILL_VIDEO.src}" value='{"type":"video","video":{"url":"${DEMO_FILL_VIDEO.src}","poster":"${DEMO_FILL_VIDEO.poster}","scaleMode":"fill","scale":50}}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "webcam",
+        name: "Webcam",
+        markup: `<div class="prop-panel">
+  <fig-fill-picker mode="webcam" webcam-mode="live" value='{"type":"webcam"}' dialog-position="left">
+    <fig-swatch></fig-swatch>
+  </fig-fill-picker>
+</div>`,
+      },
+      {
+        id: "shader",
+        name: "Custom",
+        description:
+          "Put a custom type in <code>mode</code> and slot markup with <code>slot=\"mode-&lt;name&gt;\"</code> on <code>fig-fill-picker</code> (this example is <code>mode-shader</code>). <code>label</code> is the type-select option; children become the tab. Dispatch <code>input</code>/<code>change</code> with a <code>detail</code> object so the picker stores <code>{ type: \"shader\", …detail }</code>. In React, listen for <code>modeready</code> and mount into <code>e.detail.container</code>.",
+        markup: standaloneFillPickerShaderMarkup(),
+      },
+    ],
+  },
+  {
+    id: "swatch",
+    name: "Swatch",
+    group: "Core components",
+    description: "Color and gradient swatch display for fill previews.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-swatch background="linear-gradient(135deg, rgba(0, 229, 255, 0.5), #7A00FF 50%, #FF007A)" alpha="0.8"></fig-swatch>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "slider",
+    name: "Slider",
+    group: INPUT_GROUP_NAME,
+    description:
+      "Range controls with PropKit-style examples across slider types.",
+    examples: [
+      {
+        id: "range",
+        name: "Range",
+        markup: `<div class="prop-panel">
+  <fig-slider value="50" default="50" min="0" max="100" full></fig-slider>
+</div>`,
+      },
+      {
+        id: "opacity-with-text",
+        name: "Opacity",
+        markup: `<div class="prop-panel">
+  <fig-slider type="opacity" value="75" default="100" color="#ff0000" units="%" full></fig-slider>
+</div>`,
+      },
+      {
+        id: "hue-with-text",
+        name: "Hue",
+        markup: `<div class="prop-panel">
+  <fig-slider type="hue" value="180" default="180" full></fig-slider>
+</div>`,
+      },
+      {
+        id: "stepper-with-text",
+        name: "Stepper",
+        markup: `<div class="prop-panel">
+  <fig-slider type="stepper" value="50" default="50" step="25" full>
+    <datalist>
+      <option value="0"></option>
+      <option value="25"></option>
+      <option value="50"></option>
+      <option value="75"></option>
+      <option value="100"></option>
+    </datalist>
+  </fig-slider>
+</div>`,
+      },
+      {
+        id: "delta-with-text",
+        name: "Delta",
+        markup: `<div class="prop-panel">
+  <fig-slider type="delta" value="0" default="0" step="0.25" min="-5" max="5" full>
+    <datalist>
+      <option value="0"></option>
+    </datalist>
+  </fig-slider>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "split-input",
+    name: "Split Input",
+    group: INPUT_GROUP_NAME,
+    description:
+      "Text or number input with a fig-select suggestion trigger when available and a fig-dropdown fallback.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-split-input options="House, Apartment, Condo, Townhouse, Other" placeholder="Type of residence"></fig-split-input>
+</div>`,
+      },
+      {
+        id: "number",
+        name: "Number",
+        markup: `<div class="prop-panel">
+  <fig-split-input type="number" options="8, 16, 24, 32, 64" value="16" placeholder="Size"></fig-split-input>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "input-combo",
+    name: "Input Combo",
+    group: INPUT_GROUP_NAME,
+    description:
+      "A visually grouped input and action button for compact submission controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-input-combo>
+    <fig-input-text value="Search query"></fig-input-text>
+    <fig-button>Go</fig-button>
+  </fig-input-combo>
+</div>`,
+      },
+      {
+        id: "fields",
+        name: "Fields",
+        markup: `<div class="prop-panel">
+  <fig-input-combo full>
+    <fig-input-number value="0">
+      <fig-icon slot="prepend">X</fig-icon>
+    </fig-input-number>
+    <fig-input-number value="0">
+      <fig-icon slot="prepend">Y</fig-icon>
+    </fig-input-number>
+  </fig-input-combo>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "text-input",
+    name: "Text",
+    group: INPUT_GROUP_NAME,
+    description: "Single-line and multiline text inputs for direct entry.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-input-text placeholder="Placeholder text"></fig-input-text>
+</div>`,
+      },
+      {
+        id: "multiline",
+        name: "Multiline",
+        markup: `<div class="prop-panel">
+  <fig-input-text multiline placeholder="Type here..." data-playground-hide-attrs="prepend"></fig-input-text>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "number-input",
+    name: "Number",
+    group: INPUT_GROUP_NAME,
+    description: "Precise numeric inputs with steppers, units, and bounds.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-input-number value="16" min="0" max="512" step="1" units="px"></fig-input-number>
+</div>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        markup: `<div class="prop-panel">
+  <fig-input-number size="large" value="16" min="0" max="512" step="1" units="px"></fig-input-number>
+</div>`,
+      },
+      {
+        id: "ghost",
+        name: "Ghost",
+        markup: `<div class="prop-panel">
+  <fig-input-number variant="ghost" value="16" min="0" max="512" step="1" units="px"></fig-input-number>
+</div>`,
+      },
+      {
+        id: "tabular",
+        name: "Tabular",
+        markup: `<div class="prop-panel">
+  <fig-input-number tabular value="1111" min="0" max="9999" step="1"></fig-input-number>
+  <fig-input-number tabular value="8888" min="0" max="9999" step="1"></fig-input-number>
+</div>`,
+      },
+    ],
+  },
+  ...(propkitColorSection
+    ? [{ ...propkitColorSection, group: INPUT_GROUP_NAME }]
+    : []),
+  ...(propkitPaletteSection
+    ? [{ ...propkitPaletteSection, group: INPUT_GROUP_NAME }]
+    : []),
+  ...(propkitGradientSection
+    ? [{ ...propkitGradientSection, group: INPUT_GROUP_NAME }]
+    : []),
+  {
+    id: "fill-input",
+    name: "Fill",
+    group: INPUT_GROUP_NAME,
+    description:
+      "Fill controls for solid, gradient, image, video, webcam, and custom slotted modes.",
+    examples: [
+      {
+        id: "all-modes",
+        name: "All modes",
+        markup: `<div class="prop-panel">
+  <fig-input-fill value='{"type":"solid","color":"#0D99FF","opacity":85}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "solid",
+        name: "Solid",
+        markup: `<div class="prop-panel">
+  <fig-input-fill mode="solid" value='{"type":"solid","color":"#FF24BD","opacity":72}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "gradient",
+        name: "Gradient",
+        markup: `<div class="prop-panel">
+  <fig-input-fill mode="gradient" value='{"type":"gradient","gradient":{"type":"linear","angle":135,"stops":[{"position":0,"color":"#00F5A0","opacity":100},{"position":45,"color":"#00D4FF","opacity":100},{"position":100,"color":"#4B00E0","opacity":100}]}}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "image",
+        name: "Image",
+        markup: `<div class="prop-panel">
+  <fig-input-fill mode="image" value='{"type":"image","image":{"url":"${imageUrl(320, 320, 1)}","scaleMode":"fill","scale":50}}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "video",
+        name: "Video",
+        markup: `<div class="prop-panel">
+  <fig-input-fill mode="video" default-video="${DEMO_FILL_VIDEO.src}" value='{"type":"video","video":{"url":"${DEMO_FILL_VIDEO.src}","poster":"${DEMO_FILL_VIDEO.poster}","scaleMode":"fill","scale":50}}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "webcam",
+        name: "Webcam",
+        markup: `<div class="prop-panel">
+  <fig-input-fill mode="webcam" webcam-mode="live" value='{"type":"webcam"}' full></fig-input-fill>
+</div>`,
+      },
+      {
+        id: "shader",
+        name: "Custom",
+        description:
+          "Put a custom type in <code>mode</code> and slot markup with <code>slot=\"mode-&lt;name&gt;\"</code> on <code>fig-input-fill</code> (this example is <code>mode-shader</code>). <code>label</code> is the type-select option; children become the tab. The closed control uses the same chrome as image fills. Dispatch <code>input</code>/<code>change</code> with a <code>detail</code> object so the picker stores <code>{ type: \"shader\", …detail }</code>. In React, listen for <code>modeready</code> and mount into <code>e.detail.container</code>.",
+        markup: fillPickerShaderMarkup(),
+      },
+    ],
+  },
+  {
+    id: "file-input",
+    name: "File",
+    group: INPUT_GROUP_NAME,
+    description:
+      "File upload input with filename display, clear button, drag-and-drop support, image previews, and audio playback waveforms.",
+    examples: [
+      {
+        id: "image",
+        name: "Image",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-input-file accepts="image/*" preview full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "image-url",
+        name: "Image (with URL)",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Image</label>
+    <fig-input-file accepts="image/*" preview url="${landscapeUrl()}" filename="image.webp" full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "audio-url",
+        name: "Audio (with URL)",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Audio</label>
+    <fig-input-file accepts="audio/*" preview url="https://samplelib.com/mp3/sample-15s.mp3" filename="sample-15s.mp3" full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "video-url",
+        name: "Video (with url)",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Video</label>
+    <fig-input-file accepts="video/*" preview url="${DEMO_FILL_VIDEO.src}" filename="flower.mp4" full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "accepts",
+        name: "Custom accepts",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Audio</label>
+    <fig-input-file accepts=".mp3,.opus" label="Choose audio" full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "multiple",
+        name: "Multiple",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Files</label>
+    <fig-input-file label="Upload files" multiple full></fig-input-file>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "switch",
+    name: "Switch",
+    group: INPUT_GROUP_NAME,
+    description: "Boolean toggle controls for on/off states.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-switch></fig-switch>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "checkbox",
+    name: "Checkbox",
+    group: INPUT_GROUP_NAME,
+    description: "Checkbox controls with checked and indeterminate states.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-checkbox checked="true"></fig-checkbox>
+</div>`,
+      },
+      {
+        id: "group",
+        name: "Group",
+        markup: `<div class="prop-panel">
+  <fig-group name="Toppings">
+    <fig-field>
+      <fig-checkbox name="toppings" value="cheese" label="Cheese" checked></fig-checkbox>
+    </fig-field>
+    <fig-field>
+      <fig-checkbox name="toppings" value="pepperoni" label="Pepperoni" checked></fig-checkbox>
+    </fig-field>
+    <fig-field>
+      <fig-checkbox name="toppings" value="mushrooms" label="Mushrooms"></fig-checkbox>
+    </fig-field>
+    <fig-field>
+      <fig-checkbox name="toppings" value="olives" label="Olives"></fig-checkbox>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "in-menu",
+        name: "In menu",
+        markup: `<div class="prop-panel">
+  <fig-menu-item value="animated" role="menuitemcheckbox" aria-checked="true">
+    Animated
+    <fig-checkbox slot="append"></fig-checkbox>
+  </fig-menu-item>
+</div>`,
+      },
+      {
+        id: "disabled",
+        name: "Disabled",
+        markup: `<div class="prop-panel">
+  <fig-checkbox disabled checked label="Disabled"></fig-checkbox>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "radio",
+    name: "Radio",
+    group: INPUT_GROUP_NAME,
+    description: "Radio input for mutually exclusive option selection.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-radio name="size" value="medium" checked></fig-radio>
+</div>`,
+      },
+      {
+        id: "group",
+        name: "Group",
+        markup: `<div class="prop-panel">
+  <fig-group name="Size">
+    <fig-field>
+      <fig-radio name="size-group" value="small" label="Small"></fig-radio>
+    </fig-field>
+    <fig-field>
+      <fig-radio name="size-group" value="medium" label="Medium" checked></fig-radio>
+    </fig-field>
+    <fig-field>
+      <fig-radio name="size-group" value="large" label="Large"></fig-radio>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "independent",
+        name: "Multiple radios",
+        markup: `<div class="prop-panel">
+  <fig-group name="Independent options">
+    <fig-field>
+      <fig-radio name="enable-notifications" value="on" label="Notifications"></fig-radio>
+    </fig-field>
+    <fig-field>
+      <fig-radio name="enable-sounds" value="on" label="Sounds"></fig-radio>
+    </fig-field>
+    <fig-field>
+      <fig-radio name="enable-previews" value="on" label="Previews"></fig-radio>
+    </fig-field>
+  </fig-group>
+</div>`,
+      },
+      {
+        id: "disabled",
+        name: "Disabled",
+        markup: `<div class="prop-panel">
+  <fig-radio name="disabled-demo" value="off" disabled checked label="Disabled"></fig-radio>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "field",
+    name: "Field",
+    group: "Core components",
+    description: "Field wrapper for label + control layout and accessibility.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field data-playground-field-only-controls="true">
+    <label>Label</label>
+    <fig-slider></fig-slider>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "multiline",
+        name: "Multiline",
+        markup: `<div class="prop-panel">
+  <fig-field data-playground-field-only-controls="true">
+    <label>Description</label>
+    <fig-input-text multiline autoresize value="Design systems help teams build consistent interfaces by providing shared components, patterns, and guidance. They make product decisions easier to understand, reuse, and improve over time." placeholder="Enter description…" full></fig-input-text>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "segmented-control",
+    name: "Segmented Control",
+    group: INPUT_GROUP_NAME,
+    description:
+      "Segmented options for mutually exclusive selections using radio-group semantics and arrow-key navigation.",
+    examples: [
+      {
+        id: "default",
+        name: "Text",
+        markup: `<div class="prop-panel">
+  <fig-segmented-control sizing="equal" data-playground-hide-attrs="value,name">
+    <fig-segment value="left" selected>Left</fig-segment>
+    <fig-segment value="center">Center</fig-segment>
+    <fig-segment value="right">Right</fig-segment>
+  </fig-segmented-control>
+</div>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        markup: `<div class="prop-panel">
+  <fig-segmented-control size="large" sizing="equal" data-playground-hide-attrs="value,name">
+    <fig-segment value="left" selected>Left</fig-segment>
+    <fig-segment value="center">Center</fig-segment>
+    <fig-segment value="right">Right</fig-segment>
+  </fig-segmented-control>
+</div>`,
+      },
+      {
+        id: "icons",
+        name: "Icons",
+        markup: `<div class="prop-panel">
+  <fig-segmented-control sizing="equal" data-playground-hide-attrs="value,name">
+    <fig-segment value="light" selected>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 5C12.2761 5 12.5 5.22386 12.5 5.5V6.5C12.5 6.77614 12.2761 7 12 7C11.7239 7 11.5 6.77614 11.5 6.5V5.5C11.5 5.22386 11.7239 5 12 5ZM16 12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12ZM12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15ZM7.75687 7.05026C7.56161 6.85499 7.24503 6.85499 7.04977 7.05026C6.8545 7.24552 6.8545 7.5621 7.04977 7.75736L7.75687 8.46447C7.95214 8.65973 8.26872 8.65973 8.46398 8.46447C8.65924 8.26921 8.65924 7.95262 8.46398 7.75736L7.75687 7.05026ZM19 12C19 12.2761 18.7761 12.5 18.5 12.5H17.5C17.2239 12.5 17 12.2761 17 12C17 11.7239 17.2239 11.5 17.5 11.5H18.5C18.7761 11.5 19 11.7239 19 12ZM16.9502 7.75736C17.1455 7.5621 17.1455 7.24552 16.9502 7.05026C16.755 6.85499 16.4384 6.85499 16.2431 7.05026L15.536 7.75736C15.3408 7.95262 15.3408 8.26921 15.536 8.46447C15.7313 8.65973 16.0479 8.65973 16.2431 8.46447L16.9502 7.75736ZM12 17C12.2761 17 12.5 17.2239 12.5 17.5V18.5C12.5 18.7761 12.2761 19 12 19C11.7239 19 11.5 18.7761 11.5 18.5V17.5C11.5 17.2239 11.7239 17 12 17ZM16.2422 15.5356C16.047 15.3403 15.7304 15.3403 15.5351 15.5356C15.3399 15.7309 15.3399 16.0475 15.5351 16.2427L16.2422 16.9498C16.4375 17.1451 16.7541 17.1451 16.9493 16.9498C17.1446 16.7546 17.1446 16.438 16.9493 16.2427L16.2422 15.5356ZM7 12C7 12.2761 6.77614 12.5 6.5 12.5H5.5C5.22386 12.5 5 12.2761 5 12C5 11.7239 5.22386 11.5 5.5 11.5H6.5C6.77614 11.5 7 11.7239 7 12ZM8.46488 16.2427C8.66014 16.0475 8.66014 15.7309 8.46488 15.5356C8.26962 15.3403 7.95304 15.3403 7.75777 15.5356L7.05067 16.2427C6.85541 16.438 6.85541 16.7546 7.05067 16.9498C7.24593 17.1451 7.56251 17.1451 7.75777 16.9498L8.46488 16.2427Z" fill="currentColor"/>
+      </svg>
+    </fig-segment>
+    <fig-segment value="dark">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M15 14.9999C15.3647 14.9999 15.7224 14.9672 16.0703 14.9045C15.1624 16.1743 13.677 16.9997 12 16.9997C9.23858 16.9997 7 14.7611 7 11.9997C7 10.3226 7.82546 8.8371 9.09542 7.92923C9.03267 8.27722 9 8.63509 9 8.99986C9 12.3136 11.6863 14.9999 15 14.9999ZM17.3039 14.8075C17.6193 14.2129 16.8933 13.678 16.2412 13.8446C15.8443 13.946 15.4285 13.9999 15 13.9999C12.2386 13.9999 10 11.7613 10 8.99986C10 8.57132 10.0539 8.15537 10.1553 7.75842C10.3219 7.10631 9.78711 6.38032 9.19252 6.6957C7.29348 7.70298 6 9.70029 6 11.9997C6 15.3134 8.68629 17.9997 12 17.9997C14.2993 17.9997 16.2965 16.7064 17.3039 14.8075ZM16 7.49993C16 7.22379 15.7761 6.99993 15.5 6.99993C15.2239 6.99993 15 7.22379 15 7.49993V7.99993H14.5C14.2239 7.99993 14 8.22379 14 8.49993C14 8.77607 14.2239 8.99993 14.5 8.99993H15V9.49993C15 9.77607 15.2239 9.99993 15.5 9.99993C15.7761 9.99993 16 9.77607 16 9.49993V8.99993H16.5C16.7761 8.99993 17 8.77607 17 8.49993C17 8.22379 16.7761 7.99993 16.5 7.99993H16V7.49993Z" fill="currentColor"/>
+      </svg>
+    </fig-segment>
+  </fig-segmented-control>
+</div>`,
+      },
+    ],
+  },
+  ...figui3ChooserSections,
+  {
+    id: "toolbelt",
+    name: "Toolbelt",
+    group: "Navigation & Containers",
+    description:
+      "A selectable horizontal or vertical tool container with button or buttonless overflow.",
+    examples: [
+      {
+        id: "overflow",
+        name: "Overflow",
+        markup: `<div class="prop-panel">
+  <fig-toolbelt value="edit" aria-label="Design tools" data-playground-hide-field>
+    <fig-toolbelt-group aria-label="Create tools">
+    <fig-toolbelt-item value="add" aria-label="Add">
+      <fig-tooltip text="Add">
+        <fig-button variant="ghost" icon aria-label="Add" tabindex="-1"><fig-icon name="add"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="edit" aria-label="Edit" selected>
+      <fig-tooltip text="Edit">
+        <fig-button variant="ghost" icon aria-label="Edit" tabindex="-1"><fig-icon name="edit"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    </fig-toolbelt-group>
+    <fig-toolbelt-group aria-label="View tools">
+    <fig-toolbelt-item value="search" aria-label="Search">
+      <fig-tooltip text="Search">
+        <fig-button variant="ghost" icon aria-label="Search" tabindex="-1"><fig-icon name="search"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="preview" aria-label="Preview">
+      <fig-tooltip text="Preview">
+        <fig-button variant="ghost" icon aria-label="Preview" tabindex="-1"><fig-icon name="visible"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="hide" aria-label="Hide">
+      <fig-tooltip text="Hide">
+        <fig-button variant="ghost" icon aria-label="Hide" tabindex="-1"><fig-icon name="hidden"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    </fig-toolbelt-group>
+    <fig-toolbelt-group aria-label="File tools">
+    <fig-toolbelt-item value="duplicate" aria-label="Duplicate">
+      <fig-tooltip text="Duplicate">
+        <fig-button variant="ghost" icon aria-label="Duplicate" tabindex="-1"><fig-icon name="copy"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="upload" aria-label="Upload">
+      <fig-tooltip text="Upload">
+        <fig-button variant="ghost" icon aria-label="Upload" tabindex="-1"><fig-icon name="upload"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="download" aria-label="Download">
+      <fig-tooltip text="Download">
+        <fig-button variant="ghost" icon aria-label="Download" tabindex="-1"><fig-icon name="download"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    </fig-toolbelt-group>
+    <fig-toolbelt-group aria-label="Playback and settings">
+    <fig-toolbelt-item value="play" aria-label="Play">
+      <fig-tooltip text="Play">
+        <fig-button variant="ghost" icon aria-label="Play" tabindex="-1"><fig-icon name="play"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="pause" aria-label="Pause">
+      <fig-tooltip text="Pause">
+        <fig-button variant="ghost" icon aria-label="Pause" tabindex="-1"><fig-icon name="pause"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="adjust" aria-label="Adjust">
+      <fig-tooltip text="Adjust">
+        <fig-button variant="ghost" icon aria-label="Adjust" tabindex="-1"><fig-icon name="adjust"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="settings" aria-label="Settings">
+      <fig-tooltip text="Settings">
+        <fig-button variant="ghost" icon aria-label="Settings" tabindex="-1"><fig-icon name="settings"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    </fig-toolbelt-group>
+  </fig-toolbelt>
+</div>`,
+      },
+      {
+        id: "fixed-slots",
+        name: "Fixed prepend + append",
+        markup: `<div class="prop-panel">
+  <fig-toolbelt overflow="buttons" value="play" aria-label="Design tools" data-playground-hide-field>
+    <fig-toolbelt-group slot="prepend" aria-label="Primary tool">
+      <fig-toolbelt-item value="play" aria-label="Play" selected>
+        <fig-tooltip text="Play">
+          <fig-button variant="ghost" icon aria-label="Play" tabindex="-1"><fig-icon name="play"></fig-icon></fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+    </fig-toolbelt-group>
+    <fig-toolbelt-group aria-label="Create tools">
+      <fig-toolbelt-item value="add" aria-label="Add">
+        <fig-tooltip text="Add">
+          <fig-button variant="ghost" aria-label="Add" tabindex="-1"><fig-icon name="add" slot="prepend"></fig-icon>Add</fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+      <fig-toolbelt-item value="edit" aria-label="Edit">
+        <fig-tooltip text="Edit">
+          <fig-button variant="ghost" aria-label="Edit" tabindex="-1"><fig-icon name="edit" slot="prepend"></fig-icon>Edit</fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+      <fig-toolbelt-item value="search" aria-label="Search">
+        <fig-tooltip text="Search">
+          <fig-button variant="ghost" aria-label="Search" tabindex="-1"><fig-icon name="search" slot="prepend"></fig-icon>Search</fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+      <fig-toolbelt-item value="preview" aria-label="Preview">
+        <fig-tooltip text="Preview">
+          <fig-button variant="ghost" aria-label="Preview" tabindex="-1"><fig-icon name="visible" slot="prepend"></fig-icon>Preview</fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+      <fig-toolbelt-item value="duplicate" aria-label="Duplicate">
+        <fig-tooltip text="Duplicate">
+          <fig-button variant="ghost" aria-label="Duplicate" tabindex="-1"><fig-icon name="copy" slot="prepend"></fig-icon>Duplicate</fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+    </fig-toolbelt-group>
+    <fig-toolbelt-group slot="append" aria-label="Settings">
+      <fig-toolbelt-item value="settings" aria-label="Settings">
+        <fig-tooltip text="Settings">
+          <fig-button variant="ghost" icon aria-label="Settings" tabindex="-1"><fig-icon name="settings"></fig-icon></fig-button>
+        </fig-tooltip>
+      </fig-toolbelt-item>
+    </fig-toolbelt-group>
+  </fig-toolbelt>
+</div>`,
+      },
+      {
+        id: "vertical",
+        name: "Vertical",
+        markup: `<div class="prop-panel">
+  <fig-toolbelt layout="vertical" value="edit" aria-label="Design tools" data-playground-hide-field>
+    <fig-toolbelt-item value="add" aria-label="Add">
+      <fig-tooltip text="Add">
+        <fig-button variant="ghost" icon aria-label="Add" tabindex="-1"><fig-icon name="add"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="edit" aria-label="Edit" selected>
+      <fig-tooltip text="Edit">
+        <fig-button variant="ghost" icon aria-label="Edit" tabindex="-1"><fig-icon name="edit"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="search" aria-label="Search">
+      <fig-tooltip text="Search">
+        <fig-button variant="ghost" icon aria-label="Search" tabindex="-1"><fig-icon name="search"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="settings" aria-label="Settings">
+      <fig-tooltip text="Settings">
+        <fig-button variant="ghost" icon aria-label="Settings" tabindex="-1"><fig-icon name="settings"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+  </fig-toolbelt>
+</div>`,
+      },
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-toolbelt layout="horizontal" value="edit" aria-label="Design tools" data-playground-hide-field>
+    <fig-toolbelt-item value="add" aria-label="Add">
+      <fig-tooltip text="Add">
+        <fig-button variant="ghost" icon aria-label="Add" tabindex="-1"><fig-icon name="add"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="edit" aria-label="Edit" selected>
+      <fig-tooltip text="Edit">
+        <fig-button variant="ghost" icon aria-label="Edit" tabindex="-1"><fig-icon name="edit"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="search" aria-label="Search">
+      <fig-tooltip text="Search">
+        <fig-button variant="ghost" icon aria-label="Search" tabindex="-1"><fig-icon name="search"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="preview" aria-label="Preview">
+      <fig-tooltip text="Preview">
+        <fig-button variant="ghost" icon aria-label="Preview" tabindex="-1"><fig-icon name="visible"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="duplicate" aria-label="Duplicate">
+      <fig-tooltip text="Duplicate">
+        <fig-button variant="ghost" icon aria-label="Duplicate" tabindex="-1"><fig-icon name="copy"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="upload" aria-label="Upload">
+      <fig-tooltip text="Upload">
+        <fig-button variant="ghost" icon aria-label="Upload" tabindex="-1"><fig-icon name="upload"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="download" aria-label="Download">
+      <fig-tooltip text="Download">
+        <fig-button variant="ghost" icon aria-label="Download" tabindex="-1"><fig-icon name="download"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+    <fig-toolbelt-item value="settings" aria-label="Settings">
+      <fig-tooltip text="Settings">
+        <fig-button variant="ghost" icon aria-label="Settings" tabindex="-1"><fig-icon name="settings"></fig-icon></fig-button>
+      </fig-tooltip>
+    </fig-toolbelt-item>
+  </fig-toolbelt>
+</div>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        markup: `<div class="prop-panel">
+  <fig-toolbelt layout="horizontal" value="edit" aria-label="Design tools" data-playground-hide-field>
+${toolbeltSplitTool("add", "add", "Add", [
+  ["frame", "Frame"],
+  ["section", "Section"],
+  ["component", "Component"],
+])}
+${toolbeltSplitTool("edit", "edit", "Edit", [
+  ["vector", "Vector"],
+  ["pencil", "Pencil"],
+  ["bend", "Bend"],
+], true)}
+${toolbeltSplitTool("search", "search", "Search", [
+  ["find", "Find"],
+  ["replace", "Replace"],
+  ["find-in-file", "Find in file"],
+])}
+${toolbeltSplitTool("preview", "visible", "Preview", [
+  ["present", "Present"],
+  ["prototype", "Prototype"],
+  ["mirror", "Mirror"],
+])}
+${toolbeltSplitTool("duplicate", "copy", "Duplicate", [
+  ["duplicate", "Duplicate"],
+  ["copy", "Copy"],
+  ["paste", "Paste"],
+])}
+${toolbeltSplitTool("upload", "upload", "Upload", [
+  ["upload", "Upload"],
+  ["import", "Import"],
+  ["place", "Place image"],
+])}
+${toolbeltSplitTool("download", "download", "Download", [
+  ["png", "Export PNG"],
+  ["svg", "Export SVG"],
+  ["save", "Save"],
+])}
+${toolbeltSplitTool("settings", "settings", "Settings", [
+  ["preferences", "Preferences"],
+  ["shortcuts", "Shortcuts"],
+  ["plugins", "Plugins"],
+])}
+  </fig-toolbelt>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "tabs",
+    name: "Tabs",
+    group: "Navigation & Containers",
+    description:
+      "Tab interfaces for organizing grouped content panes with roving focus and tab panel associations.",
+    examples: [
+      {
+        id: "default",
+        name: "No content",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="buttons" data-playground-hide-field>
+    <fig-tab selected>General</fig-tab>
+    <fig-tab>Advanced</fig-tab>
+    <fig-tab>Export</fig-tab>
+  </fig-tabs>
+</div>`,
+      },
+      {
+        id: "single-tab",
+        name: "Single tab",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="buttons" data-playground-hide-field>
+    <fig-tab selected>General</fig-tab>
+  </fig-tabs>
+</div>`,
+      },
+      {
+        id: "tab-content",
+        name: "Tab content",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="buttons" data-playground-hide-field>
+    <fig-tab selected content="#tabs-general">General</fig-tab>
+    <fig-tab content="#tabs-advanced">Advanced</fig-tab>
+    <fig-tab content="#tabs-export">Export</fig-tab>
+  </fig-tabs>
+  <fig-tab-content id="tabs-general" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Name</label>
+        <fig-input-text value="My Component" full></fig-input-text>
+      </fig-field>
+      <fig-field>
+        <label>Visible</label>
+        <input type="checkbox" class="switch" checked>
+      </fig-field>
+      <fig-field>
+        <label>Opacity</label>
+        <fig-slider value="100" min="0" max="100" units="%" full></fig-slider>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="tabs-advanced" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Clip content</label>
+        <input type="checkbox" class="switch">
+      </fig-field>
+      <fig-field>
+        <label>Blend mode</label>
+        <fig-dropdown full>
+          <option selected>Pass through</option>
+          <option>Normal</option>
+          <option>Multiply</option>
+          <option>Screen</option>
+        </fig-dropdown>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="tabs-export" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Format</label>
+        <fig-options options="PNG,SVG,PDF" value="PNG" full></fig-options>
+      </fig-field>
+      <fig-field>
+        <label>Scale</label>
+        <fig-options options="1x,2x,3x" value="2x" full></fig-options>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+</div>`,
+      },
+      {
+        id: "overflow",
+        name: "Button overflow",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="buttons" data-playground-hide-field>
+    <fig-tab value="all" selected>All</fig-tab>
+    <fig-tab value="ascii">ASCII</fig-tab>
+    <fig-tab value="latin">Latin</fig-tab>
+    <fig-tab value="punctuation">Punctuation</fig-tab>
+    <fig-tab value="math">Math</fig-tab>
+    <fig-tab value="arrows">Arrows</fig-tab>
+    <fig-tab value="currency">Currency</fig-tab>
+    <fig-tab value="symbols">Symbols</fig-tab>
+    <fig-tab value="emoji">Emoji</fig-tab>
+  </fig-tabs>
+</div>`,
+      },
+      {
+        id: "overflow-fade",
+        name: "Fade overflow",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="fade" data-playground-hide-field>
+    <fig-tab value="all" selected>All</fig-tab>
+    <fig-tab value="ascii">ASCII</fig-tab>
+    <fig-tab value="latin">Latin</fig-tab>
+    <fig-tab value="punctuation">Punctuation</fig-tab>
+    <fig-tab value="math">Math</fig-tab>
+    <fig-tab value="arrows">Arrows</fig-tab>
+    <fig-tab value="currency">Currency</fig-tab>
+    <fig-tab value="symbols">Symbols</fig-tab>
+    <fig-tab value="emoji">Emoji</fig-tab>
+  </fig-tabs>
+</div>`,
+      },
+      {
+        id: "overflow-content",
+        name: "Overflow with content",
+        markup: `<div class="prop-panel">
+  <fig-tabs overflow="buttons" data-playground-hide-field>
+    <fig-tab value="all" content="#overflow-tabs-all" selected>All</fig-tab>
+    <fig-tab value="ascii" content="#overflow-tabs-ascii">ASCII</fig-tab>
+    <fig-tab value="latin" content="#overflow-tabs-latin">Latin</fig-tab>
+    <fig-tab value="punctuation" content="#overflow-tabs-punctuation">Punctuation</fig-tab>
+    <fig-tab value="math" content="#overflow-tabs-math">Math</fig-tab>
+    <fig-tab value="arrows" content="#overflow-tabs-arrows">Arrows</fig-tab>
+    <fig-tab value="currency" content="#overflow-tabs-currency">Currency</fig-tab>
+    <fig-tab value="symbols" content="#overflow-tabs-symbols">Symbols</fig-tab>
+    <fig-tab value="emoji" content="#overflow-tabs-emoji">Emoji</fig-tab>
+  </fig-tabs>
+  <fig-tab-content id="overflow-tabs-all" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Characters</label>
+        <fig-input-text value="All character sets" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-ascii" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Range</label>
+        <fig-input-text value="U+0000-007F" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-latin" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Range</label>
+        <fig-input-text value="Latin Extended" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-punctuation" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value=".,!?;:" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-math" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value="+ − × ÷ =" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-arrows" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value="← ↑ → ↓" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-currency" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value="$ € ¥ £" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-symbols" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value="★ ◆ ● ■" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+  <fig-tab-content id="overflow-tabs-emoji" data-playground-ignore-controls="true" data-playground-show-source="true">
+    <fig-group>
+      <fig-field>
+        <label>Preview</label>
+        <fig-input-text value="😀 🎉 🚀" full></fig-input-text>
+      </fig-field>
+    </fig-group>
+  </fig-tab-content>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "image",
+    name: "Image",
+    group: MEDIA_GROUP_NAME,
+    description:
+      "Image previews rendered inside fig-preview with optional keyboard-reachable upload overlay.",
+    examples: [
+      {
+        id: "with-src",
+        name: "Default",
+        markup: (() => {
+          const ratios = [
+            [640, 360],
+            [400, 400],
+            [360, 640],
+            [800, 500],
+            [500, 800],
+            [1200, 675],
+          ];
+          const [w, h] = ratios[Math.floor(Math.random() * ratios.length)];
+          return `<div class="prop-panel">
+  <fig-image src="${imageUrl(w, h)}" checkerboard="true"></fig-image>
+</div>`;
+        })(),
+      },
+      {
+        id: "animated-gif",
+        name: "Animated GIF",
+        markup: `<div class="prop-panel">
+  <fig-image src="https://media.giphy.com/media/WRQBXSCnEFJIuxktnw/giphy.gif" alt="Calculating equations" controls aspect-ratio="4/3" fit="cover" full></fig-image>
+</div>`,
+      },
+      {
+        id: "upload",
+        name: "Upload",
+        markup: `<div class="prop-panel">
+  <fig-image upload="icon" label="Add image" size="auto" full checkerboard="true"></fig-image>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "card",
+    name: "Card",
+    group: "Core components",
+    description:
+      "Media card that can generate a fig-image from src and a compact fig-footer from label attributes, or preserve authored media and footer content. Supports attribute-only selection chrome.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        description:
+          "Setting src composes a fig-image; label generates a compact fig-footer below it.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Autumn field" fit="fill" style="width: 10rem"></fig-card>`,
+      },
+      {
+        id: "horizontal",
+        name: "Horizontal",
+        description:
+          "direction=\"horizontal\" creates a list-style card with a 40px media preview (56px with size=\"large\") to the left of the label and sublabel.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Autumn field" sublabel="Landscape photography" direction="horizontal" fit="fill" full></fig-card>`,
+      },
+      {
+        id: "fade-overflow",
+        name: "Fade overflow",
+        description:
+          "label-overflow=\"fade\" applies a horizontal overflow fade to both the label and sublabel.",
+        markup: `<fig-card src="${landscapeUrl()}" label="A long landscape photography collection" sublabel="Generative tools and effects library" direction="horizontal" label-overflow="fade" fit="fill" full></fig-card>`,
+      },
+      {
+        id: "large",
+        name: "Large",
+        description:
+          "size=\"large\" increases the card padding and spacing around its generated label and sublabel footer.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Image effects" sublabel="Design tools" size="large" aspect-ratio="16/9" fit="fill" full></fig-card>`,
+      },
+      {
+        id: "manual",
+        name: "Manual",
+        description:
+          "Authors fig-preview and fig-footer directly. Omitting src, label, text, and sublabel prevents fig-card from generating media or footer content.",
+        markup: `<fig-card size="large" style="width: 10rem">
+  <fig-preview aspect-ratio="1/1" style="--fig-preview-background: transparent; display: grid">
+    <fig-spinner></fig-spinner>
+  </fig-preview>
+  <fig-footer>
+    <label class="fig-card-label">Loading preview</label>
+    <label class="fig-card-sublabel">Manual card</label>
+  </fig-footer>
+</fig-card>`,
+      },
+      {
+        id: "selected",
+        name: "Selected",
+        description:
+          "selected adds selection chrome without implementing click-to-toggle behavior.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Selected card" selected fit="fill" style="width: 10rem"></fig-card>`,
+      },
+      {
+        id: "sublabel",
+        name: "Sublabel",
+        description:
+          "sublabel adds secondary, single-line text below the generated label.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Shader pill" sublabel="Generative tools/effects" selected fit="fill" style="width: 10rem"></fig-card>`,
+      },
+      {
+        id: "two-line",
+        name: "Two-line label",
+        description:
+          "label-line-clamp=\"2\" allows the generated label to wrap to two lines before truncating.",
+        markup: `<fig-card src="${landscapeUrl()}" label="A longer title that wraps onto a second line" label-line-clamp="2" fit="fill" style="width: 10rem"></fig-card>`,
+      },
+      {
+        id: "aspect-ratio",
+        name: "Aspect ratio",
+        description:
+          "aspect-ratio is forwarded to the generated fig-image to control the media shape.",
+        markup: `<fig-card src="${landscapeUrl()}" label="Wide card" aspect-ratio="16/9" fit="fill" style="width: 12rem"></fig-card>`,
+      },
+      {
+        id: "grid",
+        name: "Grid",
+        description:
+          "Cards have no columns API; compose them in a CSS grid and use full for fluid sizing.",
+        markup: `<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacer-2); width: 100%">
+  <fig-card src="${landscapeUrl()}" label="Card A" sublabel="Library/effects" selected fit="fill" full></fig-card>
+  <fig-card src="${landscapeUrl()}" label="Card B" fit="fill" full></fig-card>
+  <fig-card src="${landscapeUrl()}" label="Card C" sublabel="Generative tools/effects" fit="fill" full></fig-card>
+  <fig-card src="${landscapeUrl()}" label="Card D" fit="fill" full></fig-card>
+  <fig-card src="${landscapeUrl()}" label="Card E" fit="fill" full></fig-card>
+  <fig-card src="${landscapeUrl()}" label="Card F" fit="fill" full></fig-card>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "media",
+    name: "Media",
+    group: MEDIA_GROUP_NAME,
+    description:
+      "Shared media host that renders image/video content inside fig-preview and attaches generated controls below the preview.",
+    examples: [
+      {
+        id: "image",
+        name: "Image type",
+        markup: `<div class="prop-panel">
+  <fig-media type="image" src="${imageUrl(640, 360, 2)}" fit="cover" size="auto" full checkerboard="true"></fig-media>
+</div>`,
+      },
+      {
+        id: "video",
+        name: "Video type",
+        markup: `<div class="prop-panel">
+  <fig-media type="video" ${videoExampleAttrs('autoplay="true" muted size="auto" full checkerboard="true"')}></fig-media>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "audio",
+    name: "Audio",
+    group: MEDIA_GROUP_NAME,
+    description:
+      "Audio playback composed from a synchronized waveform and shared media controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-audio src="https://samplelib.com/mp3/sample-15s.mp3" controls></fig-audio>
+</div>`,
+      },
+      {
+        id: "looping",
+        name: "Looping",
+        markup: `<div class="prop-panel">
+  <fig-audio src="https://samplelib.com/mp3/sample-15s.mp3" controls loop></fig-audio>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "media-controls",
+    name: "Media controls",
+    group: MEDIA_GROUP_NAME,
+    description: "Standalone playback controls UI (play/pause, scrubber, time) with self-contained state via `playing`, `duration`, and `time` attributes.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-media-controls duration="125" time="42"></fig-media-controls>
+</div>`,
+      },
+      {
+        id: "playing",
+        name: "Playing",
+        markup: `<div class="prop-panel">
+  <fig-media-controls duration="125" time="42" playing></fig-media-controls>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "video",
+    name: "Video",
+    group: MEDIA_GROUP_NAME,
+    description:
+      "Video previews rendered inside fig-preview with playback controls attached below the preview and optional upload overlay.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-video ${videoExampleAttrs('autoplay="true" muted size="auto" full checkerboard="true"')}></fig-video>
+</div>`,
+      },
+      {
+        id: "poster-only",
+        name: "Poster",
+        markup: `<div class="prop-panel">
+  <fig-video poster="${landscapeUrl()}" muted size="auto" full checkerboard="true"></fig-video>
+</div>`,
+      },
+      {
+        id: "upload",
+        name: "Upload",
+        markup: `<div class="prop-panel">
+  <fig-video upload="icon" label="Add video" controls="true" muted size="auto" full checkerboard="true"></fig-video>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "carousel",
+    name: "Carousel",
+    group: MEDIA_GROUP_NAME,
+    description:
+      "Timed image and video slides with generated previous, next, and play controls.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-carousel duration="3" loop>
+    <fig-image src="${imageUrl(640, 360, 0)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-video ${videoExampleAttrs('muted aspect-ratio="16/9" fit="cover" full')}></fig-video>
+    <fig-media type="image" src="${imageUrl(640, 360, 3)}" aspect-ratio="16/9" fit="cover" full></fig-media>
+  </fig-carousel>
+</div>`,
+      },
+      {
+        id: "timing",
+        name: "Item timing",
+        markup: `<div class="prop-panel">
+  <fig-carousel duration="5" autoplay="false">
+    <fig-image src="${imageUrl(640, 360, 2)}" carousel-duration="2" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-image src="${imageUrl(640, 360, 4)}" carousel-duration="8" aspect-ratio="16/9" fit="cover" full></fig-image>
+  </fig-carousel>
+</div>`,
+      },
+      {
+        id: "progress-pagination",
+        name: "Progress pagination",
+        markup: `<div class="prop-panel">
+  <fig-carousel navigation="dots" duration="3" loop>
+    <fig-image src="${imageUrl(640, 360, 1)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-image src="${imageUrl(640, 360, 2)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-image src="${imageUrl(640, 360, 3)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+  </fig-carousel>
+</div>`,
+      },
+      {
+        id: "animated-gif",
+        name: "Animated GIF",
+        markup: `<div class="prop-panel">
+  <fig-carousel navigation="dots" loop>
+    <fig-image src="https://media.giphy.com/media/3o7TKTDn976rzVgky4/giphy.gif" alt="Unamused kid" aspect-ratio="4/3" fit="cover" full></fig-image>
+    <fig-image src="https://media.giphy.com/media/WRQBXSCnEFJIuxktnw/giphy.gif" alt="Calculating equations" aspect-ratio="4/3" fit="cover" full></fig-image>
+    <fig-image src="https://media.giphy.com/media/FoH28ucxZFJZu/giphy.gif" alt="It's been 84 years" aspect-ratio="4/3" fit="cover" full></fig-image>
+  </fig-carousel>
+</div>`,
+      },
+      {
+        id: "static-pagination",
+        name: "Static pagination",
+        markup: `<div class="prop-panel">
+  <fig-carousel navigation="dots" progress="false" duration="3" loop>
+    <fig-image src="${imageUrl(640, 360, 0)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-image src="${imageUrl(640, 360, 4)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+    <fig-image src="${imageUrl(640, 360, 3)}" aspect-ratio="16/9" fit="cover" full></fig-image>
+  </fig-carousel>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "layer",
+    name: "Layer",
+    group: "Core components",
+    description:
+      "Layer row examples with treeitem semantics, expanded state, visibility state, and keyboard-toggleable chevrons.",
+    examples: [
+      {
+        id: "with-icon",
+        name: "With icon",
+        markup: `<div class="prop-panel">
+  <fig-layer open selected>
+    <div class="fig-layer-row">
+      <svg class="fig-layer-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="4" y="4" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.25"></rect>
+      </svg>
+      <label>Rectangle</label>
+    </div>
+    <fig-layer selected>
+      <div class="fig-layer-row">
+        <label>Nested rectangle</label>
+      </div>
+    </fig-layer>
+  </fig-layer>
+</div>`,
+      },
+      {
+        id: "without-icon",
+        name: "Without icon",
+        markup: `<div class="prop-panel">
+  <fig-layer>
+    <div class="fig-layer-row">
+      <label>Layer with no icon</label>
+    </div>
+    <fig-layer selected>
+      <div class="fig-layer-row">
+        <label>Nested layer with no icon</label>
+      </div>
+    </fig-layer>
+  </fig-layer>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "popup",
+    name: "Popup",
+    group: "Dialogs, Menus & Popups",
+    description:
+      "Anchored popup surface for contextual floating content. Try clicking then dragging the anchor.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button id="anchor-btn" data-playground-ignore-controls="true" style="position: relative; cursor: grab;" onpointerdown="if(event.button!==0)return; this.style.cursor='grabbing'; this.dataset.moved='0'; this.dataset.startX=String(event.clientX); this.dataset.startY=String(event.clientY); const t=this; const onMove=(e)=>{const dx=e.clientX-Number(t.dataset.startX||e.clientX); const dy=e.clientY-Number(t.dataset.startY||e.clientY); if(Math.abs(dx)+Math.abs(dy)<2)return; t.dataset.moved='1'; const tx=Number(t.dataset.tx||0)+dx; const ty=Number(t.dataset.ty||0)+dy; t.dataset.tx=String(tx); t.dataset.ty=String(ty); t.style.transform='translate('+tx+'px, '+ty+'px)'; t.dataset.startX=String(e.clientX); t.dataset.startY=String(e.clientY);}; const onEnd=()=>{t.style.cursor='grab'; window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onEnd); window.removeEventListener('pointercancel',onEnd);}; window.addEventListener('pointermove',onMove); window.addEventListener('pointerup',onEnd); window.addEventListener('pointercancel',onEnd);" onclick="if(this.dataset.moved==='1'){this.dataset.moved='0'; return;} const p=this.nextElementSibling; p && (p.hasAttribute('open') ? p.removeAttribute('open') : p.setAttribute('open','')); ">Anchor</fig-button>
+  <dialog is="fig-popup" open closedby="none" anchor="#anchor-btn" position="center right" offset="8 8" viewport-margin="8">
+    <fig-header>
+      <h3>Popup</h3>
+    </fig-header>
+    <fig-content>
+      <p>Popup content</p>
+    </fig-content>
+  </dialog>
+</div>`,
+      },
+      {
+        id: "fields",
+        name: "Fields",
+        markup: `<div class="prop-panel">
+  <fig-button id="popup-fields-anchor" variant="secondary" data-playground-ignore-controls="true" aria-haspopup="dialog" aria-expanded="true" aria-controls="popup-fields" onclick="const p=document.getElementById('popup-fields');p.open=!p.open;this.setAttribute('aria-expanded',String(p.open));">Appearance</fig-button>
+  <dialog is="fig-popup" id="popup-fields" open anchor="#popup-fields-anchor" position="left" offset="8 8" viewport-margin="8" onclose="document.getElementById('popup-fields-anchor')?.setAttribute('aria-expanded','false')" style="width: 240px;">
+    <fig-header>
+      <h3>Appearance</h3>
+    </fig-header>
+    <fig-content padding="none">
+      <fig-group name="Appearance" collapsible open>
+        <fig-property label="Opacity">
+          <fig-slider slot="input" value="80" min="0" max="100" units="%" full></fig-slider>
+        </fig-property>
+        <fig-property label="Visible">
+          <fig-switch slot="input" checked></fig-switch>
+        </fig-property>
+        <fig-property label="Blend mode">
+          <fig-dropdown slot="input" full>
+            <option selected>Pass through</option>
+            <option>Normal</option>
+            <option>Multiply</option>
+            <option>Screen</option>
+          </fig-dropdown>
+        </fig-property>
+        <fig-property label="Gradient">
+          <fig-input-gradient slot="input" edit="picker" value='{"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#7AEA66","opacity":100},{"position":67,"color":"#4700FF","opacity":53},{"position":100,"color":"#FF00BF","opacity":100}]}}' full></fig-input-gradient>
+        </fig-property>
+      </fig-group>
+    </fig-content>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "toast",
+    name: "Toast",
+    group: "Core components",
+    description:
+      "Toast notifications for temporary feedback messages with polite/assertive live-region semantics.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="document.getElementById('demo-toast').showToast()">Show Toast</fig-button>
+  <dialog id="demo-toast" is="fig-toast" theme="auto" duration="3000" offset="16">Saved</dialog>
+</div>`,
+      },
+      {
+        id: "with-actions",
+        name: "With actions",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="document.getElementById('demo-toast-actions').showToast()">Show Toast</fig-button>
+  <dialog id="demo-toast-actions" is="fig-toast" theme="auto" dismiss="true" duration="3000" offset="16">Applied to your layers<fig-button variant="secondary">Learn more</fig-button></dialog>
+</div>`,
+      },
+      {
+        id: "processing",
+        name: "Processing",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="document.getElementById('demo-toast-processing').showToast()">Show Toast</fig-button>
+  <dialog id="demo-toast-processing" is="fig-toast" theme="auto" duration="3000" offset="16"><fig-spinner></fig-spinner>Processing&hellip;</dialog>
+</div>`,
+      },
+      {
+        id: "error",
+        name: "Error",
+        markup: `<div class="prop-panel">
+  <fig-button data-playground-ignore-controls="true" onclick="document.getElementById('demo-toast-error').showToast()">Show Error</fig-button>
+  <dialog id="demo-toast-error" is="fig-toast" theme="danger" live="assertive" icon="warning" dismiss="true" duration="3000" offset="16"><strong>Failed to upload</strong><fig-button variant="secondary">Retry</fig-button></dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "icon",
+    name: "Icon",
+    group: "Core components",
+    description:
+      "Masked icons from design tokens (--icon-24-* at medium display size, --icon-16-* at small).",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        description:
+          "Masked icons from --icon-24-* design tokens at 1.5rem display size (medium, the default).<br><br>The color attribute accepts aliases like color=\"brand\", color=\"danger\", or color=\"component\".",
+        markup: buildFigIconExampleMarkup("24"),
+      },
+      {
+        id: "character",
+        name: "Character",
+        description:
+          "Single character label icon, often used in prepended input fields",
+        markup: `<div class="prop-panel">
+  <fig-icon>X</fig-icon>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "spinner",
+    name: "Spinner",
+    group: "Load indicators",
+    description:
+      "Loading spinner indicator for async operations with status semantics and a default accessible label.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-spinner></fig-spinner>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "button-play",
+    name: "Play button",
+    group: "Load indicators",
+    description:
+      "Play/pause button with a circular progress ring. It runs its own timer unless a controlled progress value is provided.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-button-play duration="5"></fig-button-play>
+</div>`,
+      },
+      {
+        id: "controlled",
+        name: "Controlled",
+        markup: `<div class="prop-panel">
+  <fig-button-play progress="0.65" playing></fig-button-play>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "shimmer",
+    name: "Shimmer",
+    group: "Load indicators",
+    description:
+      "Animated loading placeholder skeleton that stays hidden from assistive tech unless explicitly named.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-shimmer duration="1.5s"><span>Testing...</span></fig-shimmer>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "separator",
+    name: "Separator",
+    group: "Core components",
+    description:
+      "Visual divider between content groups with an optional accessible label.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-separator></fig-separator>
+</div>`,
+      },
+      {
+        id: "labeled",
+        name: "Labeled",
+        markup: `<div class="prop-panel">
+  <fig-separator label="Group"></fig-separator>
+</div>`,
+      },
+      {
+        id: "vertical",
+        name: "Vertical",
+        markup: `<div class="prop-panel" style="display: flex; align-items: center; gap: var(--spacer-2); height: 2rem;">
+  <span>Before</span>
+  <fig-separator direction="vertical"></fig-separator>
+  <span>After</span>
+</div>`,
+      },
+      {
+        id: "menu-alias",
+        name: "Menu alias",
+        markup: `<div class="prop-panel">
+  <fig-menu-separator></fig-menu-separator>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "menu",
+    name: "Menu",
+    group: "Dialogs, Menus & Popups",
+    description:
+      "Context menu triggered by a button with ARIA trigger state, roving item focus, Escape close, and disabled item handling. fig-menu-item also works as a list row in fig-popup.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Actions</fig-button>
+    <fig-menu-item value="cut">Cut</fig-menu-item>
+    <fig-menu-item value="copy">Copy</fig-menu-item>
+    <fig-menu-item value="paste">Paste</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete">Delete</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "subtle-items",
+        name: "Subtle items",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Actions</fig-button>
+    <fig-menu-item value="cut" subtle>Cut</fig-menu-item>
+    <fig-menu-item value="copy" subtle>Copy</fig-menu-item>
+    <fig-menu-item value="paste" subtle>Paste</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete" subtle>Delete</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "icon-button",
+        name: "Icon button",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom right">
+    <fig-button variant="ghost" icon fig-menu-trigger aria-label="More actions">
+      <fig-icon name="more"></fig-icon>
+    </fig-button>
+    <fig-menu-item value="rename">Rename</fig-menu-item>
+    <fig-menu-item value="duplicate">Duplicate</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete">Delete</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "overflow",
+        name: "Overflow",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Insert</fig-button>
+    <fig-menu-item value="frame">Frame</fig-menu-item>
+    <fig-menu-item value="section">Section</fig-menu-item>
+    <fig-menu-item value="slice">Slice</fig-menu-item>
+    <fig-separator label="Shape"></fig-separator>
+    <fig-menu-item value="rectangle">Rectangle</fig-menu-item>
+    <fig-menu-item value="line">Line</fig-menu-item>
+    <fig-menu-item value="arrow">Arrow</fig-menu-item>
+    <fig-menu-item value="ellipse">Ellipse</fig-menu-item>
+    <fig-menu-item value="polygon">Polygon</fig-menu-item>
+    <fig-menu-item value="star">Star</fig-menu-item>
+    <fig-separator label="Media"></fig-separator>
+    <fig-menu-item value="image">Image</fig-menu-item>
+    <fig-menu-item value="video">Video</fig-menu-item>
+    <fig-menu-item value="audio">Audio</fig-menu-item>
+    <fig-menu-item value="document">Document</fig-menu-item>
+    <fig-menu-item value="link">Link</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "disabled-items",
+        name: "Disabled items",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Edit</fig-button>
+    <fig-menu-item value="undo">Undo</fig-menu-item>
+    <fig-menu-item value="redo" disabled>Redo</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="cut">Cut</fig-menu-item>
+    <fig-menu-item value="copy">Copy</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "labeled-separator",
+        name: "Labeled separator",
+        markup: `<div class="prop-panel">
+  <fig-menu position="bottom left">
+    <fig-button variant="secondary" fig-menu-trigger>Arrange</fig-button>
+    <fig-separator label="Bring"></fig-separator>
+    <fig-menu-item value="bring-to-front">Bring to front</fig-menu-item>
+    <fig-menu-item value="bring-forward">Bring forward</fig-menu-item>
+    <fig-separator label="Send"></fig-separator>
+    <fig-menu-item value="send-backward">Send backward</fig-menu-item>
+    <fig-menu-item value="send-to-back">Send to back</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+      {
+        id: "popup-list",
+        name: "Popup list",
+        markup: `<div class="prop-panel">
+  <fig-button id="version-history-anchor" data-playground-ignore-controls="true" onclick="const p=this.nextElementSibling; p && (p.open = !p.open);">Version history</fig-button>
+  <dialog is="fig-popup" title="Version history" drag handle="fig-header" closedby="any" anchor="#version-history-anchor" position="bottom left" offset="0 8" style="width: 18rem; max-height: 400px;">
+    <fig-content padding="none">
+${versionHistoryGroup("Today", [
+  ["v12", "Tweaked interpolation", "Version 12"],
+  ["v11", "Changed properties", "Version 11"],
+  ["v10", "Updated shader source", "Version 10"],
+  ["v9", "Restored Version 3", "Version 9 · Restored"],
+])}
+${versionHistoryGroup("Yesterday", [
+  ["v8", "Renamed layers", "Version 8"],
+  ["v7", "Adjusted fill opacity", "Version 7"],
+  ["v6", "Added noise texture", "Version 6"],
+])}
+${versionHistoryGroup("August 16", [
+  ["v5", "Cropped bitmap", "Version 5"],
+  ["v4", "Tightened padding", "Version 4"],
+  ["v3", "Initial saved version", "Version 3"],
+])}
+${versionHistoryGroup("August 11", [
+  ["v2", "Duplicated frame", "Version 2"],
+  ["v1", "Created file", "Version 1"],
+])}
+    </fig-content>
+  </dialog>
+</div>`,
+      },
+      {
+        id: "context",
+        name: "Context menu",
+        markup: `<div class="prop-panel">
+  <fig-menu trigger="contextmenu" position="bottom left">
+    <div fig-menu-trigger tabindex="0" data-playground-ignore-controls="true" data-playground-show-source="true" style="display: grid; place-items: center; min-height: 4rem; padding: var(--spacer-4); border: 1px dashed var(--figma-color-border); border-radius: var(--radius-medium); color: var(--figma-color-text-secondary); user-select: none;">
+      Right-click this area
+    </div>
+    <fig-menu-item value="copy">Copy</fig-menu-item>
+    <fig-menu-item value="paste">Paste</fig-menu-item>
+    <fig-separator></fig-separator>
+    <fig-menu-item value="delete">Delete</fig-menu-item>
+  </fig-menu>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "color-tip",
+    name: "Color Tip",
+    group: "Utilities",
+    description: "Solid color tip built on the fill picker interaction model.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-color-tip value="#FF4EF099"></fig-color-tip>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "truncate",
+    name: "Truncate",
+    group: "Utilities",
+    description:
+      "A text truncation utility supporting ellipsis and fade overflow with an optional tooltip.",
+    examples: [
+      {
+        id: "right",
+        name: "Right",
+        markup: `<div class="prop-panel">
+  <fig-truncate text="This is a very long piece of text that should be truncated on the right side" tooltip style="max-width: 50%;"></fig-truncate>
+</div>`,
+      },
+      {
+        id: "left",
+        name: "Left",
+        markup: `<div class="prop-panel">
+  <fig-truncate text="/Users/rogie/Documents/Projects/design-system/components" position="left" tooltip style="max-width: 50%;"></fig-truncate>
+</div>`,
+      },
+      {
+        id: "middle",
+        name: "Middle",
+        markup: `<div class="prop-panel">
+  <fig-truncate text="Stateside_feat_Bladee_and_Mechatok.mp3" position="middle" tail=".mp3" tooltip style="max-width: 50%;"></fig-truncate>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "audio-waveform",
+    name: "Audio waveform",
+    group: "Utilities",
+    description:
+      "A responsive waveform generated from a CORS-enabled audio URL.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-audio-waveform url="https://samplelib.com/mp3/sample-15s.mp3" progress="0.35" full></fig-audio-waveform>
+</div>`,
+      },
+      {
+        id: "ribbon",
+        name: "Ribbon",
+        markup: `<div class="prop-panel">
+  <fig-audio-waveform variant="ribbon" url="https://samplelib.com/mp3/sample-15s.mp3" progress="0.35" full></fig-audio-waveform>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "stack",
+    name: "Stack",
+    group: "Utilities",
+    description:
+      "Layout primitive for horizontal rows, vertical columns, and grids with token-based gaps.",
+    examples: [
+      {
+        id: "horizontal",
+        name: "Horizontal",
+        markup: `<div class="prop-panel">
+  <fig-stack justify="between" full>
+    <label>Layers</label>
+    <fig-button variant="ghost" icon aria-label="Add layer"><fig-icon name="add"></fig-icon></fig-button>
+  </fig-stack>
+</div>`,
+      },
+      {
+        id: "vertical",
+        name: "Vertical",
+        markup: `<div class="prop-panel">
+  <fig-stack direction="vertical" gap="1">
+    <fig-button>First</fig-button>
+    <fig-button variant="secondary">Second</fig-button>
+    <fig-button variant="ghost">Third</fig-button>
+  </fig-stack>
+</div>`,
+      },
+      {
+        id: "grid",
+        name: "Grid",
+        markup: `<div class="prop-panel">
+  <fig-stack direction="grid" columns="4" gap="1" style="width: 160px;">
+    <fig-swatch value="#0D99FF"></fig-swatch>
+    <fig-swatch value="#FFC700"></fig-swatch>
+    <fig-swatch value="#14AE5C"></fig-swatch>
+    <fig-swatch value="#F24822"></fig-swatch>
+    <fig-swatch value="#9747FF"></fig-swatch>
+    <fig-swatch value="#FF24BD"></fig-swatch>
+    <fig-swatch value="#1BC47D"></fig-swatch>
+    <fig-swatch value="#000000"></fig-swatch>
+  </fig-stack>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "overflow-fade",
+    name: "Overflow Fade",
+    group: "Utilities",
+    description:
+      "A progressively enhanced scroll utility that fades edges only when more content is available in that direction. Use the Fade control to preview both edges or either edge independently.",
+    examples: [
+      {
+        id: "default",
+        name: "Vertical",
+        markup: `<div class="prop-panel">
+  <div class="fig-overflow-fade" data-playground-control="fig-overflow-fade" style="width: 100%; max-height: 12rem; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary);">
+    <fig-content>
+      <p>Design systems turn repeated decisions into shared foundations.</p>
+      <p>Components encode interaction, accessibility, and visual behavior.</p>
+      <p>Tokens keep color, spacing, and typography consistent.</p>
+      <p>Patterns show how components work together in real interfaces.</p>
+      <p>Documentation makes those decisions understandable and reusable.</p>
+      <p>Good systems evolve as product needs and platform capabilities change.</p>
+    </fig-content>
+  </div>
+</div>`,
+      },
+      {
+        id: "horizontal",
+        name: "Horizontal",
+        markup: `<div class="prop-panel">
+  <div class="fig-overflow-fade fig-overflow-fade-horizontal" data-playground-control="fig-overflow-fade" style="width: 100%; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary);">
+    <div style="display: flex; width: max-content; gap: var(--spacer-2); padding: var(--spacer-3);">
+      <div style="display: grid; place-items: center; width: 10rem; min-height: 6rem; flex: none; border: 1px solid var(--figma-color-border); border-radius: var(--radius-medium);">Foundations</div>
+      <div style="display: grid; place-items: center; width: 10rem; min-height: 6rem; flex: none; border: 1px solid var(--figma-color-border); border-radius: var(--radius-medium);">Components</div>
+      <div style="display: grid; place-items: center; width: 10rem; min-height: 6rem; flex: none; border: 1px solid var(--figma-color-border); border-radius: var(--radius-medium);">Patterns</div>
+      <div style="display: grid; place-items: center; width: 10rem; min-height: 6rem; flex: none; border: 1px solid var(--figma-color-border); border-radius: var(--radius-medium);">Resources</div>
+    </div>
+  </div>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "handle",
+    name: "Handle",
+    group: "Utilities",
+    description:
+      "A draggable handle element used as a visual affordance in interactive controls like sliders, easing curves, and origin grids.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <div data-playground-unwrap="true" style="aspect-ratio: 1/1; width: 100%; position: relative; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary); display: grid; place-items: center;">
+    <fig-handle drag drag-snapping="modifier" data-playground-hide-field></fig-handle>
+  </div>
+</div>`,
+      },
+      {
+        id: "minimal",
+        name: "Minimal",
+        markup: `<div class="prop-panel">
+  <div data-playground-unwrap="true" style="aspect-ratio: 1/1; width: 100%; position: relative; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary); display: grid; place-items: center;">
+    <fig-handle type="minimal" drag drag-snapping="modifier" data-playground-hide-field></fig-handle>
+  </div>
+</div>`,
+      },
+      {
+        id: "color",
+        name: "Color",
+        markup: `<div class="prop-panel">
+  <div data-playground-unwrap="true" style="aspect-ratio: 1/1; width: 100%; position: relative; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary); display: grid; place-items: center;">
+    <fig-handle type="color" color="#0D99FF" drag data-playground-hide-field></fig-handle>
+  </div>
+</div>`,
+      },
+      {
+        id: "color-tip",
+        name: "Color tip",
+        markup: `<div class="prop-panel">
+  <div data-playground-unwrap="true" style="aspect-ratio: 1/1; width: 100%; position: relative; border-radius: var(--radius-medium); background: var(--figma-color-bg-secondary); display: grid; place-items: center;">
+    <fig-handle type="color" tip="color" color="#0D99FF" data-playground-hide-field></fig-handle>
+  </div>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-button",
+    name: "<button>",
+    group: "Native elements",
+    description: "Plain HTML button with inherited reset and alignment.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <button>My button</button>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-select",
+    name: "<select>",
+    group: "Native elements",
+    description: "Native select element with border, radius, and height styling.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <select>
+    <option value="one" selected>Option one</option>
+    <option value="two">Option two</option>
+    <option value="three">Option three</option>
+  </select>
+</div>`,
+      },
+      {
+        id: "multiple",
+        name: "Multiple",
+        markup: `<div class="prop-panel">
+  <select multiple size="5">
+    <option value="one" selected>Option one</option>
+    <option value="two" selected>Option two</option>
+    <option value="three">Option three</option>
+    <option value="four">Option four</option>
+    <option value="five">Option five</option>
+  </select>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-input",
+    name: "<input>",
+    group: "Native elements",
+    description:
+      "Native input elements with FigUI styling for text, numeric, choice, color, and list controls.",
+    examples: [
+      {
+        id: "text",
+        name: "text",
+        markup: `<div class="prop-panel">
+  <input type="text" placeholder="Enter text..." value="Hello world">
+</div>`,
+      },
+      {
+        id: "number",
+        name: "number",
+        markup: `<div class="prop-panel">
+  <input type="number" value="16" min="0" max="100" step="1">
+</div>`,
+      },
+      {
+        id: "password",
+        name: "password",
+        markup: `<div class="prop-panel">
+  <input type="password" value="password" aria-label="Password">
+</div>`,
+      },
+      {
+        id: "email",
+        name: "email",
+        markup: `<div class="prop-panel">
+  <input type="email" value="hello@example.com" aria-label="Email">
+</div>`,
+      },
+      {
+        id: "url",
+        name: "url",
+        markup: `<div class="prop-panel">
+  <input type="url" value="https://figma.com" aria-label="URL">
+</div>`,
+      },
+      {
+        id: "search",
+        name: "search",
+        markup: `<div class="prop-panel">
+  <input type="search" placeholder="Search..." aria-label="Search">
+</div>`,
+      },
+      {
+        id: "tel",
+        name: "tel",
+        markup: `<div class="prop-panel">
+  <input type="tel" value="+1 555 0100" aria-label="Telephone">
+</div>`,
+      },
+      {
+        id: "datalist",
+        name: "list",
+        markup: `<div class="prop-panel">
+  <input type="text" list="native-input-options" placeholder="Choose an option">
+  <datalist id="native-input-options">
+    <option value="Option one"></option>
+    <option value="Option two"></option>
+    <option value="Option three"></option>
+  </datalist>
+</div>`,
+      },
+      {
+        id: "checkbox",
+        name: "checkbox",
+        markup: `<div class="prop-panel">
+  <input type="checkbox" checked>
+</div>`,
+      },
+      {
+        id: "switch",
+        name: "switch",
+        markup: `<div class="prop-panel">
+  <input type="checkbox" class="switch" checked>
+</div>`,
+      },
+      {
+        id: "radio",
+        name: "radio",
+        markup: `<div class="prop-panel">
+  <label class="radio"><input type="radio" name="native-demo" value="a" checked> Option A</label>
+  <label class="radio"><input type="radio" name="native-demo" value="b"> Option B</label>
+</div>`,
+      },
+      {
+        id: "color",
+        name: "color",
+        markup: `<div class="prop-panel">
+  <input type="color" value="#0D99FF">
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-textarea",
+    name: "<textarea>",
+    group: "Native elements",
+    description: "Native textarea with full-width block display and focus ring.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <textarea rows="3" placeholder="Write something...">Some multiline content here</textarea>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-progress",
+    name: "<progress>",
+    group: "Native elements",
+    description:
+      "Native progress indicator for determinate and indeterminate loading states.",
+    examples: [
+      {
+        id: "determinate",
+        name: "Determinate",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label for="upload-progress">Progress</label>
+    <progress id="upload-progress" value="64" max="100">64%</progress>
+  </fig-field>
+</div>`,
+      },
+      {
+        id: "indeterminate",
+        name: "Indeterminate",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label for="sync-progress">Syncing</label>
+    <progress id="sync-progress" data-playground-hide-attrs="value,max" data-playground-strip-attrs="value,max">Loading</progress>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-meter",
+    name: "<meter>",
+    group: "Native elements",
+    description:
+      "Native meter displaying a scalar value within a known range.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fig-field>
+    <label for="storage-meter">Storage</label>
+    <meter id="storage-meter" min="0" max="100" low="30" high="80" optimum="0" value="64">64%</meter>
+  </fig-field>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-fieldset",
+    name: "<fieldset>",
+    group: "Native elements",
+    description:
+      "Native fieldset with flex column layout and grid-based labels.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <fieldset>
+    <legend>Settings</legend>
+    <label><span>Name</span><input type="text" value="Rogie"></label>
+    <label><span>Size</span><input type="number" value="24"></label>
+  </fieldset>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-details",
+    name: "<details>",
+    group: "Native elements",
+    description:
+      "Native details/summary with animated chevron and collapse behavior.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <details open>
+    <summary>Advanced options</summary>
+    <p>Hidden content revealed on toggle.</p>
+  </details>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-headings",
+    name: "Headings",
+    group: "Native elements",
+    description: "Native heading levels using FigUI typography.",
+    examples: [
+      {
+        id: "h1",
+        name: "h1",
+        markup: `<div class="prop-panel">
+  <h1>Heading 1</h1>
+</div>`,
+      },
+      {
+        id: "h2",
+        name: "h2",
+        markup: `<div class="prop-panel">
+  <h2>Heading 2</h2>
+</div>`,
+      },
+      {
+        id: "h3",
+        name: "h3",
+        markup: `<div class="prop-panel">
+  <h3>Heading 3</h3>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-table",
+    name: "<table>",
+    group: "Native elements",
+    description: "Native table markup for structured tabular data.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <table>
+    <caption>Layer properties</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Value</th>
+        <th scope="col">Unit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Width</th>
+        <td>320</td>
+        <td>px</td>
+      </tr>
+      <tr>
+        <th scope="row">Height</th>
+        <td>240</td>
+        <td>px</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Properties</th>
+        <td>2</td>
+        <td>total</td>
+      </tr>
+    </tfoot>
+  </table>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-dialog",
+    name: "<dialog>",
+    group: "Native elements",
+    description: "Native dialog surface using FigUI radius, color, and elevation.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <dialog open>
+    <h3>Dialog title</h3>
+    <p>Native dialog content.</p>
+  </dialog>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-popover",
+    name: "[popover]",
+    group: "Native elements",
+    description: "Native popover surface opened by a declarative trigger.",
+    examples: [
+      {
+        id: "default",
+        name: "Default",
+        markup: `<div class="prop-panel">
+  <button popovertarget="native-popover-example">Show popover</button>
+  <div id="native-popover-example" popover>
+    <p>Native popover content.</p>
+  </div>
+</div>`,
+      },
+    ],
+  },
+  {
+    id: "native-hr",
+    name: "<hr>",
+    group: "Native elements",
+    description: "Native horizontal rule styled as a 1px border divider.",
+    examples: [
+      {
+        id: "horizontal",
+        name: "Horizontal",
+        markup: `<div class="prop-panel">
+  <p>Content above</p>
+  <hr>
+  <p>Content below</p>
+</div>`,
+      },
+      {
+        id: "vertical",
+        name: "Vertical",
+        markup: `<div class="prop-panel" style="display: flex; align-items: stretch; height: 4rem;">
+  <span>Left</span>
+  <hr vertical>
+  <span>Right</span>
+</div>`,
+      },
+    ],
+  },
+]);
+
+const buttonOverflowTruncationExample: Example = {
+  id: "overflow-truncation",
+  name: "Overflow / truncation",
+  description:
+    'Wrap button text in an authored <code>&lt;label&gt;</code> or an element with <code>slot="label"</code> to allow long labels to truncate with an ellipsis.',
+  markup: `<div class="prop-panel">
+  <fig-field>
+    <label>Effect</label>
+    <fig-button variant="property" full>
+      <fig-icon name="settings" slot="prepend"></fig-icon>
+      <span slot="label">Drop shadow with a deliberately long name that truncates</span>
+    </fig-button>
+  </fig-field>
+</div>`,
+};
+
+const groupNoChildrenExample: Example = {
+  id: "no-children",
+  name: "No children",
+  markup: `<div class="prop-panel">
+  <fig-group>
+    <fig-header borderless>
+      <h3>Group name</h3>
+      <fig-button variant="ghost" icon="true" aria-label="Add item">
+        <fig-icon name="add"></fig-icon>
+      </fig-button>
+    </fig-header>
+  </fig-group>
+</div>`,
+};
+
+const groupCustomHeaderExample: Example = {
+  id: "custom-header",
+  name: "Custom header",
+  title: "Group with a custom header",
+  description:
+    "Add a fig-header as a direct child to replace the generated header. Include an h3 for the group's accessible name, and add actions alongside it.",
+  markup: `<div class="prop-panel">
+  <fig-group>
+    <fig-header borderless>
+      <h3>Fill</h3>
+      <fig-button variant="ghost" icon="true" aria-label="Add fill">
+        <fig-icon name="add"></fig-icon>
+      </fig-button>
+    </fig-header>
+    <fig-field>
+      <label>Background</label>
+      <fig-input-color value="#FFFFFF" text="true" full></fig-input-color>
+    </fig-field>
+    <fig-field>
+      <label>Opacity</label>
+      <fig-slider value="100" min="0" max="100" units="%" full></fig-slider>
+    </fig-field>
+    <fig-field>
+      <label>Blend mode</label>
+      <fig-dropdown full>
+        <option selected>Normal</option>
+        <option>Multiply</option>
+        <option>Screen</option>
+      </fig-dropdown>
+    </fig-field>
+    <fig-field>
+      <label>Visible</label>
+      <fig-switch checked></fig-switch>
+    </fig-field>
+  </fig-group>
+</div>`,
+};
+
+function insertExampleAfter(
+  sections: Section[],
+  sectionId: string,
+  afterExampleId: string,
+  example: Example,
+): Section[] {
+  return sections.map((section) => {
+    if (section.id !== sectionId) return section;
+    const examples = [...section.examples];
+    const index = examples.findIndex((entry) => entry.id === afterExampleId);
+    examples.splice(index === -1 ? examples.length : index + 1, 0, example);
+    return { ...section, examples };
+  });
+}
+
+export const figui3Sections: Section[] = insertExampleAfter(
+  insertExampleAfter(
+    insertExampleAfter(
+      mergePropsKitSections(figui3BaseSections),
+      "button",
+      "default",
+      buttonOverflowTruncationExample,
+    ),
+    "group",
+    "default",
+    groupNoChildrenExample,
+  ),
+  "group",
+  "no-names",
+  groupCustomHeaderExample,
+);
