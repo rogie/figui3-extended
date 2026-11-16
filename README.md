@@ -6,7 +6,7 @@ Editor and experimental Lab web components for
 ## Install
 
 ```sh
-npm install @rogieking/figui3 @rogieking/figui3-extended
+npm install @rogieking/figui3 github:rogie/figui3-extended#v1.0.0
 ```
 
 ```js
@@ -25,3 +25,6 @@ import "@rogieking/figui3-extended/fig-lab.css";
 
 The package is licensed under PolyForm Shield 1.0.0. FigUI3 core is separately
 licensed under MIT.
+
+FigUI3 Extended is distributed from this public GitHub repository and is not
+published to npm.
