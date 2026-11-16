@@ -7,7 +7,7 @@ Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
 import {
   figDefineCustomElement,
   figInvariantId,
-} from "../../shared/invariants.js";
+} from "@rogieking/figui3/extended-runtime.js";
 
 const HTMLElement = globalThis.HTMLElement ?? class {};
 

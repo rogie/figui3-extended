@@ -4,10 +4,10 @@ https://polyformproject.org/licenses/shield/1.0.0
 Required Notice: Copyright (c) 2026 Rogie King
 Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
 */
-import "../../../fig.js";
-import { figConvertRGB, figHexToRGB } from "../../../fig-color.js";
+import "@rogieking/figui3/fig.js";
+import { figConvertRGB, figHexToRGB } from "@rogieking/figui3/fig-color.js";
 import { figEditorDefineElement } from "../runtime/helpers.js";
-import { figCreatePointerSession } from "../../shared/pointer-session.js";
+import { figCreatePointerSession } from "@rogieking/figui3/extended-runtime.js";
 
 const HTMLElement = globalThis.HTMLElement ?? class {};
 

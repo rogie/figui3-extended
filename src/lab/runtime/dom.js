@@ -4,7 +4,7 @@ https://polyformproject.org/licenses/shield/1.0.0
 Required Notice: Copyright (c) 2026 Rogie King
 Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
 */
-import { figDefineCustomElement } from "../../shared/invariants.js";
+import { figDefineCustomElement } from "@rogieking/figui3/extended-runtime.js";
 
 export const HTMLElement = globalThis.HTMLElement ?? class {};
 export const CustomEvent = class extends (globalThis.CustomEvent ?? class {}) {

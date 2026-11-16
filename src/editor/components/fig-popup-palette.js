@@ -5,7 +5,7 @@ Required Notice: Copyright (c) 2026 Rogie King
 Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
 */
 import "./fig-palette-editor.js";
-import { figDefineCustomizedBuiltIn } from "../../core/runtime/index.js";
+import { figDefineCustomizedBuiltIn } from "@rogieking/figui3/extended-runtime.js";
 
 const PALETTE_ATTRIBUTES = [
   "value",

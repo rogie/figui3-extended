@@ -37,8 +37,8 @@ import {
   figRGBToHsv,
   figRGBToOklab as figEditorRgbToOklab,
   figRGBToOklch,
-} from "../../../fig-color.js";
-import { AsyncOperationOwner } from "../../internal/async-operation-owner.js";
+} from "@rogieking/figui3/fig-color.js";
+import { AsyncOperationOwner } from "@rogieking/figui3/extended-runtime.js";
 import { figGradientCSS } from "./fig-gradient-editor.js";
 // FigFillPicker
 const GRADIENT_INTERPOLATION_SPACES = [

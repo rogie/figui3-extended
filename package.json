@@ -1,0 +1,102 @@
+{
+  "name": "@rogieking/figui3-extended",
+  "version": "1.0.0",
+  "description": "Licensed Editor and Lab components for FigUI3",
+  "author": "Rogie King",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3.0",
+    "node": ">=22"
+  },
+  "main": "dist/fig-editor.js",
+  "module": "dist/fig-editor.js",
+  "types": "types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/fig-editor.js"
+    },
+    "./fig-editor.js": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/fig-editor.js"
+    },
+    "./fig-lab.js": {
+      "types": "./types/index.d.ts",
+      "default": "./dist/fig-lab.js"
+    },
+    "./fig-input-rotate.js": {
+      "types": "./types/fig-input-rotate.d.ts",
+      "default": "./dist/fig-input-rotate.js"
+    },
+    "./fig-input-slider.js": {
+      "types": "./types/fig-input-slider.d.ts",
+      "default": "./dist/fig-input-slider.js"
+    },
+    "./fig-editor.css": "./dist/fig-editor.css",
+    "./fig-lab.css": "./dist/fig-lab.css",
+    "./fig-input-rotate.css": "./dist/fig-input-rotate.css",
+    "./fig-input-slider.css": "./dist/fig-input-slider.css",
+    "./react": {
+      "types": "./types/react.d.ts",
+      "default": "./types/react.js"
+    },
+    "./src/fig-editor.js": "./fig-editor.js",
+    "./src/fig-lab.js": "./fig-lab.js",
+    "./src/fig-editor.css": "./fig-editor.css",
+    "./src/fig-lab.css": "./fig-lab.css"
+  },
+  "files": [
+    "fig-editor.js",
+    "fig-editor.css",
+    "fig-lab.js",
+    "fig-lab.css",
+    "src/",
+    "types/",
+    "dist/",
+    ".cursor/skills/",
+    "skills/",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "**/*.js",
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "npm run build:js && npm run build:css && npm run check:artifacts && npm run check:licenses",
+    "prepack": "npm run build",
+    "build:js": "bun scripts/build-js.mjs",
+    "build:css": "node scripts/build-css.mjs",
+    "check:artifacts": "node scripts/check-artifacts.mjs",
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "test": "npm run build && npm run test:types",
+    "test:types": "tsc -p tests/types/tsconfig.json"
+  },
+  "peerDependencies": {
+    "@rogieking/figui3": ">=11.11.20 <13"
+  },
+  "devDependencies": {
+    "@rogieking/figui3": "11.11.20",
+    "@types/react": "^19.3.0",
+    "lightningcss": "^1.32.0",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rogie/figui3-extended.git"
+  },
+  "homepage": "https://github.com/rogie/figui3-extended#readme",
+  "bugs": {
+    "url": "https://github.com/rogie/figui3-extended/issues"
+  },
+  "keywords": [
+    "figui3",
+    "figma",
+    "web-components",
+    "color-picker",
+    "gradient",
+    "slider"
+  ]
+}

@@ -25,7 +25,7 @@ import {
   figEditorScrollOverflowPage,
   figEditorScrollElementToCenter,
 } from "../runtime/helpers.js";
-import { figCreatePointerSession } from "../../shared/pointer-session.js";
+import { figCreatePointerSession } from "@rogieking/figui3/extended-runtime.js";
 /* Reorder wrapper */
 /**
  * @attr {string} axis - Reorder direction: "vertical" (default) or "horizontal"

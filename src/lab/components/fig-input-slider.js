@@ -16,7 +16,7 @@ import {
   stringAttribute,
 } from "../runtime/input-slider-schema.js";
 import { figLabDefineElement } from "../runtime/dom.js";
-import { figWarnInvariant } from "../../shared/invariants.js";
+import { figWarnInvariant } from "@rogieking/figui3/extended-runtime.js";
 
 const HTMLElement = globalThis.HTMLElement ?? class {};
 

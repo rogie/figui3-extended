@@ -30,7 +30,7 @@ import {
   figOklabToOklch as figEditorOklabToOklch,
   figRGBToHsl as figEditorRgbToHsl,
   figRGBToOklab as figEditorRgbToOklab,
-} from "../../../fig-color.js";
+} from "@rogieking/figui3/fig-color.js";
 /**
  * Compact swatch previewing gradient color-space interpolation.
  * Polar: CSS conic-gradient masked (SVG data-URL, round linecaps) to an arc.

@@ -14,6 +14,6 @@ Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
  *   <script src="fig-lab.js"></script>
  */
 
-import "./fig.js";
+import "@rogieking/figui3/fig.js";
 import "./src/lab/input-slider.js";
 import "./src/lab/index.js";

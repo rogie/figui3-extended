@@ -12,7 +12,7 @@ import {
   figLabColorEventAliases,
   figLabDefineElement,
 } from "../runtime/dom.js";
-import { figClosest } from "../../shared/invariants.js";
+import { figClosest } from "@rogieking/figui3/extended-runtime.js";
 
 /* Canvas Control */
 const canvasSurfaceOwners = new WeakMap();

@@ -8,6 +8,6 @@ Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
  * Standalone FigUI3 slider primitives.
  */
 
-import "../../../fig.js";
+import "@rogieking/figui3/fig.js";
 
 export * from "../input-slider.js";
