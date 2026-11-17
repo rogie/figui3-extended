@@ -6,8 +6,7 @@ import { hashRequiresEditorControls } from "./lib/editorSections";
 import "./App.css";
 
 type PlaygroundMode =
-  | "figui3"
-  | "lab"
+  | "playground"
   | "sandbox"
   | "tests";
 
@@ -20,26 +19,16 @@ function normalizePathname(pathname: string): string {
 
 function resolveModeFromPath(pathname: string): PlaygroundMode {
   const normalized = normalizePathname(pathname);
-  if (
-    normalized === "/propskit/lab" ||
-    normalized.startsWith("/propskit/lab/")
-  ) {
-    return "lab";
-  }
   if (normalized === "/sandbox" || normalized.startsWith("/sandbox/")) {
     return "sandbox";
   }
   if (normalized === "/tests" || normalized.startsWith("/tests/")) {
     return "tests";
   }
-  return "figui3";
+  return "playground";
 }
 
 function applyTitleForMode(mode: PlaygroundMode) {
-  if (mode === "lab") {
-    document.title = "PropsKit Lab: Experimental FigUI3 components";
-    return;
-  }
   if (mode === "sandbox") {
     document.title = "Sandbox playground: Styled React sample app";
     return;
@@ -56,12 +45,9 @@ function ensureSupportedRoute() {
   const normalized = normalizePathname(pathname);
   const search = window.location.search;
   const hash = window.location.hash;
-  if (normalized === "/" || normalized === "") {
-    window.history.replaceState(null, "", `/propskit${search}${hash}`);
-    return;
-  }
-
   if (
+    normalized === "/propskit/lab" ||
+    normalized.startsWith("/propskit/lab/") ||
     normalized === "/propkit/lab" ||
     normalized.startsWith("/propkit/lab/") ||
     normalized === "/figui3/lab" ||
@@ -69,7 +55,10 @@ function ensureSupportedRoute() {
     normalized === "/lab" ||
     normalized.startsWith("/lab/")
   ) {
-    window.history.replaceState(null, "", `/propskit/lab${search}${hash}`);
+    const labHash = hash
+      ? `#lab-${hash.replace(/^#/, "")}`
+      : "";
+    window.history.replaceState(null, "", `/${search}${labHash}`);
     return;
   }
 
@@ -77,21 +66,23 @@ function ensureSupportedRoute() {
     normalized === "/propkit" ||
     normalized.startsWith("/propkit/") ||
     normalized === "/figui3" ||
-    normalized.startsWith("/figui3/")
+    normalized.startsWith("/figui3/") ||
+    normalized === "/propskit" ||
+    normalized.startsWith("/propskit/")
   ) {
-    window.history.replaceState(null, "", `/propskit${search}${hash}`);
+    window.history.replaceState(null, "", `/${search}${hash}`);
     return;
   }
 
   const supported =
-    normalized === "/propskit" ||
-    normalized.startsWith("/propskit/") ||
+    normalized === "/" ||
+    normalized === "" ||
     normalized === "/sandbox" ||
     normalized.startsWith("/sandbox/") ||
     normalized === "/tests" ||
     normalized.startsWith("/tests/");
   if (!supported) {
-    window.history.replaceState(null, "", `/propskit${search}${hash}`);
+    window.history.replaceState(null, "", `/${search}${hash}`);
   }
 }
 
@@ -101,7 +92,7 @@ const bootstrap = async () => {
   const appRoot = document.getElementById("app")!;
   appRoot.dataset.mode = mode;
   const hashNeedsEditorControls =
-    mode === "figui3" && hashRequiresEditorControls(window.location.hash);
+    mode === "playground" && hashRequiresEditorControls(window.location.hash);
   if (hashNeedsEditorControls) {
     localStorage.setItem("includeEditorControls", "true");
   }
@@ -111,22 +102,12 @@ const bootstrap = async () => {
     await import("@rogieking/figui3/fig.js");
     await import("@rogieking/figui3/fig-layer.css");
     await import("@rogieking/figui3/fig-layer.js");
-    if (
-      mode === "lab" ||
-      localStorage.getItem("includeEditorControls") === "true" ||
-      hashNeedsEditorControls
-    ) {
-      await import("../../fig-editor.css");
-      // @ts-expect-error runtime side-effect import for optional editor component registration
-      await import("../../fig-editor.js");
-    }
-    if (mode === "lab") {
-      await import("../../fig-lab.css");
-    }
-    if (mode === "lab") {
-      // @ts-expect-error runtime side-effect import for lab component registration
-      await import("../../fig-lab.js");
-    }
+    await import("../../fig-editor.css");
+    // @ts-expect-error runtime side-effect import for editor component registration
+    await import("../../fig-editor.js");
+    await import("../../fig-lab.css");
+    // @ts-expect-error runtime side-effect import for lab component registration
+    await import("../../fig-lab.js");
   }
 
   applyTitleForMode(mode);
@@ -136,7 +117,7 @@ const bootstrap = async () => {
     ) : mode === "tests" ? (
       <TestApp />
     ) : (
-      <App mode={mode} />
+      <App />
     ),
   );
 };

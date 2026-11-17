@@ -373,6 +373,45 @@ export const controlAttributeRules: Record<string, AttributeRuleSet> = {
     },
     "default-video": { label: "Default video", type: "string" },
   },
+  "fig-font-picker": {
+    value: { label: "Value", type: "string" },
+    default: { label: "Default", type: "string" },
+    label: { label: "Label", type: "string" },
+    options: { label: "Options", type: "string" },
+    "preview-text": { label: "Preview text", type: "string" },
+    minimal: {
+      label: "Minimal",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    "local-fonts": {
+      label: "Local fonts",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    "google-fonts": {
+      label: "Google Fonts",
+      type: "boolean",
+      boolMode: "string",
+      defaultChecked: true,
+    },
+    "google-font-limit": {
+      label: "Google Font limit",
+      type: "number",
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    "dialog-position": {
+      label: "Dialog position",
+      type: "enum",
+      options: fillPickerPositionOptions,
+    },
+    "dialog-offset": { label: "Dialog offset", type: "string" },
+    disabled: { label: "Disabled", type: "boolean", boolMode: "presence" },
+  },
   "fig-color-tip": {
     control: {
       label: "Control",

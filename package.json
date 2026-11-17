@@ -25,6 +25,10 @@
       "types": "./types/index.d.ts",
       "default": "./dist/fig-lab.js"
     },
+    "./css-properties.js": {
+      "types": "./types/css-properties.d.ts",
+      "default": "./dist/css-properties.js"
+    },
     "./fig-input-rotate.js": {
       "types": "./types/fig-input-rotate.d.ts",
       "default": "./dist/fig-input-rotate.js"
@@ -37,6 +41,7 @@
     "./fig-lab.css": "./dist/fig-lab.css",
     "./fig-input-rotate.css": "./dist/fig-input-rotate.css",
     "./fig-input-slider.css": "./dist/fig-input-slider.css",
+    "./icons/*": "./icons/*",
     "./react": {
       "types": "./types/react.d.ts",
       "default": "./types/react.js"
@@ -54,6 +59,7 @@
     "src/",
     "types/",
     "dist/",
+    "icons/",
     ".cursor/skills/",
     "skills/",
     "README.md",
@@ -82,8 +88,8 @@
     "@rogieking/figui3": ">=11.11.20 <13"
   },
   "devDependencies": {
-    "@rogieking/figui3": "11.11.20",
     "@playwright/test": "^1.60.0",
+    "@rogieking/figui3": "^12.0.1",
     "@types/react": "^19.3.0",
     "lightningcss": "^1.32.0",
     "typescript": "^5.9.3"

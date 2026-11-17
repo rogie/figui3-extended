@@ -47,6 +47,22 @@ Events: `input`, `change`, `optionhover`, `optionfocus`.
 Methods: `focus(options)` focuses the trigger. `activate(options)` focuses the
 trigger and opens the menu unless the select is disabled.
 
+## `fig-font-picker`
+
+Observed: `label`, `aria-label`, `aria-describedby`, `value`, `default`,
+`options`, `preview-text`, `minimal`, `local-fonts`, `google-fonts`,
+`google-font-limit`, `dialog-position`, `dialog-offset`, `disabled`.
+
+- `value` / `defaultValue`: normalized `{ family, face?, axes }`; plain family strings are accepted.
+- `options`: comma/newline family strings or JSON family/face metadata.
+- Sources merge in priority order: provided, local, loaded web, Google, generic.
+- `minimal` defaults true. Full mode adds Fonts/Favorites tabs and source, category, capability, and language filters.
+- Properties: `fonts`, `favorites`, `selectedFamily`, `selectedFace`, `selectedResource`, `result`, `cssValue`, `anchorElement`.
+- Methods: `open()`, `close()`, `focus(options)`, `refreshFonts({ requestLocal })`, `inspectSelectedFace()`, `resetToDefault()`.
+- Events: `input`, `change`, `optionhover`, and `optionfocus` include `{ value, family, face, axes, css, resource }`; `favoriteschange`, `fontmetadata`, `previewend`, and `close` report picker lifecycle changes.
+- Favorites and the minimal-mode favorites-only filter persist in local storage under `figui3:*` keys.
+- Google previews and the selected embeddable face load with `FontFace`; set `google-fonts="false"` to avoid network-backed catalog entries. Local Font Access is progressive and permission-dependent.
+
 ## Input rotate
 
 `fig-input-rotate` observes `x`, `y`, `z`, `default-x`, `default-y`, `default-z`, `units`, `variant`, `open`, and `disabled`.
@@ -98,6 +114,54 @@ trigger and opens the menu unless the select is disabled.
 - Generated labels associate to the input with `aria-labelledby` unless it already has an accessible name.
 - Generated trailing events bubble across shadow roots with `detail: { input }`.
 - Child control events are not normalized or re-emitted.
+
+## Fill module
+
+`fig-module-fills` observes `fills`, `label`, `mode`, `multiple`,
+`value-property`, and `disabled`.
+
+- `fills`: JSON array of `{ type, visible, ...fillData }`; the property accepts and returns the same array.
+- `mode`: comma-separated supported fill types; defaults to `solid,gradient,image`.
+- `multiple="false"` limits the list to one fill.
+- `value-property="fill"` maps the first visible solid fill to SVG `fill`; the default maps ordered layers to `background-color` and `background-image`.
+- `values` returns the current CSS-property map.
+- User changes reflect `fills` and emit bubbling `input` / `change` events. Detail includes `{ fills, values, phase, path }` plus action/index metadata.
+- Drag handles appear only when at least two fills exist.
+
+## Filter module
+
+`fig-module-filters` observes `filters`, `label`, `multiple`, and `disabled`.
+
+- `filters`: JSON array of SVG-derived filter objects; the property accepts and returns the same array.
+- Targets: `layer` maps to `filter`; `backdrop` maps to `backdrop-filter`.
+- Types: `gaussian-blur`, `brightness`, `contrast`, `grayscale`, `hue-rotate`, `invert`, `saturate`, and `sepia`.
+- `multiple="false"` limits the list to one filter.
+- `values` returns `{ filter, "backdrop-filter" }` with visible effects serialized in order.
+- User changes reflect `filters` and emit bubbling `input` / `change` events. Detail includes `{ filters, values, phase, path }` plus action/index metadata.
+- Each filter wraps a grouped `fig-select` and unit-aware `fig-input-number` in `fig-stack[slot="input"]`, with trailing visibility/remove actions.
+
+## Shadow module
+
+`fig-module-shadows` observes `shadows`, `label`, `multiple`, and `disabled`.
+
+- `shadows`: JSON array of `{ type, x, y, blur, spread?, color, visible }`; the property accepts and returns the same array.
+- Types: `drop`, `inner`, and `text`. Text shadows omit spread; inner shadows serialize with `inset`.
+- `multiple="false"` limits the list to one shadow.
+- `values` returns `{ "box-shadow", "text-shadow" }` with visible shadows serialized in order.
+- User changes reflect `shadows` and emit bubbling `input` / `change` events. Detail includes `{ shadows, values, phase, path }` plus action/index metadata.
+- Each row uses a property button with an anchored editor and trailing visibility/remove actions.
+
+## Transform module
+
+`fig-module-transforms` observes `transforms`, `label`, `multiple`, and
+`disabled`.
+
+- `transforms`: JSON array of ordered transform objects; the property accepts and returns the same array.
+- Types: `translate`, `rotate`, `scale`, `skew`, and `perspective`.
+- `multiple="false"` limits the list to one transform.
+- `values` returns `{ transform }` with visible transform functions serialized in order.
+- User changes reflect `transforms` and emit bubbling `input` / `change` events. Detail includes `{ transforms, values, phase, path }` plus action/index metadata.
+- Each row uses a property button with an anchored editor and trailing visibility/remove actions.
 
 ## Easing popup
 

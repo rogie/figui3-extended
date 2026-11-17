@@ -8,6 +8,7 @@ export const NOTICE = [
 export const jsArtifacts = [
   { input: "fig-editor.js", output: "fig-editor.js" },
   { input: "fig-lab.js", output: "fig-lab.js" },
+  { input: "css-properties.js", output: "css-properties.js" },
   {
     input: "src/editor/entrypoints/fig-input-rotate.js",
     output: "fig-input-rotate.js",
@@ -41,6 +42,7 @@ export const outputs = [
 ];
 
 export const rootAssetNames = [
+  "css-properties.js",
   "fig-editor.js",
   "fig-editor.css",
   "fig-lab.js",

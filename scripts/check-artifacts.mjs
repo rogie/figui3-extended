@@ -17,7 +17,11 @@ const targets = Object.values(manifest.exports).flatMap((value) =>
   typeof value === "string" ? [value] : Object.values(value),
 );
 for (const target of targets) {
-  if (!existsSync(target.replace(/^\.\//, ""))) {
+  const normalizedTarget = target.replace(/^\.\//, "");
+  const pathToCheck = normalizedTarget.includes("*")
+    ? normalizedTarget.slice(0, normalizedTarget.indexOf("*"))
+    : normalizedTarget;
+  if (!existsSync(pathToCheck)) {
     throw new Error(`Missing package target ${target}`);
   }
 }

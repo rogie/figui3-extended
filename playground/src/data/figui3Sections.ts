@@ -1228,6 +1228,38 @@ const figui3BaseSections: Section[] = clusterPlaygroundGroups([
     ],
   },
   {
+    id: "font-picker",
+    name: "Font picker",
+    group: "Pickers",
+    description:
+      "Searchable font-family picker with provided, web, local, Google, and generic font discovery.",
+    examples: [
+      {
+        id: "minimal",
+        name: "Minimal",
+        markup: `<div class="prop-panel">
+  <fig-font-picker
+    value="Inter"
+    options="Inter,Instrument Sans,Georgia,IBM Plex Mono"
+  ></fig-font-picker>
+</div>`,
+      },
+      {
+        id: "full",
+        name: "Full",
+        description:
+          "Full mode adds source and capability filters plus a favorites tab.",
+        markup: `<div class="prop-panel">
+  <fig-font-picker
+    value="Instrument Sans"
+    options='[{"family":"Instrument Sans","category":"sans-serif"},{"family":"Georgia","category":"serif"},{"family":"IBM Plex Mono","category":"monospace"}]'
+    minimal="false"
+  ></fig-font-picker>
+</div>`,
+      },
+    ],
+  },
+  {
     id: "swatch",
     name: "Swatch",
     group: "Core components",

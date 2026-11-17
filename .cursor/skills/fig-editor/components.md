@@ -76,6 +76,26 @@ Data-driven (no authored options):
 - Attrs: `value` (falls back to trimmed `textContent`), `label` (closed-trigger text when content is rich), `selected`, `disabled`, `subtle` (secondary hover/focus fill)
 - `role="option"`, `aria-selected`, `aria-disabled`
 
+## `fig-font-picker`
+
+```tsx
+<fig-font-picker
+  label="Font"
+  value={JSON.stringify({ family: "Inter", axes: { wght: 500 } })}
+  options="Inter,Instrument Sans,Georgia"
+  local-fonts="false"
+  onChange={onChange}
+/>
+```
+
+- Values normalize to `{ family, face?, axes }`; plain family names are accepted for `value` and `default`.
+- `options` accepts comma/newline strings or family metadata JSON. The picker also discovers loaded web fonts, local fonts (when supported and permitted), generic families, and up to `google-font-limit` Google families.
+- `minimal` defaults to true; `minimal="false"` adds tabs and source/category/capability/language filters.
+- Properties: `fonts`, `favorites`, `selectedFamily`, `selectedFace`, `selectedResource`, `result`, and `cssValue`.
+- Methods: `open()`, `close()`, `focus()`, `refreshFonts()`, `inspectSelectedFace()`, and `resetToDefault()`.
+- Events: `input`, `change`, `optionhover`, `optionfocus`, `favoriteschange`, `fontmetadata`, `previewend`, and `close`.
+- Google previews load lazily with `FontFace`. Set `google-fonts="false"` for offline or network-free surfaces and `local-fonts="false"` when Local Font Access should not be requested.
+
 ## `fig-input-rotate`
 
 ```tsx
@@ -169,6 +189,84 @@ Authored trailing accessory (`/propskit#property/custom-accessory`):
 - Right-click opens a generated “Reset to default” menu and sets `selected` on the row until the menu closes. Authored `selected` is restored, including `selected="false"`. Set `context-menu="none"` to leave the native event untouched and disable the generated menu. `resetToDefault()` delegates to the same method on the slotted control; the item stays synchronized while open and is disabled when unsupported, disabled, or already at its default.
 - Generated trailing controls emit bubbling, composed `remove`, `add`, or `bind` events with the slotted control in `detail.input`.
 - Child input events bubble unchanged.
+
+## `fig-module-fills`
+
+Framework-neutral, hydratable fill-list module:
+
+```html
+<fig-module-fills
+  fills='[
+    {"type":"solid","color":"#0D99FF","visible":true},
+    {"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#0D99FF","opacity":100},{"position":100,"color":"#9747FF","opacity":100}]},"visible":true}
+  ]'
+></fig-module-fills>
+```
+
+- Attrs: `fills` (JSON array), `mode` (defaults to `solid,gradient,image`), `multiple` (`"false"` limits the module to one fill), `value-property` (`background` or `fill`), `label`, `disabled`
+- Properties: `fills` accepts/returns fill objects; `values` returns mapped CSS values; `multiple` reflects to the attribute.
+- `fills` is reflected after add, remove, visibility, reorder, and fill edits so consuming frameworks can hydrate from serialized markup.
+- Events: bubbling `input` / `change`; `detail` includes `fills`, mapped `values`, `phase`, `path`, and action/index metadata when relevant.
+- Multiple background fills map to ordered `background-image` layers plus a bottom `background-color`.
+
+## `fig-module-filters`
+
+Ordered SVG-derived filters rendered as inline property controls:
+
+```html
+<fig-module-filters
+  filters='[
+    {"target":"layer","type":"gaussian-blur","radius":4,"visible":true},
+    {"target":"backdrop","type":"hue-rotate","angle":45,"visible":true}
+  ]'
+></fig-module-filters>
+```
+
+- Attrs: `filters` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `filters`, `values`, `multiple`
+- Layer and Backdrop each support blur, brightness, contrast, grayscale, hue rotate, invert, saturation, and sepia.
+- Supported types map to `feGaussianBlur`, `feColorMatrix`, or `feComponentTransfer`.
+- `values.filter` and `values["backdrop-filter"]` are ordered CSS filter-function lists, or `none`.
+- Each row wraps a grouped filter `fig-select` and unit-aware `fig-input-number` in `fig-stack[slot="input"]`.
+- Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
+
+## `fig-module-shadows`
+
+Ordered box and text shadows with a property-button editor per row:
+
+```html
+<fig-module-shadows
+  shadows='[
+    {"type":"drop","x":0,"y":4,"blur":4,"spread":0,"color":"#00000040","visible":true},
+    {"type":"text","x":0,"y":2,"blur":4,"color":"#00000040","visible":true}
+  ]'
+></fig-module-shadows>
+```
+
+- Attrs: `shadows` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `shadows`, `values`, `multiple`
+- Types: `drop` and `inner` provide X/Y, blur, spread, and color; `text` omits spread.
+- `values["box-shadow"]` combines drop and inner shadows, while `values["text-shadow"]` combines text shadows. Empty visible stacks map to `none`.
+- Each row opens an anchored property popup. Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
+
+## `fig-module-transforms`
+
+Ordered CSS transforms with a property-button editor per row:
+
+```html
+<fig-module-transforms
+  transforms='[
+    {"type":"translate","x":12,"y":24,"z":0,"visible":true},
+    {"type":"rotate","x":0,"y":0,"z":45,"visible":true}
+  ]'
+></fig-module-transforms>
+```
+
+- Attrs: `transforms` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `transforms`, `values`, `multiple`
+- Types: `translate`, `rotate`, `scale`, `skew`, and `perspective`, each with type-appropriate numeric fields and units.
+- `values.transform` contains the ordered visible CSS transform-function list, or `none`.
+- Each row opens an anchored property popup. Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
 
 ## `fig-popup-easing`
 

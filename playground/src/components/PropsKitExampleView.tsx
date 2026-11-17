@@ -3,26 +3,33 @@ import {
   figCreateProps,
   figCreatePropsRoot,
 } from "@rogieking/figui3/propskit.js";
+import { figCreateModule } from "../../../css-properties.js";
 import type { PropsKitExample } from "../data/propskitSections";
+import { sourceForModule } from "../data/moduleSections";
+import { withElementProbe } from "../lib/elementProbe";
 import CodeView from "./CodeView";
 
 const PROPSKIT_IMPORT =
   /import\s*\{[\s\S]*?\}\s*from\s*["']@rogieking\/figui3\/propskit\.js["'];?/g;
+const MODULE_IMPORT =
+  /import\s*\{[\s\S]*?\}\s*from\s*["']@rogieking\/figui3-extended\/css-properties\.js["'];?/g;
 
 function withoutPropsKitImport(source: string): string {
-  return source.replace(PROPSKIT_IMPORT, "");
+  return source.replace(PROPSKIT_IMPORT, "").replace(MODULE_IMPORT, "");
 }
 
 interface Props {
   example: PropsKitExample;
   onValuesChange: (values: unknown) => void;
   onEventChange: (event: unknown) => void;
+  elementKind?: string;
 }
 
 export default function PropsKitExampleView({
   example,
   onValuesChange,
   onEventChange,
+  elementKind = "",
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [draftMarkup, setDraftMarkup] = useState(example.markup);
@@ -33,10 +40,36 @@ export default function PropsKitExampleView({
   const [runError, setRunError] = useState<string | null>(null);
 
   useEffect(() => {
+    const moduleId = example.cssModuleId;
+    if (!moduleId) return;
+    const nextMarkup = withElementProbe(elementKind, (element) =>
+      element
+        ? sourceForModule(
+          moduleId,
+          example.panelName ?? example.title,
+          element,
+        )
+        : example.markup,
+    );
+    setDraftMarkup(nextMarkup);
+    setRunState((current) => ({
+      markup: nextMarkup,
+      revision: current.revision + 1,
+    }));
+  }, [
+    elementKind,
+    example.cssModuleId,
+    example.markup,
+    example.panelName,
+    example.title,
+  ]);
+
+  useEffect(() => {
     const target = mountRef.current;
     if (!target) return;
     const kits: Array<ReturnType<typeof figCreateProps>> = [];
     const roots: Array<ReturnType<typeof figCreatePropsRoot>> = [];
+    const modules: Array<ReturnType<typeof figCreateModule>> = [];
     const unsubscribes: Array<() => void> = [];
 
     target.replaceChildren();
@@ -48,6 +81,11 @@ export default function PropsKitExampleView({
       options: {
         onInput?: (path: string, value: unknown, interaction: unknown) => void;
         onChange?: (path: string, value: unknown, interaction: unknown) => void;
+        onOptionHover?: (
+          path: string,
+          value: unknown,
+          interaction: unknown,
+        ) => void;
         [key: string]: unknown;
       } = {},
     ) => {
@@ -63,6 +101,15 @@ export default function PropsKitExampleView({
         onChange(path: string, value: unknown, interaction: unknown) {
           options.onChange?.(path, value, interaction);
           onEventChange({ phase: "change", path, value, interaction });
+        },
+        onOptionHover(path: string, value: unknown, interaction: unknown) {
+          options.onOptionHover?.(path, value, interaction);
+          onEventChange({
+            phase: "option-hover",
+            path,
+            value,
+            interaction,
+          });
         },
         },
       );
@@ -98,13 +145,63 @@ export default function PropsKitExampleView({
       return root;
     }) as typeof figCreatePropsRoot;
 
+    const createModule = ((
+      moduleId: Parameters<typeof figCreateModule>[0],
+      options: Parameters<typeof figCreateModule>[1] = {},
+    ) => {
+      const module = withElementProbe(elementKind, (element) =>
+        figCreateModule(moduleId, {
+          ...options,
+          element: element ?? options.element,
+          onInput(path, value, interaction) {
+            options.onInput?.(path, value, interaction);
+            onEventChange({ phase: "input", path, value, interaction });
+          },
+          onChange(path, value, interaction) {
+            options.onChange?.(path, value, interaction);
+            onEventChange({ phase: "change", path, value, interaction });
+          },
+          onOptionHover(path, value, interaction) {
+            options.onOptionHover?.(path, value, interaction);
+            onEventChange({
+              phase: "option-hover",
+              path,
+              value,
+              interaction,
+            });
+          },
+        }),
+      );
+      const mount = module.mount.bind(module);
+      module.mount = (requestedTarget) => {
+        const scopedTarget =
+          typeof requestedTarget === "string"
+            ? (target.matches(requestedTarget)
+                ? target
+                : target.querySelector<HTMLElement>(requestedTarget)) ?? target
+            : requestedTarget;
+        mount(scopedTarget);
+        return module;
+      };
+      modules.push(module);
+      unsubscribes.push(
+        module.subscribe((values: unknown) => onValuesChange(values)),
+        module.subscribe(
+          (records: unknown) => onEventChange(records),
+          { mode: "changes" },
+        ),
+      );
+      return module;
+    }) as typeof figCreateModule;
+
     const execute = (source: string) => {
       const run = new Function(
         "figCreateProps",
         "figCreatePropsRoot",
+        "figCreateModule",
         `"use strict";\n${withoutPropsKitImport(source)}`,
       );
-      run(createProps, createPropsRoot);
+      run(createProps, createPropsRoot, createModule);
     };
 
     try {
@@ -128,6 +225,7 @@ export default function PropsKitExampleView({
       unsubscribes.forEach((unsubscribe) => unsubscribe());
       roots.forEach((root) => root.destroy());
       kits.forEach((kit) => kit.destroy());
+      modules.forEach((module) => module.destroy());
       target.replaceChildren();
     };
   }, [

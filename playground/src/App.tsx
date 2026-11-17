@@ -6,6 +6,11 @@ import CodeView from "./components/CodeView";
 import EventView from "./components/EventView";
 import PropsKitExampleView from "./components/PropsKitExampleView";
 import StateOutputView from "./components/StateOutputView";
+import ElementView from "./components/ElementView";
+import FillsModuleView from "./components/FillsModuleView";
+import FiltersModuleView from "./components/FiltersModuleView";
+import ShadowsModuleView from "./components/ShadowsModuleView";
+import TransformsModuleView from "./components/TransformsModuleView";
 import { useTheme } from "./hooks/useTheme";
 import { useNavigation } from "./hooks/useNavigation";
 import { getExampleSourceMarkup } from "./lib/exampleMarkup";
@@ -24,6 +29,7 @@ import {
   propskitSections,
   type PropsKitExample,
 } from "./data/propskitSections";
+import { moduleSections } from "./data/moduleSections";
 import type { Section } from "./data/sections";
 import { sortSectionsWithinGroups } from "./lib/sectionOrder";
 import {
@@ -31,6 +37,19 @@ import {
   hashRequiresEditorControls,
   requiresEditorControls,
 } from "./lib/editorSections";
+
+const mergedLabSections: Section[] = labSections.map((section) => ({
+  ...section,
+  id: `lab-${section.id}`,
+  group: "Experimental",
+}));
+
+const allPlaygroundSections: Section[] = [
+  ...propskitSections,
+  ...figui3Sections,
+  ...moduleSections,
+  ...mergedLabSections,
+];
 
 function toSentenceCase(text: string): string {
   const trimmed = text.trim();
@@ -65,15 +84,6 @@ function buildExampleDescription(
   const base = exampleName.trim();
   if (!base || base.toLowerCase() === "default") return sectionDescription;
   return `${escapeHtml(toSentenceCase(base))} ${sectionWord} example. ${sectionDescription}`;
-}
-
-interface Props {
-  mode: "figui3" | "lab";
-}
-
-function sectionsForMode(mode: Props["mode"]): Section[] {
-  if (mode === "lab") return labSections;
-  return [...propskitSections, ...figui3Sections];
 }
 
 function isPropsKitExample(
@@ -184,17 +194,7 @@ function filterAvailableSections(
   ];
 }
 
-function titleForMode(mode: Props["mode"]): string {
-  if (mode === "lab") return "PropsKit Lab";
-  return "Figma PropsKit";
-}
-
-function basePathForMode(mode: Props["mode"]): string {
-  if (mode === "lab") return "/propskit/lab";
-  return "/propskit";
-}
-
-export default function App({ mode }: Props) {
+export default function App() {
   const {
     isDark,
     setTheme,
@@ -202,25 +202,19 @@ export default function App({ mode }: Props) {
     setIncludeEditorControls,
     editorComponentsVersion,
   } = useTheme();
-  const allSections: Section[] = sectionsForMode(mode);
   const [customElementsVersion, setCustomElementsVersion] = useState(0);
   const sections = useMemo(() => {
-    const visible = filterAvailableSections(allSections, {
-      includeEditorControls: mode === "lab" || includeEditorControls,
+    const visible = filterAvailableSections(allPlaygroundSections, {
+      includeEditorControls,
     });
-    return mode === "figui3" ? sortSectionsWithinGroups(visible) : visible;
+    return sortSectionsWithinGroups(visible);
   }, [
-    allSections,
     customElementsVersion,
     editorComponentsVersion,
     includeEditorControls,
-    mode,
   ]);
-  const basePath = basePathForMode(mode);
-  const appTitle = titleForMode(mode);
 
   useEffect(() => {
-    if (mode !== "figui3") return;
     const showHashSection = () => {
       if (hashRequiresEditorControls(window.location.hash)) {
         setIncludeEditorControls(true);
@@ -228,7 +222,7 @@ export default function App({ mode }: Props) {
     };
     window.addEventListener("hashchange", showHashSection);
     return () => window.removeEventListener("hashchange", showHashSection);
-  }, [mode, setIncludeEditorControls]);
+  }, [setIncludeEditorControls]);
 
   const {
     activeSectionId,
@@ -236,10 +230,11 @@ export default function App({ mode }: Props) {
     activeSection,
     activeExample,
     navigateTo,
-  } = useNavigation(sections, basePath);
+  } = useNavigation(sections, "/");
   const [editableMarkup, setEditableMarkup] = useState("");
   const [propsKitValues, setPropsKitValues] = useState<unknown>({});
   const [propsKitEvent, setPropsKitEvent] = useState<unknown>(null);
+  const [moduleElementKind, setModuleElementKind] = useState("");
   const defaultMarkupRef = useRef("");
   const markupExampleKeyRef = useRef("");
   const initialParamsRef = useRef<Record<string, string> | null>(
@@ -256,6 +251,14 @@ export default function App({ mode }: Props) {
   const activePropsKitExample = isPropsKitExample(activeExample)
     ? activeExample
     : null;
+  const isFillsModule =
+    activePropsKitExample?.cssModuleId === "background";
+  const isFiltersModule =
+    activePropsKitExample?.cssModuleId === "filters";
+  const isShadowsModule =
+    activePropsKitExample?.cssModuleId === "shadow";
+  const isTransformsModule =
+    activePropsKitExample?.cssModuleId === "transforms";
 
   useEffect(() => {
     if (!activePropsKitExample) return;
@@ -265,7 +268,7 @@ export default function App({ mode }: Props) {
   useEffect(() => {
     if (typeof customElements === "undefined") return;
     const pending = new Set<string>();
-    allSections.forEach((section) => {
+    allPlaygroundSections.forEach((section) => {
       getSectionRequiredCustomElements(section).forEach((tag) => {
         if (!customElements.get(tag)) pending.add(tag);
       });
@@ -281,7 +284,7 @@ export default function App({ mode }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [allSections]);
+  }, []);
 
   useEffect(() => {
     if (!activeExample) {
@@ -420,12 +423,11 @@ export default function App({ mode }: Props) {
         setIncludeEditorControls={setIncludeEditorControls}
         navigateTo={navigateTo}
         sections={sections}
-        appTitle={appTitle}
-        groupOrder={mode === "lab" ? ["Inputs", "AI", "Misc"] : undefined}
+        appTitle="Figma PropsKit"
       />
       <main
         className={[
-          mode === "figui3" ? "mode-figui3" : "",
+          "mode-figui3",
           activePropsKitExample ? "mode-propskit" : "",
         ]
           .filter(Boolean)
@@ -440,12 +442,34 @@ export default function App({ mode }: Props) {
             />
           </div>
         )}
-        {activePropsKitExample ? (
+        {isFillsModule ? (
+          <FillsModuleView
+            elementKind={moduleElementKind}
+            onValuesChange={setPropsKitValues}
+            onEventChange={setPropsKitEvent}
+          />
+        ) : isFiltersModule ? (
+          <FiltersModuleView
+            onValuesChange={setPropsKitValues}
+            onEventChange={setPropsKitEvent}
+          />
+        ) : isShadowsModule ? (
+          <ShadowsModuleView
+            onValuesChange={setPropsKitValues}
+            onEventChange={setPropsKitEvent}
+          />
+        ) : isTransformsModule ? (
+          <TransformsModuleView
+            onValuesChange={setPropsKitValues}
+            onEventChange={setPropsKitEvent}
+          />
+        ) : activePropsKitExample ? (
           <PropsKitExampleView
             key={activeExampleKey}
             example={activePropsKitExample}
             onValuesChange={setPropsKitValues}
             onEventChange={setPropsKitEvent}
+            elementKind={moduleElementKind}
           />
         ) : activeExample ? (
           <div className="example-view-container">
@@ -472,6 +496,12 @@ export default function App({ mode }: Props) {
         <div className="attributes-sidebar-content fig-overflow-fade">
           {activePropsKitExample ? (
             <>
+              {activePropsKitExample.cssModuleId ? (
+                <ElementView
+                  value={moduleElementKind}
+                  onChange={setModuleElementKind}
+                />
+              ) : null}
               <StateOutputView
                 kind="values"
                 title="Values"

@@ -72,7 +72,13 @@ Registered tags:
 | `fig-select` | Trigger + popup listbox (`subtle` applies to all options) |
 | `fig-select-options` | Scrollable panel (`slot="panel"`), overflow chevrons |
 | `fig-select-option` | Option (`value`, `label`, `selected`, `disabled`, `subtle`) |
+| `fig-font-picker` | Searchable local, web, provided, Google, and generic font picker |
 | `fig-fill-picker` | Full fill editor dialog (solid, gradient, image, video, webcam, custom modes) |
+| `fig-module-fills` | Hydratable, reorderable multi-fill property module |
+| `fig-module-filters` | Hydratable, reorderable SVG-derived filter module |
+| `fig-module-shadows` | Hydratable, reorderable box and text shadow module |
+| `fig-module-transforms` | Hydratable, reorderable CSS transform module |
+| `fig-module-appearance` | Appearance and blending property module |
 | `fig-property` | Composable property row with leading, input, and trailing slots |
 | `fig-input-rotate` | Compact X/Y/Z rotation property button |
 | `fig-input-point` | Compact X/Y point trigger with origin-grid popup |
@@ -86,6 +92,14 @@ Registered tags:
 - `fig-select` (this skill): custom listbox. Use this for Figma-style menus.
 
 Author options as React children, or pass `options`. Set `menu-anchor` to a selector or assign an element to `menuAnchor` when the menu should align against another element. Do not `stopPropagation` on option click. `optionhover` and `optionfocus` are native preview listeners.
+
+## Font picker
+
+`fig-font-picker` accepts plain family names or serialized
+`{ family, face?, axes }` values. Use `options` for provided families,
+`local-fonts="false"` to skip Local Font Access, and `google-fonts="false"` to
+exclude the bundled Google catalog. It exposes normalized `fonts`,
+`selectedFamily`, `selectedFace`, `selectedResource`, and `cssValue` properties.
 
 ## Fill picker
 

@@ -24,7 +24,12 @@ import {
 } from "../../playground/src/lib/images";
 import { labSections } from "../../playground/src/data/labSections";
 import { propskitSections } from "../../playground/src/data/propskitSections";
+import { moduleSections } from "../../playground/src/data/moduleSections";
 import { allComponentContracts } from "../../playground/src/testing/componentManifest";
+import {
+  CSS_PROPERTY_MODULES,
+  createCssModuleConfig,
+} from "../../css-properties.js";
 
 function markupTags(value: unknown, tags = new Set<string>()) {
   if (Array.isArray(value)) {
@@ -125,6 +130,45 @@ test("button combos expose a reduced nested-button variant control", () => {
     type: "enum",
     options: ["", "secondary", "input", "overlay"],
   });
+});
+
+test("CSS property modules preserve exact keys and friendly labels", () => {
+  expect(moduleSections.map((section) => section.name)).toEqual([
+    "Layout",
+    "Typography",
+    "Fills",
+    "Border / Stroke / Outline",
+    "Filters",
+    "Shadow",
+    "Transforms",
+    "Appearance",
+  ]);
+  const mappings = CSS_PROPERTY_MODULES.flatMap((module) => module.properties);
+  expect(new Set(mappings.map((mapping) => mapping.property)).size).toBe(
+    mappings.length,
+  );
+  expect(
+    mappings.find((mapping) => mapping.property === "font-family")?.label,
+  ).toBe("Font family");
+  expect(
+    mappings.find((mapping) => mapping.property === "stroke-width")?.label,
+  ).toBe("SVG stroke width");
+  expect(mappings.some((mapping) => mapping.property === "font-face")).toBe(
+    false,
+  );
+});
+
+test("element-free CSS modules expose every mapped property", () => {
+  for (const module of CSS_PROPERTY_MODULES) {
+    const result = createCssModuleConfig(module.id);
+    expect(result.mode).toBe("unconstrained");
+    expect(Object.keys(result.config)).toHaveLength(module.properties.length);
+    expect(
+      result.capabilities.every(
+        (capability) => capability.status === "applicable",
+      ),
+    ).toBe(true);
+  }
 });
 
 async function getAvailablePort(): Promise<number> {
@@ -1145,6 +1189,520 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       new Promise((resolve) => setTimeout(resolve, 2_000)),
     ]);
     if (playgroundServer.exitCode === null) playgroundServer.kill("SIGKILL");
+  });
+
+  test("DOM capability analysis follows current element and parent layout", async ({
+    page,
+  }) => {
+    await page.goto(playgroundUrl);
+    const moduleUrl = `/@fs/${path.resolve(
+      "src/modules/css-property-capabilities.js",
+    )}`;
+    const result = await page.evaluate(async (url) => {
+      const {
+        analyzeElementStyleCapabilities,
+        createCssModuleConfig,
+        getElementStyleCapability,
+      } = await import(url);
+      const parent = document.createElement("div");
+      const child = document.createElement("span");
+      parent.append(child);
+      document.body.append(parent);
+
+      parent.style.display = "block";
+      const block = analyzeElementStyleCapabilities(parent);
+      const blockFlex = block.properties.find(
+        (entry: { property: string }) => entry.property === "flex-direction",
+      );
+      const inlineWidth = getElementStyleCapability(child, "width");
+
+      parent.style.display = "flex";
+      const flex = analyzeElementStyleCapabilities(parent);
+      const flexDirection = flex.properties.find(
+        (entry: { property: string }) => entry.property === "flex-direction",
+      );
+      const flexGrow = getElementStyleCapability(child, "flex-grow");
+      const seeded = createCssModuleConfig("layout", { element: parent });
+
+      parent.remove();
+      return {
+        blockFlex: blockFlex?.status,
+        flexDirection: flexDirection?.status,
+        inlineWidth: inlineWidth?.status,
+        flexGrow: flexGrow?.status,
+        seededMode: seeded.mode,
+        seededDisplay: seeded.config.display?.default,
+      };
+    }, moduleUrl);
+
+    expect(result).toEqual({
+      blockFlex: "not-applicable",
+      flexDirection: "applicable",
+      inlineWidth: "not-applicable",
+      flexGrow: "applicable",
+      seededMode: "element",
+      seededDisplay: "flex",
+    });
+  });
+
+  test("module routes render PropsKit controls without runtime errors", async ({
+    page,
+  }) => {
+    for (const module of moduleSections) {
+      await page.goto(`${playgroundUrl}/#${module.id}/default`);
+      await expect(page.locator(".example-header h2")).toContainText(
+        module.name,
+      );
+      await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+      await expect(
+        page.locator(`fig-group[name="Modules"] fig-layer[data-section="${module.id}"]`),
+      ).toHaveCount(1);
+    }
+  });
+
+  test("module element selection filters controls by computed capability", async ({
+    page,
+  }) => {
+    await page.goto(`${playgroundUrl}/#module-layout/default`);
+    const select = page.locator("[data-propskit-element] fig-select");
+    await expect(select).toHaveAttribute("value", "__any__");
+
+    await select.evaluate((element: HTMLElement & { value?: string }) => {
+      element.value = "span";
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await expect
+      .poll(async () =>
+        page.locator("[data-propskit-values] .cm-content").textContent(),
+      )
+      .not.toContain('"width":');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"display": "inline"');
+
+    await select.evaluate((element: HTMLElement & { value?: string }) => {
+      element.value = "img";
+      element.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await expect
+      .poll(async () =>
+        page.locator("[data-propskit-values] .cm-content").textContent(),
+      )
+      .toContain('"width":');
+    await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
+  test("Layout uses its opinionated module layout", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-layout/default`);
+    const module = page.locator("[data-layout-module]");
+    await expect(module).toBeVisible();
+    await expect(module.locator("fig-group")).toHaveCount(1);
+    await expect(module.locator("fig-group > fig-header")).toContainText(
+      "Layout",
+    );
+    await expect(module.getByText("Add flex")).toHaveCount(0);
+
+    const inputs = module.locator("fig-input-number");
+    await expect(inputs).toHaveCount(4);
+    await expect(inputs.first()).toHaveAttribute("steppers", "false");
+    await expect(
+      module.locator('fig-input-number[aria-label="X position"]'),
+    ).toHaveCount(1);
+    await expect(
+      module.locator('fig-input-number[aria-label="Y position"]'),
+    ).toHaveCount(1);
+    await expect(
+      module.locator('fig-input-number[aria-label="Rotation"]'),
+    ).toHaveCount(0);
+    await expect(
+      module.locator('fig-input-number[aria-label="Width"]'),
+    ).toHaveCount(1);
+    await expect(
+      module.locator('fig-input-number[aria-label="Height"]'),
+    ).toHaveCount(1);
+    const sizeInputs = module.locator("fig-split-input");
+    await expect(sizeInputs).toHaveCount(2);
+    await expect(sizeInputs.first()).toHaveAttribute(
+      "options",
+      "Fixed,Fill,Relative",
+    );
+    await expect(sizeInputs.first().locator("fig-select")).toHaveAttribute(
+      "value",
+      "Relative",
+    );
+
+    const modes = module.locator(
+      'fig-segmented-control[aria-label="Layout mode"]',
+    );
+    await expect(
+      module.locator("fig-group > fig-property").first().locator(
+        'fig-segmented-control[aria-label="Layout mode"]',
+      ),
+    ).toHaveCount(1);
+    await expect(modes.locator("fig-segment")).toHaveCount(4);
+    await expect(modes.locator("fig-segment fig-icon svg")).toHaveCount(4);
+    await expect(modes).toHaveAttribute("value", "freeform");
+
+    await modes.locator('fig-segment[value="vertical"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"display": "flex"');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"flex-direction": "column"');
+
+    await modes.locator('fig-segment[value="horizontal"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"flex-direction": "row"');
+
+    await modes.locator('fig-segment[value="grid"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"display": "grid"');
+
+    await modes.locator('fig-segment[value="freeform"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"display": "block"');
+
+    await module.locator("fig-checkbox input").check();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"overflow": "hidden"');
+
+    await module
+      .locator('fig-input-number[aria-label="Width"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "420";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"width": "420%"');
+
+    const moduleUrl = `/@fs/${path.resolve(
+      "src/modules/fig-create-module.js",
+    )}`;
+    const synced = await page.evaluate(async (url) => {
+      const { figCreateModule } = await import(url);
+      const host = document.createElement("div");
+      document.body.append(host);
+      const controller = figCreateModule("layout");
+      controller.mount(host);
+      controller.setValues({
+        left: "12px",
+        top: "24px",
+        width: "320px",
+        height: "180px",
+        display: "flex",
+        "flex-direction": "column",
+        overflow: "hidden",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const result = {
+        x: host
+          .querySelector<HTMLElement>('[data-layout-property="left"]')
+          ?.getAttribute("value"),
+        mode: host
+          .querySelector("fig-segmented-control")
+          ?.getAttribute("value"),
+        clipped: host
+          .querySelector("fig-checkbox")
+          ?.hasAttribute("checked"),
+      };
+      controller.destroy();
+      host.remove();
+      return result;
+    }, moduleUrl);
+    expect(synced).toEqual({
+      x: "12",
+      mode: "vertical",
+      clipped: true,
+    });
+    await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
+  test("Typography uses its dedicated module", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-typography/default`);
+    const module = page.locator("fig-module-typography");
+    await expect(module).toBeVisible();
+    await expect(module.locator("fig-group > fig-header")).toContainText(
+      "Typography",
+    );
+    await expect(module.locator("fig-select")).toHaveCount(2);
+    await expect(
+      module.locator(
+        'fig-property > fig-tooltip > fig-select[label="Font family"]',
+      ),
+    ).toHaveCount(0);
+    await expect(module.locator("fig-font-picker")).toHaveCount(1);
+    await expect(module.locator("fig-font-picker")).toHaveAttribute(
+      "value",
+      '{"family":"sans-serif","axes":{}}',
+    );
+    await expect(module.locator("fig-input-number")).toHaveCount(3);
+    await expect(
+      module.locator('fig-input-number[aria-label="Font size"]'),
+    ).toHaveAttribute("value", "16");
+    await expect(module.locator("fig-segmented-control")).toHaveCount(2);
+    await expect(
+      module.locator(
+        'fig-segmented-control[aria-label="Text alignment"] fig-segment',
+      ),
+    ).toHaveCount(3);
+    await expect(module.locator("fig-icon > svg")).toHaveCount(8);
+    await expect(
+      module.locator(
+        'fig-select[label="Font weight"] > [slot="prepend-trigger"]',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      module.locator(
+        'fig-input-number[aria-label="Line height"] fig-icon[slot="prepend"] > svg',
+      ),
+    ).toHaveAttribute("viewBox", "0 0 24 24");
+    await expect(module.locator("fig-tooltip")).toHaveCount(12);
+    await expect(
+      module.locator('fig-tooltip[text="Font family"] fig-font-picker'),
+    ).toHaveCount(1);
+    await expect(
+      module.locator('fig-tooltip[text="Font size"] fig-input-number'),
+    ).toHaveCount(1);
+    await expect(
+      module.locator('fig-tooltip[text="Align middle"] fig-segment'),
+    ).toHaveCount(1);
+    await expect(module.locator('fig-tooltip[slot="input"]')).toHaveCount(0);
+    await expect(
+      module.locator('fig-property [slot="input"]'),
+    ).toHaveCount(4);
+    const iconGeometry = await module
+      .locator("fig-icon > svg")
+      .evaluateAll((icons) =>
+        icons.map((icon) => {
+          const box = icon.getBoundingClientRect();
+          return {
+            width: box.width,
+            height: box.height,
+            fill: getComputedStyle(icon.querySelector("path")!).fill,
+          };
+        }),
+      );
+    expect(
+      iconGeometry.every(
+        ({ width, height, fill }) =>
+          width === 24 && height === 24 && fill !== "none",
+      ),
+    ).toBe(true);
+
+    await module
+      .locator("fig-font-picker")
+      .evaluate((element: HTMLElement & { open(): void }) => element.open());
+    await module
+      .locator('[data-font-option-id="family:serif"]')
+      .click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"font-family": "serif"');
+
+    await module
+      .locator('fig-input-number[aria-label="Font size"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "24";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"font-size": "24px"');
+    await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
+  test("Appearance uses its opinionated module layout", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-appearance/default`);
+    const module = page.locator("fig-module-appearance");
+    await expect(module).toBeVisible();
+    await expect(module.locator("fig-group")).toHaveCount(1);
+    await expect(module.locator("fig-group > fig-header")).toContainText(
+      "Blending",
+    );
+    await expect(
+      module.locator("fig-group > fig-header fig-button[aria-label]"),
+    ).toHaveCount(1);
+    await expect(module.locator("fig-input-number")).toHaveAttribute(
+      "aria-label",
+      "Opacity",
+    );
+    await expect(module.locator("fig-select")).toHaveAttribute(
+      "label",
+      "Blend mode",
+    );
+    await expect(
+      page.locator("fig-select-options fig-separator"),
+    ).toHaveCount(5);
+    await expect(
+      page.locator('fig-select-option[value="plus-lighter"]'),
+    ).toHaveCount(1);
+    await expect(
+      page.locator('fig-select-option[value="plus-darker"]'),
+    ).toHaveCount(0);
+    await expect(page.locator("main .propkit-code-view")).toHaveCount(1);
+    await expect(page.locator("main .propkit-code-view")).toContainText(
+      "figCreateModule",
+    );
+    await module.locator("fig-input-number").evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "50";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+    );
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"opacity": 0.5');
+    await module.locator("fig-select").evaluate((element) => {
+      element.dispatchEvent(
+        new CustomEvent("optionhover", {
+          detail: "multiply",
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    });
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"phase": "option-hover"');
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"value": "multiply"');
+    await expect(page.locator("[data-propskit-element]")).toBeVisible();
+  });
+
+  test("Background uses reorderable fill rows", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-background/default`);
+    const module = page.locator("[data-fills-module]");
+    const rows = module.locator("fig-reorder > fig-property");
+
+    await expect(module.locator("fig-header")).toContainText("Fills");
+    await expect(
+      module.locator('fig-header fig-button[aria-label="Add fill"]'),
+    ).toHaveCount(1);
+    await expect(rows).toHaveCount(1);
+    await expect(
+      rows.locator('fig-button[aria-label="Hide fill"]'),
+    ).toHaveCount(1);
+    await expect(
+      rows.locator('fig-button[aria-label="Remove fill"]'),
+    ).toHaveCount(1);
+    await expect(rows.locator('[slot="leading"]')).toHaveCount(0);
+
+    await module
+      .locator('fig-header fig-button[aria-label="Add fill"]')
+      .click();
+    await page.locator('fig-menu-item[value="gradient"]').click();
+
+    await expect(rows).toHaveCount(2);
+    await expect(rows.locator('[slot="leading"]')).toHaveCount(2);
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"background-image": "linear-gradient(');
+
+    await module.locator("fig-reorder").evaluate((reorder) => {
+      reorder.append(reorder.firstElementChild!);
+      reorder.dispatchEvent(
+        new CustomEvent("reorder", {
+          bubbles: true,
+          detail: { oldIndex: 0, newIndex: 1 },
+        }),
+      );
+    });
+    await expect(rows.first().locator("fig-input-fill")).toHaveAttribute(
+      "value",
+      /"type":"gradient"/,
+    );
+
+    await rows
+      .first()
+      .locator('fig-button[aria-label="Hide fill"]')
+      .click();
+    await expect(
+      rows.first().locator('fig-button[aria-label="Show fill"]'),
+    ).toHaveCount(1);
+
+    await rows
+      .last()
+      .locator('fig-button[aria-label="Remove fill"]')
+      .click();
+    await expect(rows).toHaveCount(1);
+    await expect(rows.locator('[slot="leading"]')).toHaveCount(0);
+  });
+
+  test("Filters uses SVG-derived property rows", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-filters/default`);
+    const module = page.locator("[data-filters-module]");
+    const rows = module.locator("fig-reorder > fig-property");
+
+    await expect(
+      module.locator("fig-module-filters > fig-group > fig-header"),
+    ).toContainText("Filters");
+    await expect(rows).toHaveCount(1);
+    const controls = rows.locator('fig-stack[slot="input"]');
+    await expect(controls.locator("fig-select")).toHaveAttribute(
+      "value",
+      "layer:gaussian-blur",
+    );
+    await expect(controls.locator("fig-input-number")).toHaveAttribute(
+      "units",
+      "px",
+    );
+    await expect(
+      rows.locator('fig-button[aria-label="Hide filter"]'),
+    ).toHaveCount(1);
+    await expect(
+      rows.locator('fig-button[aria-label="Remove filter"]'),
+    ).toHaveCount(1);
+
+    await module
+      .locator('fig-header fig-button[aria-label="Add filter"]')
+      .click();
+    await page.locator('fig-menu-item[value="layer:hue-rotate"]').click();
+
+    await expect(rows).toHaveCount(2);
+    await expect(rows.locator('[slot="leading"]')).toHaveCount(2);
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"filter": "blur(4px) hue-rotate(0deg)"');
+
+    await rows
+      .first()
+      .locator('fig-button[aria-label="Hide filter"]')
+      .click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"filter": "hue-rotate(0deg)"');
+  });
+
+  test("Transforms uses editable ordered transform rows", async ({ page }) => {
+    await page.goto(`${playgroundUrl}/#module-transforms/default`);
+    const module = page.locator("[data-transforms-module]");
+    const rows = module.locator("fig-reorder > fig-property");
+
+    await expect(
+      module.locator("fig-module-transforms > fig-group > fig-header"),
+    ).toContainText("Transforms");
+    await expect(rows).toHaveCount(1);
+    await expect(
+      rows.locator('fig-button[variant="property"]'),
+    ).toContainText("Translate");
+    await expect(
+      rows.locator('fig-button[aria-label="Hide transform"]'),
+    ).toHaveCount(1);
+    await expect(
+      rows.locator('fig-button[aria-label="Remove transform"]'),
+    ).toHaveCount(1);
+
+    await rows.locator('fig-button[variant="property"]').click();
+    await expect(
+      module.locator('dialog[open] fig-input-number'),
+    ).toHaveCount(3);
   });
 
   test("compact button icon control uses a small chevron across type changes", async ({

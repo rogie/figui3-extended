@@ -18,7 +18,7 @@ Install `fig-editor.css` + `fig-editor.js` (pulls in `fig.js`). Still import `fi
 Figma-style listbox. Prefer this over core `fig-dropdown`.
 
 ```tsx
-<fig-select value={align} label="Align" full onChange={onChange}>
+<fig-select value={align} label="Align" size="large" full onChange={onChange}>
   <fig-select-options>
     <fig-select-option value="left">Left</fig-select-option>
     <fig-select-option value="center">Center</fig-select-option>
@@ -38,8 +38,9 @@ Data-driven (no authored options):
 />
 ```
 
-- Attrs: `value`, `label`, `options` (comma / newline / JSON), `menu-anchor` (alternate anchor selector), `variant` (`ghost` | `input`), `size` (`large`, 32px trigger), `icon` (square chevron-only trigger; provide `aria-label`), `subtle` (applies the secondary hover/focus fill to every option), `full`, `disabled`, `position` (omit to overlay the selected option on the trigger; set `bottom left`, `bottom right`, `top left`, `top right`, `bottom center`, or `top center` to place the menu like a popup), `offset`, `closedby`, `open`
+- Attrs: `value`, `label`, `options` (comma / newline / JSON), `menu-anchor` (alternate anchor selector), `variant` (`primary` | `ghost` | `input`), `size` (`large`, 32px trigger), `icon` (square chevron-only trigger; provide `aria-label`), `subtle` (applies the secondary hover/focus fill to every option), `full`, `disabled`, `position` (omit to overlay the selected option on the trigger; set `bottom left`, `bottom right`, `top left`, `top right`, `bottom center`, or `top center` to place the menu like a popup), `offset`, `closedby`, `open`
 - Property: `menuAnchor` accepts an `Element`, selector string, or `null`. The menu matches the anchor width and centers its selected row over it; if the anchor is narrower than the menu’s usable minimum, default overlay mode centers the wider menu over the anchor. Clear it to restore trigger-text alignment. Explicit `position` keeps anchor-derived sizing while applying normal popup placement and edge alignment.
+- Methods: `focus(options)` focuses the trigger; `activate(options)` focuses the trigger and opens the menu unless disabled.
 - Events: `input` / `change` on commit; `optionhover` for pointer previews; `optionfocus` for open-menu keyboard previews. Both preview events provide the option value in `detail` without changing selection and require native listeners.
 - Do not `stopPropagation` on option click — React light-DOM handlers must run.
 - Internal popup uses `popover="manual"` so the list works inside `fig-popup variant="popover"`.
@@ -75,6 +76,26 @@ Data-driven (no authored options):
 - Attrs: `value` (falls back to trimmed `textContent`), `label` (closed-trigger text when content is rich), `selected`, `disabled`, `subtle` (secondary hover/focus fill)
 - `role="option"`, `aria-selected`, `aria-disabled`
 
+## `fig-font-picker`
+
+```tsx
+<fig-font-picker
+  label="Font"
+  value={JSON.stringify({ family: "Inter", axes: { wght: 500 } })}
+  options="Inter,Instrument Sans,Georgia"
+  local-fonts="false"
+  onChange={onChange}
+/>
+```
+
+- Values normalize to `{ family, face?, axes }`; plain family names are accepted for `value` and `default`.
+- `options` accepts comma/newline strings or family metadata JSON. The picker also discovers loaded web fonts, local fonts (when supported and permitted), generic families, and up to `google-font-limit` Google families.
+- `minimal` defaults to true; `minimal="false"` adds tabs and source/category/capability/language filters.
+- Properties: `fonts`, `favorites`, `selectedFamily`, `selectedFace`, `selectedResource`, `result`, and `cssValue`.
+- Methods: `open()`, `close()`, `focus()`, `refreshFonts()`, `inspectSelectedFace()`, and `resetToDefault()`.
+- Events: `input`, `change`, `optionhover`, `optionfocus`, `favoriteschange`, `fontmetadata`, `previewend`, and `close`.
+- Google previews load lazily with `FontFace`. Set `google-fonts="false"` for offline or network-free surfaces and `local-fonts="false"` when Local Font Access should not be requested.
+
 ## `fig-input-rotate`
 
 ```tsx
@@ -88,6 +109,7 @@ Data-driven (no authored options):
 - `value` returns numeric `{ x, y, z }`.
 - `.default` / `.defaultValue` return `{ x, y, z }`; `.isDefault` and `.resetToDefault()` use all three axes and emit one host event pair.
 - Clicking opens an anchored popup with a `fig-3d-rotate` editor; popup edits emit `input` and `change` with `{ x, y, z }`.
+- Methods: `focus(options)`, `activate(options)` (focuses and clicks the trigger)
 
 ## `fig-input-point`
 
@@ -152,7 +174,7 @@ Authored trailing accessory (`/propskit#property/custom-accessory`):
 </fig-property>
 ```
 
-- Attrs: `label`, `ratio` (`label:input`, default `1:2`), `leading` (`drag` | `chevron`), `trailing` (`remove` | `add` | `bind`), `show-leading`, `show-trailing`, `selected`
+- Attrs: `label`, `ratio` (`label:input`, default `1:2`), `leading` (`drag` | `chevron`), `trailing` (`remove` | `add` | `bind`), `show-leading`, `show-trailing`, `selected`, `activation` (`row`)
 - `ratio` accepts positive numeric pairs such as `1:1` and `2.5:3`; its reflected property supports React assignment. Invalid values fall back to `1:2`. Row activation ignores it.
 - CSS overrides: `--fig-property-label-ratio`, `--fig-property-input-ratio`, and `--fig-property-label-track`.
 - Slots: `input` (one direct primary control), `label`, `leading`, `trailing`
@@ -160,10 +182,91 @@ Authored trailing accessory (`/propskit#property/custom-accessory`):
 - Authored accessory slots override generated shortcuts.
 - `selected` and `selected="true"` use the selected background; `selected="false"` does not.
 - Omitted or `"hover"` show attributes use hover visibility; `"false"` never shows the slot; an empty/present attribute always shows it.
+- `activation="row"` activates from the label or unused row surface without intercepting direct input or accessory clicks; focus moves the shared outline to the row and applies the selected background. A slotted `fig-select` uses the property row as its menu anchor.
+- Row activation content-sizes slotted controls even when `full` is present; color, gradient, palette, and point inputs use the standard compact width.
+- `focus(options)` delegates focus to the slotted control; `activate(options)` delegates activation and falls back to focus.
 - `isDefault` is true only when at least one resettable slotted control exists and every resettable control is at its default.
 - Right-click opens a generated “Reset to default” menu and sets `selected` on the row until the menu closes. Authored `selected` is restored, including `selected="false"`. Set `context-menu="none"` to leave the native event untouched and disable the generated menu. `resetToDefault()` delegates to the same method on the slotted control; the item stays synchronized while open and is disabled when unsupported, disabled, or already at its default.
 - Generated trailing controls emit bubbling, composed `remove`, `add`, or `bind` events with the slotted control in `detail.input`.
 - Child input events bubble unchanged.
+
+## `fig-module-fills`
+
+Framework-neutral, hydratable fill-list module:
+
+```html
+<fig-module-fills
+  fills='[
+    {"type":"solid","color":"#0D99FF","visible":true},
+    {"type":"gradient","gradient":{"type":"linear","angle":90,"stops":[{"position":0,"color":"#0D99FF","opacity":100},{"position":100,"color":"#9747FF","opacity":100}]},"visible":true}
+  ]'
+></fig-module-fills>
+```
+
+- Attrs: `fills` (JSON array), `mode` (defaults to `solid,gradient,image`), `multiple` (`"false"` limits the module to one fill), `value-property` (`background` or `fill`), `label`, `disabled`
+- Properties: `fills` accepts/returns fill objects; `values` returns mapped CSS values; `multiple` reflects to the attribute.
+- `fills` is reflected after add, remove, visibility, reorder, and fill edits so consuming frameworks can hydrate from serialized markup.
+- Events: bubbling `input` / `change`; `detail` includes `fills`, mapped `values`, `phase`, `path`, and action/index metadata when relevant.
+- Multiple background fills map to ordered `background-image` layers plus a bottom `background-color`.
+
+## `fig-module-filters`
+
+Ordered SVG-derived filters rendered as inline property controls:
+
+```html
+<fig-module-filters
+  filters='[
+    {"target":"layer","type":"gaussian-blur","radius":4,"visible":true},
+    {"target":"backdrop","type":"hue-rotate","angle":45,"visible":true}
+  ]'
+></fig-module-filters>
+```
+
+- Attrs: `filters` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `filters`, `values`, `multiple`
+- Layer and Backdrop each support blur, brightness, contrast, grayscale, hue rotate, invert, saturation, and sepia.
+- Supported types map to `feGaussianBlur`, `feColorMatrix`, or `feComponentTransfer`.
+- `values.filter` and `values["backdrop-filter"]` are ordered CSS filter-function lists, or `none`.
+- Each row wraps a grouped filter `fig-select` and unit-aware `fig-input-number` in `fig-stack[slot="input"]`.
+- Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
+
+## `fig-module-shadows`
+
+Ordered box and text shadows with a property-button editor per row:
+
+```html
+<fig-module-shadows
+  shadows='[
+    {"type":"drop","x":0,"y":4,"blur":4,"spread":0,"color":"#00000040","visible":true},
+    {"type":"text","x":0,"y":2,"blur":4,"color":"#00000040","visible":true}
+  ]'
+></fig-module-shadows>
+```
+
+- Attrs: `shadows` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `shadows`, `values`, `multiple`
+- Types: `drop` and `inner` provide X/Y, blur, spread, and color; `text` omits spread.
+- `values["box-shadow"]` combines drop and inner shadows, while `values["text-shadow"]` combines text shadows. Empty visible stacks map to `none`.
+- Each row opens an anchored property popup. Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
+
+## `fig-module-transforms`
+
+Ordered CSS transforms with a property-button editor per row:
+
+```html
+<fig-module-transforms
+  transforms='[
+    {"type":"translate","x":12,"y":24,"z":0,"visible":true},
+    {"type":"rotate","x":0,"y":0,"z":45,"visible":true}
+  ]'
+></fig-module-transforms>
+```
+
+- Attrs: `transforms` (JSON array), `multiple`, `label`, `disabled`
+- Properties: `transforms`, `values`, `multiple`
+- Types: `translate`, `rotate`, `scale`, `skew`, and `perspective`, each with type-appropriate numeric fields and units.
+- `values.transform` contains the ordered visible CSS transform-function list, or `none`.
+- Each row opens an anchored property popup. Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
 
 ## `fig-popup-easing`
 

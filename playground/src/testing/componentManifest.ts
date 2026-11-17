@@ -655,6 +655,79 @@ export const editorComponentContracts: ComponentContract[] = [
     ],
   },
   {
+    tag: "fig-font-picker",
+    title: "Font Picker",
+    group: "input",
+    markup: `<fig-font-picker value="Inter" options="Inter,Georgia" local-fonts="false" google-fonts="false"></fig-font-picker>`,
+    attributes: [
+      {
+        name: "value",
+        attribute: "value",
+        value: "Georgia",
+        expected: `{"family":"Georgia","axes":{}}`,
+      },
+      { name: "disabled", attribute: "disabled", value: "" },
+    ],
+  },
+  {
+    tag: "fig-module-fills",
+    title: "Fill Module",
+    group: "input",
+    markup: `<fig-module-fills fills='[{"type":"solid","color":"#0D99FF","visible":true}]'></fig-module-fills>`,
+    attributes: [
+      {
+        name: "fills",
+        attribute: "fills",
+        value: `[{"type":"solid","color":"#14AE5C","visible":true}]`,
+      },
+    ],
+  },
+  {
+    tag: "fig-module-filters",
+    title: "Filter Module",
+    group: "input",
+    markup: `<fig-module-filters filters='[{"type":"gaussian-blur","radius":4,"visible":true}]'></fig-module-filters>`,
+    attributes: [
+      {
+        name: "filters",
+        attribute: "filters",
+        value: `[{"type":"hue-rotate","angle":90,"visible":true}]`,
+      },
+    ],
+  },
+  {
+    tag: "fig-module-shadows",
+    title: "Shadow Module",
+    group: "input",
+    markup: `<fig-module-shadows shadows='[{"type":"drop","x":0,"y":4,"blur":4,"spread":0,"color":"#00000040","visible":true}]'></fig-module-shadows>`,
+    attributes: [
+      {
+        name: "shadows",
+        attribute: "shadows",
+        value: `[{"type":"inner","x":0,"y":2,"blur":4,"spread":0,"color":"#00000040","visible":true}]`,
+      },
+    ],
+  },
+  {
+    tag: "fig-module-transforms",
+    title: "Transform Module",
+    group: "input",
+    markup: `<fig-module-transforms transforms='[{"type":"translate","x":0,"y":0,"z":0,"visible":true}]'></fig-module-transforms>`,
+    attributes: [
+      {
+        name: "transforms",
+        attribute: "transforms",
+        value: `[{"type":"rotate","x":0,"y":0,"z":45,"visible":true}]`,
+      },
+    ],
+  },
+  {
+    tag: "fig-module-appearance",
+    title: "Appearance Module",
+    group: "layout",
+    markup: `<fig-module-appearance></fig-module-appearance>`,
+  },
+  {
     tag: "fig-fill-picker",
     title: "Fill Picker",
     group: "input",

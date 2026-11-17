@@ -1,4 +1,5 @@
 import type { PropsKitConfig } from "@rogieking/figui3/propskit.js";
+import type { CssPropertyModuleId } from "../../../types/css-properties";
 import { imageUrl } from "../lib/images";
 
 const PROPSKIT_IMAGE_URLS = Array.from({ length: 5 }, (_, index) =>
@@ -15,6 +16,7 @@ export interface PropsKitExample {
   createConfig: () => PropsKitConfig;
   lang?: "html" | "javascript";
   dialog?: PropsKitDialogPresentation;
+  cssModuleId?: CssPropertyModuleId;
 }
 
 export interface PropsKitDialogPresentation {

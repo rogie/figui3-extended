@@ -26,13 +26,6 @@ interface Props {
   groupOrder?: string[];
 }
 
-const COLLAPSED_GROUPS = new Set([
-  "Utilities",
-  "Native elements",
-  "Editor components",
-  "Dialog examples",
-]);
-
 function toSentenceCase(text: string): string {
   const trimmed = text.trim();
   if (!trimmed) return "";
@@ -179,10 +172,6 @@ export default function Nav({
     );
     if (!activeLayer) return;
 
-    activeLayer
-      .closest<HTMLElement>("fig-group[collapsible]")
-      ?.setAttribute("open", "true");
-
     const frame = requestAnimationFrame(() => {
       const containerRect = el.getBoundingClientRect();
       const layerRect = activeLayer.getBoundingClientRect();
@@ -302,7 +291,10 @@ export default function Nav({
             groups.push(...groups.splice(nativeElementsIndex, 1));
           }
 
-          return groups.map((g, gi) => {
+          const renderGroup = (
+            g: { group: string | undefined; sections: Section[] },
+            key: string,
+          ) => {
             const layers = g.sections.map((section) => {
               const isSingleExample = singleExampleSectionIds.has(section.id);
               const onlyExample = section.examples[0];
@@ -332,25 +324,65 @@ export default function Nav({
             });
 
             if (g.group) {
-              const collapsed = COLLAPSED_GROUPS.has(g.group);
               return (
                 <fig-group
-                  key={g.group}
+                  key={key}
                   name={g.group}
                   compact
                   collapsible
-                  open={normalizedSearch ? true : collapsed ? undefined : true}
+                  open={
+                    normalizedSearch ||
+                    g.group === "Modules" ||
+                    g.group === "Pickers"
+                      ? true
+                      : undefined
+                  }
                 >
                   {layers}
                 </fig-group>
               );
             }
             return (
-              <React.Fragment key={`ungrouped-${gi}`}>
+              <React.Fragment key={key}>
                 {layers}
               </React.Fragment>
             );
-          });
+          };
+
+          const propsKitGroups = groups.filter(
+            (entry) =>
+              entry.group !== "Modules" &&
+              entry.group !== "Pickers" &&
+              entry.group !== "Experimental",
+          );
+          const modulesGroup = groups.find(
+            (entry) => entry.group === "Modules",
+          );
+          const pickersGroup = groups.find(
+            (entry) => entry.group === "Pickers",
+          );
+          const experimentalGroup = groups.find(
+            (entry) => entry.group === "Experimental",
+          );
+
+          return [
+            modulesGroup ? renderGroup(modulesGroup, "modules") : null,
+            pickersGroup ? renderGroup(pickersGroup, "pickers") : null,
+            <fig-group
+              key="propskit"
+              className="nav-product-group"
+              name="PropsKit"
+              compact
+              collapsible
+            >
+              {propsKitGroups.map((group, index) =>
+                renderGroup(group, `propskit-${group.group ?? index}`),
+              )}
+            </fig-group>,
+            experimentalGroup
+              ? renderGroup(experimentalGroup, "experimental")
+              : null,
+          ];
         })()}
       </div>
       <footer className="nav-footer">
