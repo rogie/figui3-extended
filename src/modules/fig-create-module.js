@@ -32,6 +32,7 @@ const BLEND_MODE_GROUPS = [
 const APPEARANCE_PROPERTIES = [
   "visibility",
   "opacity",
+  "border-radius",
   "mix-blend-mode",
 ];
 
@@ -174,6 +175,8 @@ const TYPOGRAPHY_ICON_PATHS = {
 
 const OPACITY_ICON =
   '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16.2041 6.01074C17.2128 6.113 18 6.96435 18 8V16L17.9893 16.2041C17.8938 17.1457 17.1457 17.8938 16.2041 17.9893L16 18H8C6.96435 18 6.113 17.2128 6.01074 16.2041L6 16V8C6 6.89543 6.89543 6 8 6H16L16.2041 6.01074ZM8 7C7.44772 7 7 7.44772 7 8V16C7 16.5523 7.44772 17 8 17H16C16.5523 17 17 16.5523 17 16V8C17 7.44772 16.5523 7 16 7H8ZM9 14.5C9.27614 14.5 9.5 14.7239 9.5 15C9.5 15.2761 9.27614 15.5 9 15.5C8.72386 15.5 8.5 15.2761 8.5 15C8.5 14.7239 8.72386 14.5 9 14.5ZM11 14.5C11.2761 14.5 11.5 14.7239 11.5 15C11.5 15.2761 11.2761 15.5 11 15.5C10.7239 15.5 10.5 15.2761 10.5 15C10.5 14.7239 10.7239 14.5 11 14.5ZM13 14.5C13.2761 14.5 13.5 14.7239 13.5 15C13.5 15.2761 13.2761 15.5 13 15.5C12.7239 15.5 12.5 15.2761 12.5 15C12.5 14.7239 12.7239 14.5 13 14.5ZM15 14.5C15.2761 14.5 15.5 14.7239 15.5 15C15.5 15.2761 15.2761 15.5 15 15.5C14.7239 15.5 14.5 15.2761 14.5 15C14.5 14.7239 14.7239 14.5 15 14.5ZM11 12.5C11.2761 12.5 11.5 12.7239 11.5 13C11.5 13.2761 11.2761 13.5 11 13.5C10.7239 13.5 10.5 13.2761 10.5 13C10.5 12.7239 10.7239 12.5 11 12.5ZM13 12.5C13.2761 12.5 13.5 12.7239 13.5 13C13.5 13.2761 13.2761 13.5 13 13.5C12.7239 13.5 12.5 13.2761 12.5 13C12.5 12.7239 12.7239 12.5 13 12.5ZM15 12.5C15.2761 12.5 15.5 12.7239 15.5 13C15.5 13.2761 15.2761 13.5 15 13.5C14.7239 13.5 14.5 13.2761 14.5 13C14.5 12.7239 14.7239 12.5 15 12.5ZM13 10.5C13.2761 10.5 13.5 10.7239 13.5 11C13.5 11.2761 13.2761 11.5 13 11.5C12.7239 11.5 12.5 11.2761 12.5 11C12.5 10.7239 12.7239 10.5 13 10.5ZM15 10.5C15.2761 10.5 15.5 10.7239 15.5 11C15.5 11.2761 15.2761 11.5 15 11.5C14.7239 11.5 14.5 11.2761 14.5 11C14.5 10.7239 14.7239 10.5 15 10.5ZM15 8.5C15.2761 8.5 15.5 8.72386 15.5 9C15.5 9.27614 15.2761 9.5 15 9.5C14.7239 9.5 14.5 9.27614 14.5 9C14.5 8.72386 14.7239 8.5 15 8.5Z" fill="currentColor" fill-opacity=".9"/></svg>';
+const BORDER_RADIUS_ICON =
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 8C15.7761 8 16 8.22386 16 8.5C16 8.77614 15.7761 9 15.5 9H12.5C11.7917 9 11.2902 9.00022 10.8984 9.03223C10.5126 9.06377 10.2769 9.12345 10.0918 9.21777C9.71554 9.40951 9.40951 9.71554 9.21777 10.0918C9.12345 10.2769 9.06377 10.5126 9.03223 10.8984C9.00022 11.2902 9 11.7917 9 12.5V15.5C9 15.7761 8.77614 16 8.5 16C8.22386 16 8 15.7761 8 15.5V12.5C8 11.8082 8.00003 11.2593 8.03613 10.8174C8.07272 10.3696 8.14901 9.98732 8.32715 9.6377C8.61472 9.07347 9.07347 8.61472 9.6377 8.32715C9.98732 8.14901 10.3696 8.07272 10.8174 8.03613C11.2593 8.00003 11.8082 8 12.5 8H15.5Z" fill="currentColor" fill-opacity=".9"/></svg>';
 const STROKE_WIDTH_ICON =
   '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17.25 14C17.6642 14 18 14.3358 18 14.75V17.25C18 17.6642 17.6642 18 17.25 18H6.75C6.33579 18 6 17.6642 6 17.25V14.75C6 14.3358 6.33579 14 6.75 14H17.25ZM7 17H17V15H7V17ZM17.25 9C17.6642 9 18 9.33579 18 9.75V11.25C18 11.6642 17.6642 12 17.25 12H6.75C6.33579 12 6 11.6642 6 11.25V9.75C6 9.33579 6.33579 9 6.75 9H17.25ZM7 11H17V10H7V11ZM17.5 6C17.7761 6 18 6.22386 18 6.5C18 6.77614 17.7761 7 17.5 7H6.5C6.22386 7 6 6.77614 6 6.5C6 6.22386 6.22386 6 6.5 6H17.5Z" fill="currentColor" fill-opacity=".9"/></svg>';
 const BLEND_MODE_ICON =
@@ -1708,10 +1711,50 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     stack.append(withControlTooltip(opacityInput));
   }
 
+  let borderRadiusInput = null;
+  if (has("border-radius")) {
+    borderRadiusInput = document.createElement("fig-input-number");
+    borderRadiusInput.style.cssText = "flex: 1 1 0; min-width: 0";
+    borderRadiusInput.setAttribute("default", "0");
+    borderRadiusInput.setAttribute("min", "0");
+    borderRadiusInput.setAttribute("step", "1");
+    borderRadiusInput.setAttribute("units", "px");
+    borderRadiusInput.setAttribute("steppers", "false");
+    borderRadiusInput.setAttribute("aria-label", "Border radius");
+    borderRadiusInput.addEventListener("input", (event) => {
+      emit(
+        "border-radius",
+        `${Number(eventValue(event))}px`,
+        "input",
+        event,
+      );
+    });
+    borderRadiusInput.addEventListener("change", (event) => {
+      emit(
+        "border-radius",
+        `${Number(eventValue(event))}px`,
+        "change",
+        event,
+      );
+    });
+    const prepend = document.createElement("span");
+    prepend.setAttribute("slot", "prepend");
+    appendSvgIcon(prepend, BORDER_RADIUS_ICON);
+    borderRadiusInput.append(prepend);
+    stack.append(withControlTooltip(borderRadiusInput));
+  }
+
   let blendSelect = null;
+  let blendProperty = null;
   if (has("mix-blend-mode")) {
+    blendProperty = document.createElement("fig-property");
+    blendProperty.setAttribute("ratio", "1:1");
+    const blendStack = document.createElement("fig-stack");
+    blendStack.setAttribute("slot", "input");
+    blendStack.setAttribute("full", "");
+
     blendSelect = document.createElement("fig-select");
-    blendSelect.style.cssText = "flex: 1 1 0; min-width: 0";
+    blendSelect.setAttribute("full", "");
     blendSelect.setAttribute("label", "Blend mode");
     blendSelect.addEventListener("input", (event) => {
       emit("mix-blend-mode", String(eventValue(event)), "input", event);
@@ -1743,11 +1786,13 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
       });
     });
     blendSelect.append(options);
-    stack.append(withControlTooltip(blendSelect));
+    blendStack.append(withControlTooltip(blendSelect));
+    blendProperty.append(blendStack);
   }
 
   property.append(stack);
   group.append(property);
+  if (blendProperty) group.append(blendProperty);
   panel.append(group);
   root.append(panel);
   target.append(root);
@@ -1777,6 +1822,12 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
       opacityInput.setAttribute(
         "value",
         String(Math.round(Number(values.opacity ?? 1) * 100)),
+      );
+    }
+    if (borderRadiusInput) {
+      borderRadiusInput.setAttribute(
+        "value",
+        String(numericValue(values["border-radius"], 0)),
       );
     }
     if (blendSelect) {

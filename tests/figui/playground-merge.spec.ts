@@ -2140,19 +2140,39 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"visibility": "hidden"');
-    await expect(module.locator("fig-input-number")).toHaveAttribute(
+    const opacityInput = module.locator(
+      'fig-input-number[aria-label="Opacity"]',
+    );
+    await expect(opacityInput).toHaveAttribute(
       "aria-label",
       "Opacity",
     );
-    await expect(module.locator("fig-select")).toHaveAttribute(
+    const borderRadiusInput = module.locator(
+      'fig-input-number[aria-label="Border radius"]',
+    );
+    await expect(borderRadiusInput).toHaveAttribute("value", "0");
+    await expect(borderRadiusInput).toHaveAttribute("units", "px");
+    const borderRadiusIcon = borderRadiusInput.locator("fig-icon svg path");
+    await expect(borderRadiusIcon).toHaveAttribute("d", /^M15\.5 8C/);
+    await expect(borderRadiusIcon).toHaveAttribute("fill", "currentColor");
+    const propertyRows = module.locator(
+      "fig-group.appearance-blending-group > fig-property",
+    );
+    await expect(propertyRows).toHaveCount(2);
+    await expect(propertyRows.nth(1).locator("fig-select")).toHaveAttribute(
       "label",
       "Blend mode",
     );
     await expect(
-      module.locator(
-        'fig-property > fig-stack[slot="input"] > fig-tooltip',
+      propertyRows.nth(0).locator(
+        'fig-stack[slot="input"] > fig-tooltip',
       ),
     ).toHaveCount(2);
+    await expect(
+      propertyRows.nth(1).locator(
+        'fig-stack[slot="input"] > fig-tooltip',
+      ),
+    ).toHaveCount(1);
     await expect(
       page.locator("fig-select-options fig-separator"),
     ).toHaveCount(5);
@@ -2166,7 +2186,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(page.locator("main .propkit-code-view")).toContainText(
       "figCreateModule",
     );
-    await module.locator("fig-input-number").evaluate(
+    await opacityInput.evaluate(
       (element: HTMLElement & { value?: string }) => {
         element.value = "50";
         element.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2175,6 +2195,15 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"opacity": 0.5');
+    await borderRadiusInput.evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "12";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+    );
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-radius": "12px"');
     await module.locator("fig-select").evaluate((element) => {
       element.dispatchEvent(
         new CustomEvent("optionhover", {

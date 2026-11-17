@@ -303,7 +303,6 @@ const border = [
   color("border-left-color", "Left border color", "#000000"),
   color("border-block-color", "Block border color", "#000000"),
   color("border-inline-color", "Inline border color", "#000000"),
-  text("border-radius", "Border radius", "0px"),
   text("border-top-left-radius", "Top left radius", "0px"),
   text("border-top-right-radius", "Top right radius", "0px"),
   text("border-bottom-right-radius", "Bottom right radius", "0px"),
@@ -393,6 +392,7 @@ const masks = [
 
 const appearance = [
   number("opacity", "Opacity", 1, "", "all", { variant: "opacity", min: 0, max: 1, step: 0.01 }),
+  text("border-radius", "Border radius", "0px"),
   select("visibility", "Visibility", ["visible", "hidden", "collapse"], "visible"),
   select("mix-blend-mode", "Blend mode", ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity", "plus-darker", "plus-lighter"], "normal"),
   select("isolation", "Isolation", ["auto", "isolate"], "auto"),
