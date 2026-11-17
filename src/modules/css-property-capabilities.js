@@ -194,7 +194,7 @@ const layout = [
 
 const typography = [
   text("font", "Font", ""),
-  text("font-family", "Font family", "sans-serif", "text"),
+  text("font-family", "Font family", "Inter", "text"),
   text("font-size", "Font size", "16px", "text"),
   text("font-size-adjust", "Font size adjustment", "none", "text"),
   select("font-style", "Font style", ["normal", "italic", "oblique"], "normal", "text"),
@@ -270,7 +270,7 @@ const background = [
   number("stop-opacity", "SVG stop opacity", 1, "", "svg", { min: 0, max: 1, step: 0.01 }),
 ];
 
-const borders = [
+const border = [
   text("border", "Border", "none"),
   text("border-width", "Border width", "medium"),
   select("border-style", "Border style", ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"], "none"),
@@ -318,17 +318,23 @@ const borders = [
   text("border-image-width", "Border image width", "1"),
   text("border-image-outset", "Border image outset", "0"),
   text("border-image-repeat", "Border image repeat", "stretch"),
-  text("outline", "Outline", "none"),
-  color("outline-color", "Outline color", "#000000"),
-  select("outline-style", "Outline style", ["none", "auto", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"], "none"),
-  text("outline-width", "Outline width", "medium"),
-  text("outline-offset", "Outline offset", "0px"),
   select("border-collapse", "Border collapse", ["separate", "collapse"], "separate", "table"),
   text("border-spacing", "Border spacing", "0px", "table"),
   color("column-rule-color", "Column rule color", "#000000", "multi-column"),
   select("column-rule-style", "Column rule style", ["none", "dotted", "dashed", "solid", "double"], "none", "multi-column"),
   text("column-rule-width", "Column rule width", "medium", "multi-column"),
   text("column-rule", "Column rule", "medium none currentcolor", "multi-column"),
+];
+
+const outline = [
+  text("outline", "Outline", "none"),
+  color("outline-color", "Outline color", "#005fcc"),
+  select("outline-style", "Outline style", ["none", "auto", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"], "none"),
+  text("outline-width", "Outline width", "medium"),
+  text("outline-offset", "Outline offset", "0px"),
+];
+
+const stroke = [
   color("stroke", "SVG stroke", "#000000", "svg"),
   number("stroke-opacity", "SVG stroke opacity", 1, "", "svg", { min: 0, max: 1, step: 0.01 }),
   text("stroke-width", "SVG stroke width", "1px", "svg"),
@@ -422,11 +428,9 @@ export const CSS_PROPERTY_MODULES = Object.freeze([
   { id: "layout", label: "Layout", properties: layout },
   { id: "typography", label: "Typography", properties: typography },
   { id: "background", label: "Fills", properties: background },
-  {
-    id: "border-stroke-outline",
-    label: "Border / Stroke / Outline",
-    properties: borders,
-  },
+  { id: "border", label: "Border", properties: border },
+  { id: "stroke", label: "Stroke", properties: stroke },
+  { id: "outline", label: "Outline", properties: outline },
   { id: "filters", label: "Filters", properties: filters },
   { id: "shadow", label: "Shadow", properties: shadows },
   { id: "transforms", label: "Transforms", properties: transforms },

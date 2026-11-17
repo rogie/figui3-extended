@@ -9,6 +9,7 @@ import {
   CustomEvent,
   figEditorDefineElement,
   figEditorUniqueId,
+  figEditorWithTooltip,
 } from "../runtime/helpers.js";
 
 const TRANSFORM_TYPES = {
@@ -457,6 +458,10 @@ class FigModuleTransforms extends HTMLElement {
     group.append(header);
 
     const reorder = document.createElement("fig-reorder");
+    reorder.setAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
     reorder.addEventListener("reorder", (event) => {
       event.stopPropagation();
       const oldIndex = event.detail?.oldIndex ?? event.detail?.from;
@@ -537,7 +542,13 @@ class FigModuleTransforms extends HTMLElement {
           { action: "remove", index },
         );
       });
-      actions.append(visibility, remove);
+      actions.append(
+        figEditorWithTooltip(
+          transform.visible ? "Hide transform" : "Show transform",
+          visibility,
+        ),
+        figEditorWithTooltip("Remove transform", remove),
+      );
       property.append(actions);
 
       const popup = this.#createEditor(transform, index, trigger, disabled);
@@ -548,6 +559,9 @@ class FigModuleTransforms extends HTMLElement {
 
     group.append(reorder);
     this.replaceChildren(group);
+    queueMicrotask(() => {
+      if (reorder.isConnected) reorder.refresh();
+    });
   }
 }
 

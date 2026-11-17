@@ -17,7 +17,6 @@ import {
   applyFontPickerCss,
   fontCapabilities,
   fontPickerCss,
-  fontRecommendationScores,
   genericFontFamilies,
   googleFontsStylesheetUrl,
   mergeFontFamilies,
@@ -1282,18 +1281,6 @@ export class FigFontPicker extends HTMLElement {
       selectedIcon.setAttribute("slot", "prepend");
       selectedIcon.setAttribute("aria-hidden", "true");
       option.append(selectedIcon, preview);
-      const recommendations = fontRecommendationScores(family);
-      for (const badge of [
-        recommendations.classified ? "" : "Unclassified",
-      ].filter(Boolean)) {
-        option.append(
-          figEditorCreateElement(
-            "span",
-            { className: "fig-font-picker-badge" },
-            badge,
-          ),
-        );
-      }
       const favorite = this.#favorites.has(family.family.toLocaleLowerCase());
       option.append(
         figEditorCreateElement(

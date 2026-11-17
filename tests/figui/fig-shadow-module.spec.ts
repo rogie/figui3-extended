@@ -53,6 +53,9 @@ test.describe("fig-module-shadows", () => {
           'fig-button[variant="property"][aria-haspopup="dialog"]',
         ).length,
         editors: element.querySelectorAll('dialog[is="fig-popup"]').length,
+        tooltips: element.querySelectorAll(
+          'fig-property > fig-tooltip, fig-property > fig-stack[slot="trailing"] > fig-tooltip',
+        ).length,
       };
     });
 
@@ -64,6 +67,7 @@ test.describe("fig-module-shadows", () => {
     expect(result.rows).toBe(3);
     expect(result.triggers).toBe(3);
     expect(result.editors).toBe(3);
+    expect(result.tooltips).toBe(9);
   });
 
   test("opens the row editor with fields appropriate to its type", async ({
@@ -137,6 +141,15 @@ test.describe("fig-module-shadows", () => {
 
     const rows = page.locator("fig-module-shadows fig-reorder > fig-property");
     await expect(rows).toHaveCount(2);
+    await expect(page.locator("fig-module-shadows fig-reorder")).toHaveAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
+    await expect(
+      rows.locator(
+        ':scope > fig-icon[slot="leading"][name="drag-handle"][data-reorder-handle]',
+      ),
+    ).toHaveCount(2);
     await expect(
       rows.last().locator(':scope > dialog[is="fig-popup"]'),
     ).toHaveAttribute("open", "true");

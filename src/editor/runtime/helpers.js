@@ -112,6 +112,14 @@ function figEditorCreateElement(tagName, attributes, children) {
   return figEditorAppendChildren(element, children);
 }
 
+function figEditorWithTooltip(text, child, attributes = {}) {
+  return figEditorCreateElement(
+    "fig-tooltip",
+    { text, ...attributes },
+    child,
+  );
+}
+
 const FIG_EDITOR_SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
 function figEditorCreateSvgElement(tagName, attributes, children) {
@@ -257,6 +265,7 @@ export {
   figEditorAppendChildren,
   figEditorSetAttributes,
   figEditorCreateElement,
+  figEditorWithTooltip,
   FIG_EDITOR_SVG_NAMESPACE,
   figEditorCreateSvgElement,
   figEditorCreateOverflowButtons,

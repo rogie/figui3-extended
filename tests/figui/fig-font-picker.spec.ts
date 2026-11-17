@@ -92,6 +92,7 @@ test.describe("fig-font-picker", () => {
               ':scope > fig-icon.fig-font-picker-favorite[slot="append"]',
             ),
         ),
+        badgeCount: picker.querySelectorAll(".fig-font-picker-badge").length,
         searchIconCount:
           picker.querySelector(".fig-font-picker-search")?.querySelectorAll(
             ":scope > fig-icon",
@@ -127,6 +128,7 @@ test.describe("fig-font-picker", () => {
       largeOptions: true,
       optionGap: "4px",
       optionSlots: true,
+      badgeCount: 0,
       searchIconCount: 1,
       dialogOpen: true,
     });

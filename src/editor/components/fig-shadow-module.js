@@ -9,6 +9,7 @@ import {
   CustomEvent,
   figEditorDefineElement,
   figEditorUniqueId,
+  figEditorWithTooltip,
 } from "../runtime/helpers.js";
 
 const SHADOW_TYPES = {
@@ -461,6 +462,10 @@ class FigModuleShadows extends HTMLElement {
     group.append(header);
 
     const reorder = document.createElement("fig-reorder");
+    reorder.setAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
     reorder.addEventListener("reorder", (event) => {
       event.stopPropagation();
       const oldIndex = event.detail?.oldIndex ?? event.detail?.from;
@@ -505,7 +510,9 @@ class FigModuleShadows extends HTMLElement {
         trigger.setAttribute("aria-expanded", String(popup.open));
         trigger.toggleAttribute("selected", popup.open);
       });
-      property.append(trigger);
+      property.append(
+        figEditorWithTooltip(SHADOW_TYPES[shadow.type].label, trigger),
+      );
 
       const actions = document.createElement("fig-stack");
       actions.setAttribute("slot", "trailing");
@@ -534,7 +541,13 @@ class FigModuleShadows extends HTMLElement {
           { action: "remove", index },
         );
       });
-      actions.append(visibility, remove);
+      actions.append(
+        figEditorWithTooltip(
+          shadow.visible ? "Hide shadow" : "Show shadow",
+          visibility,
+        ),
+        figEditorWithTooltip("Remove shadow", remove),
+      );
       property.append(actions);
 
       const popup = this.#createEditor(shadow, index, trigger, disabled);
@@ -545,6 +558,9 @@ class FigModuleShadows extends HTMLElement {
 
     group.append(reorder);
     this.replaceChildren(group);
+    queueMicrotask(() => {
+      if (reorder.isConnected) reorder.refresh();
+    });
   }
 }
 

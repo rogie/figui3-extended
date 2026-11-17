@@ -37,6 +37,9 @@ test.describe("fig-module-fills", () => {
         values: element.values,
         rows: element.querySelectorAll("fig-property").length,
         handles: element.querySelectorAll('[slot="leading"]').length,
+        tooltips: element.querySelectorAll(
+          'fig-property > fig-tooltip, fig-property > fig-stack[slot="trailing"] > fig-tooltip',
+        ).length,
       };
     }, initial);
 
@@ -44,6 +47,7 @@ test.describe("fig-module-fills", () => {
     expect(hydrated.values["background-color"]).toBe("#ff0000");
     expect(hydrated.rows).toBe(2);
     expect(hydrated.handles).toBe(2);
+    expect(hydrated.tooltips).toBe(6);
 
     const propertyState = await page.evaluate(() => {
       const element = document.querySelector("fig-module-fills") as HTMLElement & {
@@ -105,6 +109,15 @@ test.describe("fig-module-fills", () => {
 
     const rows = page.locator("fig-module-fills fig-reorder > fig-property");
     await expect(rows).toHaveCount(2);
+    await expect(page.locator("fig-module-fills fig-reorder")).toHaveAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
+    await expect(
+      rows.locator(
+        ':scope > fig-icon[slot="leading"][name="drag-handle"][data-reorder-handle]',
+      ),
+    ).toHaveCount(2);
     await expect(rows.last().locator("fig-input-fill")).toHaveAttribute(
       "value",
       /"type":"gradient"/,

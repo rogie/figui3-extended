@@ -79,6 +79,9 @@ Registered tags:
 | `fig-module-shadows` | Hydratable, reorderable box and text shadow module |
 | `fig-module-transforms` | Hydratable, reorderable CSS transform module |
 | `fig-module-appearance` | Appearance and blending property module |
+| `fig-module-border` | Compact CSS border editor with side targeting |
+| `fig-module-stroke` | Compact SVG stroke editor with dash controls |
+| `fig-module-outline` | Compact CSS outline editor with signed offset |
 | `fig-property` | Composable property row with leading, input, and trailing slots |
 | `fig-input-rotate` | Compact X/Y/Z rotation property button |
 | `fig-input-point` | Compact X/Y point trigger with origin-grid popup |

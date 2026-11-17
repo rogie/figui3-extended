@@ -137,7 +137,9 @@ test("CSS property modules preserve exact keys and friendly labels", () => {
     "Layout",
     "Typography",
     "Fills",
-    "Border / Stroke / Outline",
+    "Border",
+    "Stroke",
+    "Outline",
     "Filters",
     "Shadow",
     "Transforms",
@@ -1257,6 +1259,13 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       await expect(
         page.locator(`fig-group[name="Modules"] fig-layer[data-section="${module.id}"]`),
       ).toHaveCount(1);
+      const visibilityIcons = page.locator(
+        '.propkit-example-preview fig-icon[name="visible"], ' +
+          '.propkit-example-preview fig-icon[name="hidden"]',
+      );
+      for (let index = 0; index < await visibilityIcons.count(); index += 1) {
+        await expect(visibilityIcons.nth(index)).not.toHaveAttribute("size");
+      }
     }
   });
 
@@ -1320,6 +1329,39 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       module.locator('fig-input-number[aria-label="Height"]'),
     ).toHaveCount(1);
+    const positionProperty = module.locator(
+      'fig-property:has([data-layout-property="left"])',
+    );
+    await expect(positionProperty).toHaveAttribute("trailing", "space");
+    await expect(positionProperty).toHaveAttribute("show-trailing", "");
+    await expect(
+      module.locator(
+        'fig-property > fig-stack[slot="input"] > fig-tooltip > [data-layout-property]',
+      ),
+    ).toHaveCount(4);
+    await expect(
+      module.locator(
+        'fig-property > fig-tooltip > fig-checkbox[slot="input"]',
+      ),
+    ).toHaveCount(1);
+    const aspectRatioButton = module.locator(
+      'fig-property:has([data-layout-property="width"]) > fig-button[slot="trailing"][aria-label="Constrain proportions"]',
+    );
+    await expect(aspectRatioButton).toHaveAttribute("slot", "trailing");
+    await expect(aspectRatioButton).toHaveAttribute("variant", "ghost");
+    await expect(aspectRatioButton).toHaveAttribute("type", "toggle");
+    await expect(aspectRatioButton).toHaveAttribute("aria-pressed", "false");
+    await expect(aspectRatioButton.locator("..")).toHaveAttribute(
+      "show-trailing",
+      "",
+    );
+    const aspectRatioIcon = aspectRatioButton.locator("span");
+    await expect(aspectRatioIcon).toHaveCSS(
+      "mask-image",
+      /icon\.24\.crop\.aspect-ratio\.square/,
+    );
+    await expect(aspectRatioIcon).toHaveCSS("width", "24px");
+    await expect(aspectRatioIcon).toHaveCSS("height", "24px");
     const sizeInputs = module.locator("fig-split-input");
     await expect(sizeInputs).toHaveCount(2);
     await expect(sizeInputs.first()).toHaveAttribute(
@@ -1332,14 +1374,32 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     );
 
     const modes = module.locator(
-      'fig-segmented-control[aria-label="Layout mode"]',
+      'fig-segmented-control[aria-labelledby^="fig-layout-module-title-"]',
     );
     await expect(
       module.locator("fig-group > fig-property").first().locator(
-        'fig-segmented-control[aria-label="Layout mode"]',
+        'fig-segmented-control[aria-labelledby^="fig-layout-module-title-"]',
       ),
     ).toHaveCount(1);
+    await expect(modes).not.toHaveAttribute("aria-label", "Layout mode");
     await expect(modes.locator("fig-segment")).toHaveCount(4);
+    await expect(modes.locator("fig-segment").nth(1)).toHaveAttribute(
+      "value",
+      "horizontal",
+    );
+    await expect(modes.locator("fig-segment").nth(2)).toHaveAttribute(
+      "value",
+      "vertical",
+    );
+    await expect(modes.locator(":scope > fig-tooltip")).toHaveCount(4);
+    await expect(
+      modes.locator(
+        ':scope > fig-tooltip[text="Freeform"] > fig-segment[value="freeform"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      module.locator("fig-tooltip > fig-segmented-control"),
+    ).toHaveCount(0);
     await expect(modes.locator("fig-segment fig-icon svg")).toHaveCount(4);
     await expect(modes).toHaveAttribute("value", "freeform");
 
@@ -1374,6 +1434,53 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await module
       .locator('fig-input-number[aria-label="Width"]')
       .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "320";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await module
+      .locator('fig-input-number[aria-label="Height"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "180";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await aspectRatioButton.click();
+    await expect(aspectRatioButton).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"aspect-ratio": "320 / 180"');
+
+    await module
+      .locator('fig-input-number[aria-label="Width"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "640";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"aspect-ratio": "640 / 180"');
+
+    await module
+      .locator('fig-input-number[aria-label="X position"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "24";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"path": "aspect-ratio"');
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"value": "640 / 180"');
+
+    await aspectRatioButton.click();
+    await expect(aspectRatioButton).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"aspect-ratio": "auto"');
+
+    await module
+      .locator('fig-input-number[aria-label="Width"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
         element.value = "420";
         element.dispatchEvent(new Event("input", { bubbles: true }));
       });
@@ -1395,6 +1502,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
         top: "24px",
         width: "320px",
         height: "180px",
+        "aspect-ratio": "16 / 9",
         display: "flex",
         "flex-direction": "column",
         overflow: "hidden",
@@ -1410,6 +1518,11 @@ test.describe.serial("ExampleView DOM synchronization", () => {
         clipped: host
           .querySelector("fig-checkbox")
           ?.hasAttribute("checked"),
+        constrained: host
+          .querySelector<HTMLElement>(
+            'fig-button[aria-label="Constrain proportions"]',
+          )
+          ?.hasAttribute("selected"),
       };
       controller.destroy();
       host.remove();
@@ -1419,6 +1532,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       x: "12",
       mode: "vertical",
       clipped: true,
+      constrained: true,
     });
     await expect(page.locator(".propkit-run-error")).toHaveCount(0);
   });
@@ -1439,12 +1553,20 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(module.locator("fig-font-picker")).toHaveCount(1);
     await expect(module.locator("fig-font-picker")).toHaveAttribute(
       "value",
-      '{"family":"sans-serif","axes":{}}',
+      '{"family":"Inter","axes":{}}',
     );
+    const weightOptions = module.locator(
+      'fig-select[label="Font weight"] fig-select-option',
+    );
+    await expect(weightOptions).toHaveCount(9);
     await expect(module.locator("fig-input-number")).toHaveCount(3);
+    const fontSizeInput = module.locator(
+      'fig-input-number[data-typography-property="font-size"]',
+    );
     await expect(
-      module.locator('fig-input-number[aria-label="Font size"]'),
+      fontSizeInput,
     ).toHaveAttribute("value", "16");
+    await expect(fontSizeInput).not.toHaveAttribute("aria-label", "Font size");
     await expect(module.locator("fig-segmented-control")).toHaveCount(2);
     await expect(
       module.locator(
@@ -1499,14 +1621,24 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       .locator("fig-font-picker")
       .evaluate((element: HTMLElement & { open(): void }) => element.open());
     await module
+      .locator('[data-font-option-id="family:Archivo Black"]')
+      .click();
+    await expect(weightOptions).toHaveCount(1);
+    await expect(weightOptions.first()).toHaveAttribute("value", "400");
+
+    await module
+      .locator("fig-font-picker")
+      .evaluate((element: HTMLElement & { open(): void }) => element.open());
+    await module
       .locator('[data-font-option-id="family:serif"]')
       .click();
+    await expect(weightOptions).toHaveCount(9);
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"font-family": "serif"');
 
     await module
-      .locator('fig-input-number[aria-label="Font size"]')
+      .locator('fig-input-number[data-typography-property="font-size"]')
       .evaluate((element: HTMLElement & { value?: string }) => {
         element.value = "24";
         element.dispatchEvent(new Event("change", { bubbles: true }));
@@ -1517,17 +1649,472 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(page.locator(".propkit-run-error")).toHaveCount(0);
   });
 
+  test("Border, Stroke, and Outline use compact dedicated modules", async ({
+    page,
+  }) => {
+    await page.goto(`${playgroundUrl}/#module-border/default`);
+    const border = page.locator("fig-module-border");
+    await expect(border).toBeVisible();
+    const borderValues = page.locator("[data-propskit-values] .cm-content");
+    await expect(borderValues).not.toContainText('"border":');
+    await expect(borderValues).not.toContainText('"border-radius"');
+    await expect(borderValues).not.toContainText('"border-image"');
+    await expect(borderValues).not.toContainText('"border-block"');
+    await expect(border.locator("fig-group > fig-header").first()).toContainText(
+      "Border",
+    );
+    await expect(
+      border.locator('fig-button[aria-label="Advanced settings"]'),
+    ).toHaveCount(0);
+    await expect(
+      border.locator(".compact-line-module-advanced"),
+    ).toHaveCount(0);
+    await expect(
+      border.locator(
+        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      border.locator("fig-group > fig-property").first(),
+    ).toHaveClass(/compact-line-module-color/);
+    const borderColorRow = border.locator(".compact-line-module-color");
+    await expect(borderColorRow).toHaveAttribute("show-trailing", "");
+    await expect(
+      borderColorRow.locator(':scope > fig-stack[slot="trailing"]'),
+    ).toHaveCount(1);
+    await expect(
+      borderColorRow.locator(
+        'fig-button[aria-label="Hide border"], fig-button[aria-label="Show border"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      borderColorRow.locator('fig-button[aria-label="Remove border"]'),
+    ).toHaveCount(1);
+    const borderPrimaryRow = border.locator(".compact-line-module-primary");
+    const addBorder = border.locator(
+      'fig-button[aria-label="Add border"]',
+    );
+    await expect(addBorder).toBeVisible();
+    await expect(borderColorRow).toBeHidden();
+    await expect(borderPrimaryRow).toBeHidden();
+    await addBorder.click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-style": "solid"');
+    await expect(addBorder).toBeHidden();
+    await expect(borderColorRow).toBeVisible();
+    await expect(borderPrimaryRow).toBeVisible();
+    await expect(
+      border.locator(
+        ".compact-line-module-primary > fig-stack > fig-tooltip > fig-button",
+      ),
+    ).toHaveCount(0);
+    await expect(
+      border.locator(
+        'fig-input-number[aria-label="Border width"] > fig-icon[slot="prepend"] svg',
+      ),
+    ).toHaveCount(1);
+    await expect(border.locator('fig-select[label="Border style"]')).toHaveCount(
+      1,
+    );
+    await expect(border.locator('fig-select[label="Border sides"]')).toHaveCount(
+      1,
+    );
+    await border
+      .locator('fig-select[label="Border sides"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "top";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "top",
+          }),
+        );
+      });
+    await expect(addBorder).toBeVisible();
+    await expect(borderColorRow).toBeHidden();
+    await expect(borderPrimaryRow).toBeHidden();
+    await addBorder.click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-top-style": "solid"');
+    await expect(addBorder).toBeHidden();
+    await expect(borderColorRow).toBeVisible();
+    await expect(borderPrimaryRow).toBeVisible();
+    await border
+      .locator('fig-input-number[aria-label="Border width"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "3";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-top-width": "3px"');
+    await border.locator('fig-button[aria-label="Remove border"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-top-style": "none"');
+    await expect(addBorder).toBeVisible();
+    await expect(borderColorRow).toBeHidden();
+    await expect(borderPrimaryRow).toBeHidden();
+    await addBorder.click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-top-style": "solid"');
+    await expect(addBorder).toBeHidden();
+    await expect(borderColorRow).toBeVisible();
+    await expect(borderPrimaryRow).toBeVisible();
+
+    await page.goto(`${playgroundUrl}/#module-stroke/default`);
+    const stroke = page.locator("fig-module-stroke");
+    await expect(stroke).toBeVisible();
+    const strokeValues = page.locator("[data-propskit-values] .cm-content");
+    await expect(strokeValues).not.toContainText('"marker');
+    await expect(strokeValues).not.toContainText('"paint-order"');
+    await expect(strokeValues).not.toContainText('"vector-effect"');
+    await expect(strokeValues).not.toContainText('"stroke-miterlimit"');
+    await expect(
+      stroke.locator(
+        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      stroke.locator(
+        'fig-input-number[aria-label="Stroke width"] > fig-icon[slot="prepend"] svg',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      stroke.locator("fig-group > fig-property").first(),
+    ).toHaveClass(/compact-line-module-color/);
+    const strokeColorRow = stroke.locator(".compact-line-module-color");
+    await expect(strokeColorRow).toHaveAttribute("show-trailing", "");
+    await expect(
+      strokeColorRow.locator(':scope > fig-stack[slot="trailing"]'),
+    ).toHaveCount(1);
+    await expect(
+      stroke.locator(
+        '.compact-line-module-color fig-button[aria-label="Hide stroke"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      stroke.locator(
+        '.compact-line-module-color fig-button[aria-label="Remove stroke"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      stroke.locator(
+        ".compact-line-module-primary > fig-stack > fig-tooltip > fig-button",
+      ),
+    ).toHaveCount(0);
+    await expect(
+      stroke.locator('fig-button[aria-label="Advanced settings"]'),
+    ).toHaveCount(0);
+    await expect(
+      stroke.locator(".compact-line-module-advanced"),
+    ).toHaveCount(0);
+    await expect(
+      stroke.locator(
+        '.compact-line-module-color > fig-stack > fig-input-number[aria-label="Stroke opacity"]',
+      ),
+    ).toHaveCount(0);
+    const strokeColorOpacity = stroke.locator(
+      ".compact-line-module-color fig-input-color fig-input-number",
+    );
+    await expect(strokeColorOpacity).toHaveCount(1);
+    await strokeColorOpacity.evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "50";
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+    );
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"stroke-opacity": 0.5');
+    await expect(stroke.locator('fig-select[label="Stroke style"]')).toHaveCount(
+      1,
+    );
+    const strokeDashRow = stroke.locator(".compact-line-module-dash");
+    await expect(strokeDashRow).toBeHidden();
+    await expect(
+      stroke.locator(
+        ".compact-line-module-dash + .compact-line-module-line",
+      ),
+    ).toHaveCount(1);
+    await stroke
+      .locator('fig-select[label="Stroke style"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "dashed";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "dashed",
+          }),
+        );
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"stroke-dasharray": "6 3"');
+    await expect(strokeDashRow).toBeVisible();
+    await stroke
+      .locator('fig-input-number[aria-label="Stroke dash offset"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "-2";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"stroke-dashoffset": "-2"');
+    await stroke.locator('fig-button[aria-label="Remove stroke"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"stroke": "none"');
+    await stroke.locator('fig-button[aria-label="Add stroke"]').click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"stroke-width": "1px"');
+
+    await page.goto(`${playgroundUrl}/#module-outline/default`);
+    const outline = page.locator("fig-module-outline");
+    await expect(outline).toBeVisible();
+    await expect(
+      outline.locator(
+        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      outline.locator(
+        'fig-input-number[aria-label="Outline width"] > fig-icon[slot="prepend"] svg',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      outline.locator('fig-button[aria-label="Advanced settings"]'),
+    ).toHaveCount(0);
+    await expect(
+      outline.locator(".compact-line-module-advanced"),
+    ).toHaveCount(0);
+    const addOutline = outline.locator(
+      'fig-button[aria-label="Add outline"]',
+    );
+    const outlineColorRow = outline.locator(".compact-line-module-color");
+    const outlinePrimaryRow = outline.locator(
+      'fig-property:has(fig-input-number[aria-label="Outline width"])',
+    );
+    await expect(outlinePrimaryRow).not.toHaveClass(
+      /compact-line-module-primary/,
+    );
+    await expect(
+      outlinePrimaryRow.locator(':scope > fig-stack[slot="input"]'),
+    ).toHaveCount(1);
+    const outlineValues = page.locator("[data-propskit-values] .cm-content");
+    await expect(outlineValues).toContainText('"outline": "none"');
+    await expect(outlineValues).not.toContainText('"outline-style"');
+    await expect(addOutline).toBeVisible();
+    await expect(outlineColorRow).toBeHidden();
+    await expect(outlinePrimaryRow).toBeHidden();
+    await addOutline.click();
+    await expect(outlineValues).toContainText('"outline-style": "solid"');
+    await expect(outlineValues).not.toContainText('"outline":');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-color": "#005fcc"');
+    await expect(
+      outline.locator('fig-input-color[aria-label="Outline color"]'),
+    ).toHaveAttribute("value", "#005fcc");
+    await expect(addOutline).toBeHidden();
+    await expect(outlineColorRow).toBeVisible();
+    await expect(outlinePrimaryRow).toBeVisible();
+    await expect(
+      outline.locator('fig-select[label="Outline style"]'),
+    ).toHaveCount(1);
+    await expect(
+      outline.locator(
+        'fig-select[label="Outline style"] fig-select-option[value="none"]',
+      ),
+    ).toHaveCount(0);
+    const outlineAlignment = outline.locator(
+      'fig-select[label="Outline alignment"]',
+    );
+    await expect(outlineAlignment).toBeVisible();
+    await expect(outlineAlignment).toHaveAttribute("value", "outside");
+    await outlineAlignment.evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "inside";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "inside",
+          }),
+        );
+      },
+    );
+    await outline
+      .locator('fig-input-number[aria-label="Outline width"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "4";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-offset": "-4px"');
+    await outlineAlignment.evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "center";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "center",
+          }),
+        );
+      },
+    );
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-offset": "-2px"');
+    await outlineAlignment.evaluate(
+      (element: HTMLElement & { value?: string }) => {
+        element.value = "custom";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "custom",
+          }),
+        );
+      },
+    );
+    const customOutlineOffset = outline.locator(
+      'fig-split-input[aria-label="Outline offset"]',
+    );
+    await expect(outlineAlignment).toBeHidden();
+    await expect(customOutlineOffset).toBeVisible();
+    await outline
+      .locator('fig-input-number[aria-label="Outline offset"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "-7";
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-offset": "-7px"');
+    await expect(
+      customOutlineOffset.locator("fig-select"),
+    ).toHaveAttribute("value", "Custom");
+    await outline
+      .locator('fig-select[label="Outline style"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "dashed";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "dashed",
+          }),
+        );
+      });
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-style": "dashed"');
+    await outline.locator('fig-button[aria-label="Hide outline"]').click();
+    await expect(outlineValues).toContainText('"outline": "none"');
+    await expect(outlineValues).not.toContainText('"outline-color"');
+    await expect(outlineValues).not.toContainText('"outline-style"');
+    await expect(outlineValues).not.toContainText('"outline-width"');
+    await expect(outlineValues).not.toContainText('"outline-offset"');
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"path": "outline"');
+    await expect(
+      page.locator("[data-propskit-event] .cm-content"),
+    ).toContainText('"value": "none"');
+    await outline.locator('fig-button[aria-label="Show outline"]').click();
+    await expect(outlineValues).toContainText('"outline-style": "dashed"');
+    await expect(outlineValues).not.toContainText('"outline":');
+    await expect(addOutline).toBeHidden();
+    await outline.locator('fig-button[aria-label="Remove outline"]').click();
+    await expect(outlineValues).toContainText('"outline": "none"');
+    await expect(outlineValues).not.toContainText('"outline-style"');
+    await expect(addOutline).toBeVisible();
+    await expect(outlineColorRow).toBeHidden();
+    await expect(outlinePrimaryRow).toBeHidden();
+    await addOutline.click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"outline-style": "dashed"');
+    await expect(addOutline).toBeHidden();
+    await expect(outlineColorRow).toBeVisible();
+    await expect(outlinePrimaryRow).toBeVisible();
+    const moduleUrl = `/@fs/${path.resolve(
+      "src/modules/fig-create-module.js",
+    )}`;
+    const synchronized = await page.evaluate(async (url) => {
+      const { figCreateModule } = await import(url);
+      const host = document.createElement("div");
+      document.body.append(host);
+
+      const borderController = figCreateModule("border");
+      borderController.mount(host);
+      borderController.setValue("border-width", "7px");
+      const borderWidth = host
+        .querySelector('fig-input-number[aria-label="Border width"]')
+        ?.getAttribute("value");
+      borderController.destroy();
+
+      const strokeController = figCreateModule("stroke");
+      strokeController.mount(host);
+      strokeController.setValue("stroke-dashoffset", "-3");
+      const strokeOffset = host
+        .querySelector('fig-input-number[aria-label="Stroke dash offset"]')
+        ?.getAttribute("value");
+      strokeController.destroy();
+
+      const outlineController = figCreateModule("outline");
+      outlineController.mount(host);
+      outlineController.setValue("outline-offset", "5px");
+      const outlineOffset = host
+        .querySelector('fig-input-number[aria-label="Outline offset"]')
+        ?.getAttribute("value");
+      outlineController.destroy();
+      host.remove();
+
+      return { borderWidth, strokeOffset, outlineOffset };
+    }, moduleUrl);
+    expect(synchronized).toEqual({
+      borderWidth: "7",
+      strokeOffset: "-3",
+      outlineOffset: "5",
+    });
+    await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
   test("Appearance uses its opinionated module layout", async ({ page }) => {
     await page.goto(`${playgroundUrl}/#module-appearance/default`);
     const module = page.locator("fig-module-appearance");
     await expect(module).toBeVisible();
     await expect(module.locator("fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group > fig-header")).toContainText(
-      "Blending",
+      "Appearance",
     );
     await expect(
       module.locator("fig-group > fig-header fig-button[aria-label]"),
     ).toHaveCount(1);
+    const visibilityButton = module.locator(
+      'fig-group > fig-header fig-button[type="toggle"]',
+    );
+    await expect(visibilityButton).not.toHaveAttribute("selected", "");
+    await visibilityButton.click();
+    await expect(visibilityButton).toHaveAttribute("selected", "");
+    await expect(visibilityButton).toHaveAttribute("aria-pressed", "true");
+    await expect(visibilityButton.locator('fig-icon[name="hidden"]')).toHaveCount(
+      1,
+    );
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"visibility": "hidden"');
     await expect(module.locator("fig-input-number")).toHaveAttribute(
       "aria-label",
       "Opacity",
@@ -1536,6 +2123,11 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       "label",
       "Blend mode",
     );
+    await expect(
+      module.locator(
+        'fig-property > fig-stack[slot="input"] > fig-tooltip',
+      ),
+    ).toHaveCount(2);
     await expect(
       page.locator("fig-select-options fig-separator"),
     ).toHaveCount(5);

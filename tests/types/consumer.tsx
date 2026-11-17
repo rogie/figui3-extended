@@ -13,7 +13,10 @@ import type {
   FigFontPickerValue,
   FigModuleFiltersElement,
   FigModuleFillsElement,
+  FigModuleBorderElement,
+  FigModuleOutlineElement,
   FigModuleShadowsElement,
+  FigModuleStrokeElement,
   FigModuleTransformsElement,
   FigInputSliderElement,
   FigReorderDetail,
@@ -67,6 +70,16 @@ transformModule.transforms = [
 ];
 void transformModule.values;
 
+const borderModule: FigModuleBorderElement =
+  document.querySelector("fig-module-border")!;
+const strokeModule: FigModuleStrokeElement =
+  document.querySelector("fig-module-stroke")!;
+const outlineModule: FigModuleOutlineElement =
+  document.querySelector("fig-module-outline")!;
+void borderModule;
+void strokeModule;
+void outlineModule;
+
 const detail: FigReorderDetail = { from: 0, to: 1 };
 void detail;
 
@@ -92,6 +105,9 @@ appearanceModule.destroy();
 void capabilities;
 void widthCapability;
 void layoutConfig;
+void createCssModuleConfig("border");
+void createCssModuleConfig("stroke");
+void createCssModuleConfig("outline");
 
 export const controls = (
   <>
@@ -111,6 +127,9 @@ export const controls = (
       transforms='[{"type":"translate","x":0,"y":0,"z":0,"visible":true}]'
       multiple
     />
+    <fig-module-border />
+    <fig-module-stroke />
+    <fig-module-outline />
     <fig-fill-picker value="#ff0000" />
     <fig-font-picker
       value="Inter"

@@ -8,6 +8,7 @@ import {
   HTMLElement,
   CustomEvent,
   figEditorDefineElement,
+  figEditorWithTooltip,
 } from "../runtime/helpers.js";
 
 const DEFAULT_COLOR = "#00000000";
@@ -307,6 +308,10 @@ class FigModuleFills extends HTMLElement {
     group.append(header);
 
     const reorder = document.createElement("fig-reorder");
+    reorder.setAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
     reorder.addEventListener("reorder", (event) => {
       event.stopPropagation();
       const { oldIndex, newIndex } = event.detail ?? {};
@@ -363,7 +368,12 @@ class FigModuleFills extends HTMLElement {
       };
       input.addEventListener("input", update);
       input.addEventListener("change", update);
-      property.append(input);
+      property.append(
+        figEditorWithTooltip(
+          `${FILL_LABELS[fill.type] ?? "Color"} fill`,
+          input,
+        ),
+      );
 
       const actions = document.createElement("fig-stack");
       actions.setAttribute("slot", "trailing");
@@ -396,7 +406,12 @@ class FigModuleFills extends HTMLElement {
           value: fills[index].visible,
         });
       });
-      actions.append(visibility);
+      actions.append(
+        figEditorWithTooltip(
+          fill.visible ? "Hide fill" : "Show fill",
+          visibility,
+        ),
+      );
 
       const remove = document.createElement("fig-button");
       remove.setAttribute("variant", "ghost");
@@ -413,13 +428,16 @@ class FigModuleFills extends HTMLElement {
           { action: "remove", index },
         );
       });
-      actions.append(remove);
+      actions.append(figEditorWithTooltip("Remove fill", remove));
       property.append(actions);
       reorder.append(property);
     });
 
     group.append(reorder);
     this.replaceChildren(group);
+    queueMicrotask(() => {
+      if (reorder.isConnected) reorder.refresh();
+    });
   }
 }
 

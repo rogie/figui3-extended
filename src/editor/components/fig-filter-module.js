@@ -8,6 +8,7 @@ import {
   HTMLElement,
   CustomEvent,
   figEditorDefineElement,
+  figEditorWithTooltip,
 } from "../runtime/helpers.js";
 
 const FILTER_TYPES = {
@@ -227,7 +228,9 @@ class FigModuleFilters extends HTMLElement {
   #focusEditor(index) {
     requestAnimationFrame(() => {
       if (!this.isConnected) return;
-      const property = this.querySelectorAll("fig-reorder > fig-property")[index];
+      const property = this.querySelector(
+        `fig-reorder > fig-property[data-filter-index="${index}"]`,
+      );
       property?.querySelector("fig-input-number:not([disabled])")?.focus();
     });
   }
@@ -305,37 +308,71 @@ class FigModuleFilters extends HTMLElement {
     header.append(menu);
     group.append(header);
 
-    const reorder = document.createElement("fig-reorder");
-    reorder.addEventListener("reorder", (event) => {
-      event.stopPropagation();
-      const oldIndex = event.detail?.oldIndex ?? event.detail?.from;
-      const newIndex = event.detail?.newIndex ?? event.detail?.to;
-      if (
-        typeof oldIndex !== "number" ||
-        typeof newIndex !== "number" ||
-        oldIndex === newIndex
-      ) {
-        return;
-      }
-      const filters = [...this.#filters];
-      const [moved] = filters.splice(oldIndex, 1);
-      if (!moved) return;
-      filters.splice(newIndex, 0, moved);
-      this.#replaceFilters(filters, "change", {
-        action: "reorder",
-        oldIndex,
-        newIndex,
+    const createReorder = (target) => {
+      const reorder = document.createElement("fig-reorder");
+      reorder.setAttribute("aria-label", `${target.label} filters`);
+      reorder.setAttribute(
+        "handle",
+        'fig-icon[slot="leading"][name="drag-handle"]',
+      );
+      reorder.addEventListener("reorder", (event) => {
+        event.stopPropagation();
+        const oldIndex = event.detail?.oldIndex ?? event.detail?.from;
+        const newIndex = event.detail?.newIndex ?? event.detail?.to;
+        if (
+          typeof oldIndex !== "number" ||
+          typeof newIndex !== "number" ||
+          oldIndex === newIndex
+        ) {
+          return;
+        }
+        const targetIndexes = this.#filters.flatMap((filter, index) =>
+          filter.target === target.value ? [index] : [],
+        );
+        const targetFilters = targetIndexes.map((index) => this.#filters[index]);
+        const [moved] = targetFilters.splice(oldIndex, 1);
+        if (
+          !moved ||
+          newIndex < 0 ||
+          newIndex >= targetIndexes.length
+        ) {
+          return;
+        }
+        targetFilters.splice(newIndex, 0, moved);
+        const filters = [...this.#filters];
+        targetIndexes.forEach((filterIndex, index) => {
+          filters[filterIndex] = targetFilters[index];
+        });
+        this.#replaceFilters(filters, "change", {
+          action: "reorder",
+          target: target.value,
+          oldIndex: targetIndexes[oldIndex],
+          newIndex: targetIndexes[newIndex],
+        });
       });
-    });
+      return reorder;
+    };
+    const reorders = Object.fromEntries(
+      FILTER_TARGETS.map((target) => [target.value, createReorder(target)]),
+    );
+    const targetCounts = Object.fromEntries(
+      FILTER_TARGETS.map((target) => [
+        target.value,
+        this.#filters.filter((filter) => filter.target === target.value).length,
+      ]),
+    );
 
     this.#filters.forEach((filter, index) => {
       const property = document.createElement("fig-property");
+      property.setAttribute("data-filter-index", String(index));
       property.setAttribute(
         "aria-label",
         `${filter.target === "backdrop" ? "Backdrop " : ""}${FILTER_TYPES[filter.type].label} filter`,
       );
       property.setAttribute("show-trailing", "");
-      if (this.#filters.length > 1) property.setAttribute("leading", "drag");
+      if (targetCounts[filter.target] > 1) {
+        property.setAttribute("leading", "drag");
+      }
 
       const controls = document.createElement("fig-stack");
       controls.setAttribute("slot", "input");
@@ -386,7 +423,7 @@ class FigModuleFilters extends HTMLElement {
           true,
         );
       });
-      controls.append(typeSelect);
+      controls.append(figEditorWithTooltip("Filter type", typeSelect));
 
       const valueInput = document.createElement("fig-input-number");
       valueInput.setAttribute("full", "");
@@ -437,7 +474,12 @@ class FigModuleFilters extends HTMLElement {
       };
       valueInput.addEventListener("input", updateValue);
       valueInput.addEventListener("change", updateValue);
-      controls.append(valueInput);
+      controls.append(
+        figEditorWithTooltip(
+          `${FILTER_TYPES[filter.type].label} value`,
+          valueInput,
+        ),
+      );
       property.append(controls);
 
       const actions = document.createElement("fig-stack");
@@ -467,13 +509,29 @@ class FigModuleFilters extends HTMLElement {
           { action: "remove", index },
         );
       });
-      actions.append(visibility, remove);
+      actions.append(
+        figEditorWithTooltip(
+          filter.visible ? "Hide filter" : "Show filter",
+          visibility,
+        ),
+        figEditorWithTooltip("Remove filter", remove),
+      );
       property.append(actions);
-      reorder.append(property);
+      reorders[filter.target].append(property);
     });
 
-    group.append(reorder);
+    group.append(reorders.layer);
+    if (targetCounts.backdrop > 0) {
+      const separator = document.createElement("fig-separator");
+      separator.setAttribute("label", "Backdrop");
+      group.append(separator, reorders.backdrop);
+    }
     this.replaceChildren(group);
+    queueMicrotask(() => {
+      Object.values(reorders).forEach((reorder) => {
+        if (reorder.isConnected) reorder.refresh();
+      });
+    });
   }
 }
 

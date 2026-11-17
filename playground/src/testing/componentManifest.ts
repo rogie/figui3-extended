@@ -728,6 +728,24 @@ export const editorComponentContracts: ComponentContract[] = [
     markup: `<fig-module-appearance></fig-module-appearance>`,
   },
   {
+    tag: "fig-module-border",
+    title: "Border Module",
+    group: "layout",
+    markup: `<fig-module-border></fig-module-border>`,
+  },
+  {
+    tag: "fig-module-stroke",
+    title: "Stroke Module",
+    group: "layout",
+    markup: `<fig-module-stroke></fig-module-stroke>`,
+  },
+  {
+    tag: "fig-module-outline",
+    title: "Outline Module",
+    group: "layout",
+    markup: `<fig-module-outline></fig-module-outline>`,
+  },
+  {
     tag: "fig-fill-picker",
     title: "Fill Picker",
     group: "input",

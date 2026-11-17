@@ -23,5 +23,8 @@ export * from "./components/fig-shadow-module.js";
 export * from "./components/fig-transform-module.js";
 export * from "./components/fig-module-appearance.js";
 export * from "./components/fig-module-typography.js";
+export * from "./components/fig-module-border.js";
+export * from "./components/fig-module-stroke.js";
+export * from "./components/fig-module-outline.js";
 export * from "./components/fig-interpolation-swatch.js";
 export * from "./components/fig-reorder.js";

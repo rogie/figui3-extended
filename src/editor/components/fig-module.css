@@ -9,7 +9,46 @@ fig-module-filters,
 fig-module-shadows,
 fig-module-transforms,
 fig-module-appearance,
-fig-module-typography {
+fig-module-typography,
+fig-module-border,
+fig-module-stroke,
+fig-module-outline {
   display: block;
   width: stretch;
+}
+
+.compact-line-module {
+  .compact-line-module-actions {
+    margin-left: auto;
+  }
+
+  .compact-line-module-primary > fig-stack,
+  .compact-line-module-color > fig-stack {
+    align-items: center;
+    gap: var(--spacer-1);
+  }
+
+  .compact-line-module-primary {
+    fig-select,
+    fig-input-number,
+    fig-split-input {
+      min-width: 0;
+    }
+
+    fig-tooltip {
+      flex: 0 0 auto;
+    }
+  }
+
+  .compact-line-module-advanced {
+    border-top: 1px solid var(--figma-color-border);
+
+    &[hidden] {
+      display: none;
+    }
+
+    > fig-field {
+      padding: var(--spacer-1) var(--spacer-2);
+    }
+  }
 }

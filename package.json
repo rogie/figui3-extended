@@ -89,7 +89,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@rogieking/figui3": "^12.0.1",
+    "@rogieking/figui3": "^12.0.3",
     "@types/react": "^19.3.0",
     "lightningcss": "^1.32.0",
     "typescript": "^5.9.3"

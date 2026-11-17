@@ -63,6 +63,16 @@ Observed: `label`, `aria-label`, `aria-describedby`, `value`, `default`,
 - Favorites and the minimal-mode favorites-only filter persist in local storage under `figui3:*` keys.
 - Google previews and the selected embeddable face load with `FontFace`; set `google-fonts="false"` to avoid network-backed catalog entries. Local Font Access is progressive and permission-dependent.
 
+## Border, stroke, and outline module shells
+
+`fig-module-border`, `fig-module-stroke`, and `fig-module-outline` are the
+rendered shells for `figCreateModule("border" | "stroke" | "outline")`.
+Create, mount, synchronize, and destroy them through the CSS module controller.
+Stroke exposes `stroke-dasharray` and signed `stroke-dashoffset`; Outline derives
+`outline-offset` from Inside/Center/Outside alignment presets and exposes a
+signed split input for Custom alignment. All three expose style, add,
+visibility, and remove controls; advanced controls are limited to Border.
+
 ## Input rotate
 
 `fig-input-rotate` observes `x`, `y`, `z`, `default-x`, `default-y`, `default-z`, `units`, `variant`, `open`, and `disabled`.

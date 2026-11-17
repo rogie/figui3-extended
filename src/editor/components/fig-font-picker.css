@@ -173,16 +173,6 @@ fig-font-picker {
   white-space: nowrap;
 }
 
-.fig-font-picker-badge {
-  flex: 0 0 auto;
-  padding: 1px var(--spacer-1, 0.25rem);
-  border-radius: var(--border-radius-small, 0.1875rem);
-  color: var(--figma-color-text-secondary);
-  background: var(--figma-color-bg-secondary);
-  font-size: 0.5625rem;
-  line-height: 0.875rem;
-}
-
 .fig-font-picker-empty {
   margin: 0;
   padding: var(--spacer-3);

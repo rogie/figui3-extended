@@ -268,6 +268,20 @@ Ordered CSS transforms with a property-button editor per row:
 - `values.transform` contains the ordered visible CSS transform-function list, or `none`.
 - Each row opens an anchored property popup. Events and visibility, remove, add, and reorder behavior follow `fig-module-fills`.
 
+## Border, stroke, and outline modules
+
+`figCreateModule("border" | "stroke" | "outline")` mounts compact editors in
+`fig-module-border`, `fig-module-stroke`, and `fig-module-outline` shells.
+
+- Border edits width, color, native border style, and All/Top/Right/Bottom/Left targets.
+- Stroke edits color, opacity, width, solid/dashed/dotted/custom style, line cap/join, dash array, and signed dash offset.
+- Outline edits color, width, and native outline style. Its Inside/Center/Outside
+  alignment presets derive `outline-offset` from the current width; Custom
+  reveals a split signed-offset input with the alignment menu attached.
+- Each module provides add, visibility, and remove actions. Border provides
+  advanced settings; Stroke and Outline keep their controls inline.
+- Values, events, element capability filtering, and lifecycle use the `figCreateModule` controller from `css-properties.js`.
+
 ## `fig-popup-easing`
 
 Reusable easing dialog with an internal

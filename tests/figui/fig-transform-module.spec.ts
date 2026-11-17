@@ -36,6 +36,9 @@ test.describe("fig-module-transforms", () => {
           'fig-button[variant="property"][aria-haspopup="dialog"]',
         ).length,
         editors: element.querySelectorAll('dialog[is="fig-popup"]').length,
+        tooltips: element.querySelectorAll(
+          'fig-property > fig-tooltip, fig-property > fig-stack[slot="trailing"] > fig-tooltip',
+        ).length,
       };
     });
 
@@ -48,6 +51,7 @@ test.describe("fig-module-transforms", () => {
     expect(result.rows).toBe(5);
     expect(result.triggers).toBe(5);
     expect(result.editors).toBe(5);
+    expect(result.tooltips).toBe(10);
   });
 
   test("renders type-specific dialog fields", async ({ page }) => {
@@ -165,6 +169,17 @@ test.describe("fig-module-transforms", () => {
       "fig-module-transforms fig-reorder > fig-property",
     );
     await expect(rows).toHaveCount(2);
+    await expect(
+      page.locator("fig-module-transforms fig-reorder"),
+    ).toHaveAttribute(
+      "handle",
+      'fig-icon[slot="leading"][name="drag-handle"]',
+    );
+    await expect(
+      rows.locator(
+        ':scope > fig-icon[slot="leading"][name="drag-handle"][data-reorder-handle]',
+      ),
+    ).toHaveCount(2);
     await expect(
       rows.last().locator(':scope > dialog[is="fig-popup"]'),
     ).toHaveAttribute("open", "true");

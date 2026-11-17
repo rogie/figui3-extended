@@ -11,6 +11,15 @@ import {
 import { createCssModuleConfig } from "./css-property-capabilities.js";
 import { quoteFontFamily } from "../editor/runtime/fonts.js";
 
+const ASPECT_RATIO_SQUARE_ICON_FILE =
+  "icon.24.crop.aspect-ratio.square.svg";
+const aspectRatioSquareIconUrl = new URL(
+  import.meta.url.includes("/dist/")
+    ? `../icons/${ASPECT_RATIO_SQUARE_ICON_FILE}`
+    : `../../icons/${ASPECT_RATIO_SQUARE_ICON_FILE}`,
+  import.meta.url,
+).href;
+
 const BLEND_MODE_GROUPS = [
   ["normal"],
   ["darken", "multiply", "plus-darker", "color-burn"],
@@ -31,6 +40,7 @@ const LAYOUT_PROPERTIES = [
   "top",
   "width",
   "height",
+  "aspect-ratio",
   "display",
   "flex-direction",
   "overflow",
@@ -46,6 +56,77 @@ const TYPOGRAPHY_PROPERTIES = [
   "text-align",
   "vertical-align",
 ];
+
+const STROKE_PROPERTIES = [
+  "stroke",
+  "stroke-opacity",
+  "stroke-width",
+  "stroke-linecap",
+  "stroke-linejoin",
+  "stroke-dasharray",
+  "stroke-dashoffset",
+];
+
+const OUTLINE_PROPERTIES = [
+  "outline-color",
+  "outline-style",
+  "outline-width",
+  "outline-offset",
+];
+
+const BORDER_STYLE_OPTIONS = [
+  ["none", "None"],
+  ["solid", "Solid"],
+  ["dashed", "Dashed"],
+  ["dotted", "Dotted"],
+  ["double", "Double"],
+  ["groove", "Groove"],
+  ["ridge", "Ridge"],
+  ["inset", "Inset"],
+  ["outset", "Outset"],
+];
+
+const OUTLINE_STYLE_OPTIONS = [
+  ...BORDER_STYLE_OPTIONS.filter(([value]) => value !== "none"),
+  ["auto", "Auto"],
+];
+
+const OUTLINE_ALIGNMENT_OPTIONS = [
+  ["inside", "Inside"],
+  ["center", "Center"],
+  ["outside", "Outside"],
+  ["custom", "Custom"],
+];
+
+// Chromium's default focus-ring color (`-webkit-focus-ring-color`).
+const DEFAULT_OUTLINE_COLOR = "#005fcc";
+
+const BORDER_TARGET_OPTIONS = [
+  ["all", "All"],
+  ["top", "Top"],
+  ["right", "Right"],
+  ["bottom", "Bottom"],
+  ["left", "Left"],
+];
+
+const BORDER_PROPERTIES = BORDER_TARGET_OPTIONS.flatMap(([target]) =>
+  ["width", "style", "color"].map((part) =>
+    target === "all" ? `border-${part}` : `border-${target}-${part}`,
+  ),
+);
+
+const STROKE_STYLE_OPTIONS = [
+  ["solid", "Solid"],
+  ["dashed", "Dashed"],
+  ["dotted", "Dotted"],
+  ["custom", "Custom"],
+];
+
+const STROKE_DASHARRAY_BY_STYLE = {
+  solid: "none",
+  dashed: "6 3",
+  dotted: "1 2",
+};
 
 const FONT_FAMILIES = [
   "Inter",
@@ -93,6 +174,8 @@ const TYPOGRAPHY_ICON_PATHS = {
 
 const OPACITY_ICON =
   '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M16.2041 6.01074C17.2128 6.113 18 6.96435 18 8V16L17.9893 16.2041C17.8938 17.1457 17.1457 17.8938 16.2041 17.9893L16 18H8C6.96435 18 6.113 17.2128 6.01074 16.2041L6 16V8C6 6.89543 6.89543 6 8 6H16L16.2041 6.01074ZM8 7C7.44772 7 7 7.44772 7 8V16C7 16.5523 7.44772 17 8 17H16C16.5523 17 17 16.5523 17 16V8C17 7.44772 16.5523 7 16 7H8ZM9 14.5C9.27614 14.5 9.5 14.7239 9.5 15C9.5 15.2761 9.27614 15.5 9 15.5C8.72386 15.5 8.5 15.2761 8.5 15C8.5 14.7239 8.72386 14.5 9 14.5ZM11 14.5C11.2761 14.5 11.5 14.7239 11.5 15C11.5 15.2761 11.2761 15.5 11 15.5C10.7239 15.5 10.5 15.2761 10.5 15C10.5 14.7239 10.7239 14.5 11 14.5ZM13 14.5C13.2761 14.5 13.5 14.7239 13.5 15C13.5 15.2761 13.2761 15.5 13 15.5C12.7239 15.5 12.5 15.2761 12.5 15C12.5 14.7239 12.7239 14.5 13 14.5ZM15 14.5C15.2761 14.5 15.5 14.7239 15.5 15C15.5 15.2761 15.2761 15.5 15 15.5C14.7239 15.5 14.5 15.2761 14.5 15C14.5 14.7239 14.7239 14.5 15 14.5ZM11 12.5C11.2761 12.5 11.5 12.7239 11.5 13C11.5 13.2761 11.2761 13.5 11 13.5C10.7239 13.5 10.5 13.2761 10.5 13C10.5 12.7239 10.7239 12.5 11 12.5ZM13 12.5C13.2761 12.5 13.5 12.7239 13.5 13C13.5 13.2761 13.2761 13.5 13 13.5C12.7239 13.5 12.5 13.2761 12.5 13C12.5 12.7239 12.7239 12.5 13 12.5ZM15 12.5C15.2761 12.5 15.5 12.7239 15.5 13C15.5 13.2761 15.2761 13.5 15 13.5C14.7239 13.5 14.5 13.2761 14.5 13C14.5 12.7239 14.7239 12.5 15 12.5ZM13 10.5C13.2761 10.5 13.5 10.7239 13.5 11C13.5 11.2761 13.2761 11.5 13 11.5C12.7239 11.5 12.5 11.2761 12.5 11C12.5 10.7239 12.7239 10.5 13 10.5ZM15 10.5C15.2761 10.5 15.5 10.7239 15.5 11C15.5 11.2761 15.2761 11.5 15 11.5C14.7239 11.5 14.5 11.2761 14.5 11C14.5 10.7239 14.7239 10.5 15 10.5ZM15 8.5C15.2761 8.5 15.5 8.72386 15.5 9C15.5 9.27614 15.2761 9.5 15 9.5C14.7239 9.5 14.5 9.27614 14.5 9C14.5 8.72386 14.7239 8.5 15 8.5Z" fill="currentColor" fill-opacity=".9"/></svg>';
+const STROKE_WIDTH_ICON =
+  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17.25 14C17.6642 14 18 14.3358 18 14.75V17.25C18 17.6642 17.6642 18 17.25 18H6.75C6.33579 18 6 17.6642 6 17.25V14.75C6 14.3358 6.33579 14 6.75 14H17.25ZM7 17H17V15H7V17ZM17.25 9C17.6642 9 18 9.33579 18 9.75V11.25C18 11.6642 17.6642 12 17.25 12H6.75C6.33579 12 6 11.6642 6 11.25V9.75C6 9.33579 6.33579 9 6.75 9H17.25ZM7 11H17V10H7V11ZM17.5 6C17.7761 6 18 6.22386 18 6.5C18 6.77614 17.7761 7 17.5 7H6.5C6.22386 7 6 6.77614 6 6.5C6 6.22386 6.22386 6 6.5 6H17.5Z" fill="currentColor" fill-opacity=".9"/></svg>';
 const BLEND_MODE_ICON =
   '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11.3525 5.62264C11.714 5.26055 12.286 5.26055 12.6475 5.62264C13.9997 6.97736 17 10.2893 17 13.0006C16.9999 16.5004 14.4999 18.0006 12 18.0006C9.50007 18.0006 7.00013 16.5004 7 13.0006C7 10.2893 10.0003 6.97736 11.3525 5.62264ZM12 6.39217C11.3421 7.05594 10.337 8.14317 9.49316 9.36971C8.59711 10.6723 8 11.9642 8 13.0006C8.00006 14.4911 8.52166 15.4539 9.21777 16.0572C9.93729 16.6807 10.9381 17.0006 12 17.0006C13.0619 17.0006 14.0627 16.6807 14.7822 16.0572C15.4783 15.4539 15.9999 14.4911 16 13.0006C16 11.9642 15.4029 10.6723 14.5068 9.36971C13.663 8.14317 12.6579 7.05594 12 6.39217Z" fill="currentColor" fill-opacity=".9"/></svg>';
 const LAYOUT_MODE_ICON_PATHS = {
@@ -125,6 +208,21 @@ function eventValue(event) {
     return detail.value;
   }
   return event.currentTarget?.value ?? "";
+}
+
+function withControlTooltip(control, text) {
+  if (control?.localName === "fig-tooltip") return control;
+  const tooltip = document.createElement("fig-tooltip");
+  tooltip.setAttribute(
+    "text",
+    text ||
+      control?.getAttribute?.("aria-label") ||
+      control?.getAttribute?.("label") ||
+      control?.localName ||
+      "Input",
+  );
+  tooltip.append(control);
+  return tooltip;
 }
 
 function blendModeLabel(mode) {
@@ -166,7 +264,7 @@ function numericValue(value, fallback = 0) {
 }
 
 function fontFamilyLabel(value) {
-  return String(value || "sans-serif")
+  return String(value || "Inter")
     .split(",")[0]
     .trim()
     .replace(/^(['"])(.*)\1$/, "$2");
@@ -192,6 +290,8 @@ function appendTypographyIcon(parent, name, slot) {
   return icon;
 }
 
+let nextLayoutModuleId = 0;
+
 function mountLayoutModule(target, kit, emit) {
   const root = document.createElement("div");
   root.className = "propskit-root propskit-module-root";
@@ -207,6 +307,8 @@ function mountLayoutModule(target, kit, emit) {
   const header = document.createElement("fig-header");
   header.setAttribute("borderless", "");
   const title = document.createElement("h3");
+  nextLayoutModuleId += 1;
+  title.id = `fig-layout-module-title-${nextLayoutModuleId}`;
   title.textContent = "Layout";
   header.append(title);
   group.append(header);
@@ -215,6 +317,24 @@ function mountLayoutModule(target, kit, emit) {
     Object.prototype.hasOwnProperty.call(kit.values, property);
   const inputs = new Map();
   const sizeInputs = new Map();
+  let aspectRatioButton = null;
+  let handleAspectRatioClick = null;
+
+  const calculatedAspectRatio = () => {
+    const width = sizeInputs.get("width")?.value;
+    const height = sizeInputs.get("height")?.value;
+    return Number.isFinite(width) &&
+      width > 0 &&
+      Number.isFinite(height) &&
+      height > 0
+      ? `${width} / ${height}`
+      : "1 / 1";
+  };
+  const emitCalculatedAspectRatio = (phase, event) => {
+    if (aspectRatioButton?.selected === true) {
+      emit("aspect-ratio", calculatedAspectRatio(), phase, event);
+    }
+  };
 
   const createNumberInput = (property, label, prefix, unit, minimum) => {
     if (!has(property)) return null;
@@ -242,6 +362,7 @@ function mountLayoutModule(target, kit, emit) {
           phase,
           event,
         );
+        emitCalculatedAspectRatio(phase, event);
       });
     }
     inputs.set(property, input);
@@ -299,6 +420,7 @@ function mountLayoutModule(target, kit, emit) {
         }
         syncChrome();
         emit(property, cssValue(), phase, event);
+        emitCalculatedAspectRatio(phase, event);
       });
     }
     state.syncChrome = syncChrome;
@@ -309,14 +431,15 @@ function mountLayoutModule(target, kit, emit) {
 
   const appendInputRow = (controls) => {
     const available = controls.filter(Boolean);
-    if (available.length === 0) return;
+    if (available.length === 0) return null;
     const property = document.createElement("fig-property");
     const stack = document.createElement("fig-stack");
     stack.setAttribute("slot", "input");
     stack.setAttribute("full", "");
-    stack.append(...available);
+    stack.append(...available.map((control) => withControlTooltip(control)));
     property.append(stack);
     group.append(property);
+    return property;
   };
 
   let modeControl = null;
@@ -326,20 +449,22 @@ function mountLayoutModule(target, kit, emit) {
     modeControl.setAttribute("slot", "input");
     modeControl.setAttribute("sizing", "equal");
     modeControl.setAttribute("full", "");
-    modeControl.setAttribute("aria-label", "Layout mode");
+    modeControl.setAttribute("aria-labelledby", title.id);
 
     for (const [mode, label] of [
       ["freeform", "Freeform"],
-      ["vertical", "Vertical flex"],
       ["horizontal", "Horizontal flex"],
+      ["vertical", "Vertical flex"],
       ["grid", "Grid"],
     ]) {
       const segment = document.createElement("fig-segment");
       segment.setAttribute("value", mode);
       segment.setAttribute("aria-label", label);
-      segment.setAttribute("title", label);
       appendSvgIcon(segment, layoutModeIcon(mode));
-      modeControl.append(segment);
+      const tooltip = document.createElement("fig-tooltip");
+      tooltip.setAttribute("text", label);
+      tooltip.append(segment);
+      modeControl.append(tooltip);
     }
 
     const emitMode = (phase, event) => {
@@ -352,6 +477,7 @@ function mountLayoutModule(target, kit, emit) {
       } else if (has("flex-direction") && mode === "horizontal") {
         emit("flex-direction", "row", phase, event);
       }
+      emitCalculatedAspectRatio(phase, event);
     };
     modeControl.addEventListener("input", (event) => emitMode("input", event));
     modeControl.addEventListener("change", (event) =>
@@ -361,14 +487,45 @@ function mountLayoutModule(target, kit, emit) {
     group.append(property);
   }
 
-  appendInputRow([
+  const positionProperty = appendInputRow([
     createNumberInput("left", "X position", "X", "px"),
     createNumberInput("top", "Y position", "Y", "px"),
   ]);
-  appendInputRow([
+  positionProperty?.setAttribute("trailing", "space");
+  positionProperty?.setAttribute("show-trailing", "");
+  const sizeProperty = appendInputRow([
     createSizeInput("width", "Width", "W"),
     createSizeInput("height", "Height", "H"),
   ]);
+
+  if (has("aspect-ratio") && sizeProperty) {
+    sizeProperty.setAttribute("show-trailing", "");
+    aspectRatioButton = document.createElement("fig-button");
+    aspectRatioButton.setAttribute("variant", "ghost");
+    aspectRatioButton.setAttribute("type", "toggle");
+    aspectRatioButton.setAttribute("icon", "");
+    aspectRatioButton.setAttribute("slot", "trailing");
+    aspectRatioButton.setAttribute("aria-label", "Constrain proportions");
+    aspectRatioButton.setAttribute("title", "Constrain proportions");
+
+    const icon = document.createElement("span");
+    icon.setAttribute("aria-hidden", "true");
+    icon.style.cssText =
+      `display:block;width:24px;height:24px;flex:0 0 24px;background:currentColor;` +
+      `-webkit-mask:url("${aspectRatioSquareIconUrl}") center/24px 24px no-repeat;` +
+      `mask:url("${aspectRatioSquareIconUrl}") center/24px 24px no-repeat`;
+    aspectRatioButton.append(icon);
+    handleAspectRatioClick = (event) => {
+      const selected = aspectRatioButton?.selected === true;
+      emit(
+        "aspect-ratio",
+        selected ? calculatedAspectRatio() : "auto",
+        "change",
+        event,
+      );
+    };
+    sizeProperty.append(aspectRatioButton);
+  }
 
   let clipCheckbox = null;
   if (has("overflow")) {
@@ -391,15 +548,19 @@ function mountLayoutModule(target, kit, emit) {
           phase,
           event,
         );
+        emitCalculatedAspectRatio(phase, event);
       });
     }
-    property.append(clipCheckbox);
+    property.append(withControlTooltip(clipCheckbox));
     group.append(property);
   }
 
   panel.append(group);
   root.append(panel);
   target.append(root);
+  if (aspectRatioButton && handleAspectRatioClick) {
+    aspectRatioButton.addEventListener("click", handleAspectRatioClick);
+  }
 
   const sync = (values) => {
     for (const [property, input] of inputs) {
@@ -432,6 +593,13 @@ function mountLayoutModule(target, kit, emit) {
               : "horizontal"
             : "freeform";
       modeControl.setAttribute("value", mode);
+    }
+    if (aspectRatioButton) {
+      const aspectRatio = String(values["aspect-ratio"] ?? "auto").trim();
+      aspectRatioButton.toggleAttribute(
+        "selected",
+        aspectRatio !== "" && aspectRatio !== "auto",
+      );
     }
     if (clipCheckbox) {
       clipCheckbox.toggleAttribute(
@@ -491,20 +659,30 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
   };
 
   const selects = new Map();
+  const setSelectOptions = (select, options) => {
+    let optionsPanel = select.querySelector(
+      ":scope > fig-select-options",
+    );
+    if (!optionsPanel) {
+      optionsPanel = document.createElement("fig-select-options");
+      optionsPanel.setAttribute("slot", "panel");
+      select.append(optionsPanel);
+    }
+    optionsPanel.replaceChildren(
+      ...options.map(([value, optionLabel]) => {
+        const option = document.createElement("fig-select-option");
+        option.setAttribute("value", String(value));
+        option.setAttribute("label", optionLabel);
+        option.textContent = optionLabel;
+        return option;
+      }),
+    );
+  };
   const createSelect = (property, label, options) => {
     if (!has(property)) return null;
     const select = document.createElement("fig-select");
     select.setAttribute("label", label);
-    const panel = document.createElement("fig-select-options");
-    panel.setAttribute("slot", "panel");
-    options.forEach(([value, optionLabel]) => {
-      const option = document.createElement("fig-select-option");
-      option.setAttribute("value", value);
-      option.setAttribute("label", optionLabel);
-      option.textContent = optionLabel;
-      panel.append(option);
-    });
-    select.append(panel);
+    setSelectOptions(select, options);
     select.addEventListener("input", (event) => {
       emit(property, String(eventValue(event)), "input", event);
     });
@@ -518,7 +696,67 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     return select;
   };
 
+  const weightSelect = createSelect(
+    "font-weight",
+    "Font weight",
+    FONT_WEIGHTS,
+  );
   let fontPicker = null;
+  let fontWeightOptionsKey = "";
+  const availableFontWeights = () => {
+    const family = fontPicker?.selectedFamily;
+    if (!family) return FONT_WEIGHTS;
+    const faces = Array.isArray(family.faces) ? family.faces : [];
+    const weightAxis = faces
+      .flatMap((face) => (Array.isArray(face.axes) ? face.axes : []))
+      .find((axis) => axis.tag === "wght");
+    if (weightAxis) {
+      const options = FONT_WEIGHTS.filter(([value]) => {
+        const weight = Number(value);
+        return weight >= weightAxis.min && weight <= weightAxis.max;
+      });
+      if (options.length > 0) return options;
+    }
+
+    const weights = [
+      ...new Set(
+        faces
+          .map((face) => Number(face.weight))
+          .filter((weight) => Number.isFinite(weight)),
+      ),
+    ].sort((left, right) => left - right);
+    const hasFaceMetadata =
+      weights.length > 1 ||
+      faces.some(
+        (face) => face.src || face.fullName || face.postscriptName,
+      );
+    if (!hasFaceMetadata || weights.length === 0) return FONT_WEIGHTS;
+
+    return weights.map((weight) => {
+      const value = String(weight);
+      const standardLabel = FONT_WEIGHTS.find(
+        ([candidate]) => candidate === value,
+      )?.[1];
+      const faceLabel = faces.find(
+        (face) => Number(face.weight) === weight,
+      )?.style;
+      return [
+        value,
+        standardLabel ||
+          (/^(regular|italic|oblique)$/i.test(faceLabel || "")
+            ? value
+            : faceLabel || value),
+      ];
+    });
+  };
+  const syncFontWeightOptions = () => {
+    if (!weightSelect) return;
+    const options = availableFontWeights();
+    const key = JSON.stringify(options);
+    if (key === fontWeightOptionsKey) return;
+    fontWeightOptionsKey = key;
+    setSelectOptions(weightSelect, options);
+  };
   if (has("font-family")) {
     const currentFamily = fontFamilyLabel(kit.values["font-family"]);
     fontPicker = document.createElement("fig-font-picker");
@@ -534,18 +772,19 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     );
     fontPicker.addEventListener("input", (event) => {
       emit("font-family", fontPickerFamilyValue(event), "input", event);
+      syncFontWeightOptions();
     });
     fontPicker.addEventListener("change", (event) => {
       emit("font-family", fontPickerFamilyValue(event), "change", event);
+      syncFontWeightOptions();
     });
+    fontPicker.addEventListener("fontmetadata", syncFontWeightOptions);
     fontPicker.addEventListener("optionhover", (event) => {
       emitOptionHover("font-family", fontPickerFamilyValue(event), event);
     });
     appendProperty(fontPicker);
   }
-  appendProperty(
-    createSelect("font-weight", "Font weight", FONT_WEIGHTS),
-  );
+  appendProperty(weightSelect);
 
   const metricInputs = new Map();
   const metricStack = document.createElement("fig-stack");
@@ -562,8 +801,9 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
   ) => {
     if (!has(property)) return;
     const input = document.createElement("fig-input-number");
+    input.dataset.typographyProperty = property;
     input.style.cssText = "flex: 1 1 0; min-width: 0";
-    input.setAttribute("aria-label", label);
+    if (property !== "font-size") input.setAttribute("aria-label", label);
     input.setAttribute("steppers", "false");
     input.setAttribute("units", units);
     if (iconName) {
@@ -669,11 +909,12 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
   target.append(root);
 
   const sync = (values) => {
-    for (const [property, select] of selects) {
-      select.setAttribute("value", String(values[property] ?? ""));
-    }
     if (fontPicker) {
       fontPicker.value = fontFamilyLabel(values["font-family"]);
+    }
+    syncFontWeightOptions();
+    for (const [property, select] of selects) {
+      select.setAttribute("value", String(values[property] ?? ""));
     }
     for (const [property, { input, fallback }] of metricInputs) {
       const raw = String(values[property] ?? "");
@@ -703,6 +944,708 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
   };
 }
 
+function moduleLabel(property) {
+  return property
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function moduleColorValue(event, control) {
+  const detail = event instanceof CustomEvent ? event.detail : null;
+  const value =
+    detail?.hexOpaque ??
+    detail?.hex ??
+    detail?.value ??
+    control.value ??
+    eventValue(event);
+  return typeof value === "object"
+    ? String(value?.hex ?? value?.value ?? "#000000")
+    : String(value || "#000000");
+}
+
+function createModuleSelect(label, options, onValue) {
+  const select = document.createElement("fig-select");
+  select.setAttribute("label", label);
+  select.setAttribute("full", "");
+  select.style.cssText = "flex: 1 1 0; min-width: 0";
+  const panel = document.createElement("fig-select-options");
+  panel.setAttribute("slot", "panel");
+  options.forEach(([value, optionLabel]) => {
+    const option = document.createElement("fig-select-option");
+    option.setAttribute("value", value);
+    option.setAttribute("label", optionLabel);
+    option.textContent = optionLabel;
+    panel.append(option);
+  });
+  select.append(panel);
+  for (const phase of ["input", "change"]) {
+    select.addEventListener(phase, (event) => {
+      onValue(String(eventValue(event)), phase, event);
+    });
+  }
+  return select;
+}
+
+function createModuleNumber(label, units, onValue, options = {}) {
+  const input = document.createElement("fig-input-number");
+  input.setAttribute("aria-label", label);
+  input.setAttribute("steppers", "false");
+  input.setAttribute("step", String(options.step ?? 1));
+  if (units) input.setAttribute("units", units);
+  if (options.min !== undefined) input.setAttribute("min", String(options.min));
+  if (options.max !== undefined) input.setAttribute("max", String(options.max));
+  input.style.cssText = "flex: 1 1 0; min-width: 0";
+  if (options.prependIcon) {
+    const icon = appendSvgIcon(input, options.prependIcon);
+    icon.setAttribute("slot", "prepend");
+  }
+  for (const phase of ["input", "change"]) {
+    input.addEventListener(phase, (event) => {
+      onValue(numericValue(eventValue(event)), phase, event);
+    });
+  }
+  return input;
+}
+
+function createModuleText(label, onValue) {
+  const input = document.createElement("fig-input-text");
+  input.setAttribute("aria-label", label);
+  input.setAttribute("full", "");
+  input.style.cssText = "flex: 1 1 0; min-width: 0";
+  for (const phase of ["input", "change"]) {
+    input.addEventListener(phase, (event) => {
+      onValue(String(eventValue(event)), phase, event);
+    });
+  }
+  return input;
+}
+
+function createModuleColor(label, onValue) {
+  const input = document.createElement("fig-input-color");
+  input.setAttribute("aria-label", label);
+  input.setAttribute("text", "true");
+  input.setAttribute("full", "");
+  input.style.cssText = "flex: 1 1 0; min-width: 0";
+  for (const phase of ["input", "change"]) {
+    input.addEventListener(phase, (event) => {
+      onValue(moduleColorValue(event, input), phase, event);
+    });
+  }
+  return input;
+}
+
+function appendModuleRow(group, controls, className = "") {
+  const available = controls.filter(Boolean);
+  if (!available.length) return null;
+  const property = document.createElement("fig-property");
+  if (className) property.className = className;
+  const stack = document.createElement("fig-stack");
+  stack.setAttribute("slot", "input");
+  stack.setAttribute("full", "");
+  stack.append(...available.map((control) => withControlTooltip(control)));
+  property.append(stack);
+  group.append(property);
+  return property;
+}
+
+function createModuleAction(iconName, label, onClick) {
+  const tooltip = document.createElement("fig-tooltip");
+  tooltip.setAttribute("text", label);
+  const button = document.createElement("fig-button");
+  button.setAttribute("variant", "ghost");
+  button.setAttribute("icon", "");
+  button.setAttribute("aria-label", label);
+  const icon = document.createElement("fig-icon");
+  icon.setAttribute("name", iconName);
+  icon.setAttribute("size", "small");
+  button.append(icon);
+  button.addEventListener("click", onClick);
+  tooltip.append(button);
+  return { tooltip, button, icon };
+}
+
+function createCompactModule(target, tagName, moduleId, title) {
+  const root = document.createElement(tagName);
+  root.className = "propskit-root propskit-module-root compact-line-module";
+  root.dataset.module = moduleId;
+
+  const panel = document.createElement("div");
+  panel.className = "propskit-panel prop-panel";
+  const group = document.createElement("fig-group");
+  group.setAttribute("compact", "");
+  group.className = `${moduleId}-properties-group`;
+  const header = document.createElement("fig-header");
+  header.setAttribute("borderless", "");
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  const actions = document.createElement("fig-stack");
+  actions.setAttribute("direction", "horizontal");
+  actions.className = "compact-line-module-actions";
+  header.append(heading, actions);
+  group.append(header);
+
+  const advanced = document.createElement("fig-group");
+  advanced.setAttribute("compact", "");
+  advanced.className = "compact-line-module-advanced";
+  advanced.hidden = true;
+  const advancedHeader = document.createElement("fig-header");
+  advancedHeader.setAttribute("borderless", "");
+  const advancedTitle = document.createElement("h3");
+  advancedTitle.textContent = "Advanced";
+  advancedHeader.append(advancedTitle);
+  advanced.append(advancedHeader);
+
+  panel.append(group, advanced);
+  root.append(panel);
+  target.append(root);
+  return { root, group, header, actions, advanced };
+}
+
+function appendAdvancedTextControls(group, kit, emit, excluded) {
+  const controls = new Map();
+  for (const property of Object.keys(kit.values)) {
+    if (excluded.has(property)) continue;
+    const input = createModuleText(moduleLabel(property), (value, phase, event) =>
+      emit(property, value, phase, event),
+    );
+    const field = document.createElement("fig-field");
+    const label = document.createElement("label");
+    label.textContent = moduleLabel(property);
+    field.append(label, input);
+    group.append(field);
+    controls.set(property, input);
+  }
+  return (values) => {
+    for (const [property, input] of controls) {
+      input.setAttribute("value", String(values[property] ?? ""));
+    }
+  };
+}
+
+function setupCompactModuleActions(view, options) {
+  let settings = null;
+  if (options.advanced !== false) {
+    settings = createModuleAction("settings", "Advanced settings", () => {
+      const open = view.advanced.hidden;
+      view.advanced.hidden = !open;
+      settings.button.toggleAttribute("selected", open);
+      settings.button.setAttribute(
+        "aria-label",
+        open ? "Hide advanced settings" : "Show advanced settings",
+      );
+    });
+    view.actions.append(settings.tooltip);
+  }
+  const add = createModuleAction("add", `Add ${options.name}`, options.onAdd);
+  view.actions.append(add.tooltip);
+
+  const visibility = createModuleAction("visible", `Hide ${options.name}`, () =>
+    options.onVisibility(),
+  );
+  visibility.icon.removeAttribute("size");
+  const remove = createModuleAction("minus", `Remove ${options.name}`, () =>
+    options.onRemove(),
+  );
+  return {
+    add,
+    settings,
+    visibility,
+    remove,
+    syncVisibility(visible) {
+      visibility.icon.setAttribute("name", visible ? "visible" : "hidden");
+      visibility.button.toggleAttribute("selected", !visible);
+      visibility.button.setAttribute(
+        "aria-label",
+        visible ? `Hide ${options.name}` : `Show ${options.name}`,
+      );
+      visibility.tooltip.setAttribute(
+        "text",
+        visible ? `Hide ${options.name}` : `Show ${options.name}`,
+      );
+    },
+  };
+}
+
+function mountBorderModule(target, kit, emit) {
+  const view = createCompactModule(
+    target,
+    "fig-module-border",
+    "border",
+    "Border",
+  );
+  view.advanced.remove();
+  const state = { target: "all", lastStyle: "solid" };
+  const propertyFor = (part) =>
+    state.target === "all"
+      ? `border-${part}`
+      : `border-${state.target}-${part}`;
+  const has = (property) =>
+    Object.prototype.hasOwnProperty.call(kit.values, property);
+
+  let sync = () => {};
+  const width = createModuleNumber(
+    "Border width",
+    "px",
+    (value, phase, event) => {
+      const property = propertyFor("width");
+      if (has(property)) emit(property, `${value}px`, phase, event);
+    },
+    { min: 0, prependIcon: STROKE_WIDTH_ICON },
+  );
+  const style = createModuleSelect(
+    "Border style",
+    BORDER_STYLE_OPTIONS,
+    (value, phase, event) => {
+      const property = propertyFor("style");
+      if (!has(property)) return;
+      if (value !== "none") state.lastStyle = value;
+      emit(property, value, phase, event);
+    },
+  );
+  const targetSelect = createModuleSelect(
+    "Border sides",
+    BORDER_TARGET_OPTIONS,
+    (value) => {
+      state.target = value;
+      sync(kit.values);
+    },
+  );
+  const color = createModuleColor("Border color", (value, phase, event) => {
+    const property = propertyFor("color");
+    if (has(property)) emit(property, value, phase, event);
+  });
+
+  const actions = setupCompactModuleActions(view, {
+    name: "border",
+    advanced: false,
+    onAdd(event) {
+      emit(propertyFor("width"), "1px", "change", event);
+      emit(propertyFor("style"), state.lastStyle || "solid", "change", event);
+    },
+    onVisibility(event) {
+      const property = propertyFor("style");
+      const current = String(kit.values[property] ?? "none");
+      if (current !== "none") state.lastStyle = current;
+      emit(
+        property,
+        current === "none" ? state.lastStyle || "solid" : "none",
+        "change",
+        event,
+      );
+    },
+    onRemove(event) {
+      emit(propertyFor("width"), "0px", "change", event);
+      emit(propertyFor("style"), "none", "change", event);
+    },
+  });
+  const colorRow = appendModuleRow(
+    view.group,
+    [color],
+    "compact-line-module-color",
+  );
+  colorRow.setAttribute("show-trailing", "");
+  const colorActions = document.createElement("fig-stack");
+  colorActions.setAttribute("slot", "trailing");
+  colorActions.setAttribute("gap", "1");
+  colorActions.append(
+    actions.visibility.tooltip,
+    actions.remove.tooltip,
+  );
+  colorRow.append(colorActions);
+  const primaryRow = appendModuleRow(
+    view.group,
+    [width, style, targetSelect],
+    "compact-line-module-primary",
+  );
+
+  sync = (values) => {
+    const widthProperty = propertyFor("width");
+    const styleProperty = propertyFor("style");
+    const colorProperty = propertyFor("color");
+    width.setAttribute("value", String(numericValue(values[widthProperty], 1)));
+    style.setAttribute("value", String(values[styleProperty] ?? "none"));
+    targetSelect.setAttribute("value", state.target);
+    color.setAttribute("value", String(values[colorProperty] ?? "#000000"));
+    const visible = String(values[styleProperty] ?? "none") !== "none";
+    if (visible) state.lastStyle = String(values[styleProperty]);
+    const hasBorder =
+      visible || numericValue(values[widthProperty], 0) > 0;
+    colorRow.hidden = !hasBorder;
+    primaryRow.hidden = !hasBorder;
+    actions.add.button.toggleAttribute("hidden", hasBorder);
+    actions.add.tooltip.toggleAttribute("hidden", hasBorder);
+    actions.syncVisibility(visible);
+  };
+  const unsubscribe = kit.subscribe(sync);
+  return {
+    element: view.root,
+    destroy() {
+      unsubscribe();
+      view.root.remove();
+    },
+  };
+}
+
+function strokeStyleForDasharray(value) {
+  const text = String(value ?? "none").trim();
+  if (!text || text === "none") return "solid";
+  if (text === STROKE_DASHARRAY_BY_STYLE.dashed) return "dashed";
+  if (text === STROKE_DASHARRAY_BY_STYLE.dotted) return "dotted";
+  return "custom";
+}
+
+function mountStrokeModule(target, kit, emit) {
+  const view = createCompactModule(
+    target,
+    "fig-module-stroke",
+    "stroke",
+    "Stroke",
+  );
+  view.advanced.remove();
+  const state = { lastColor: "#000000" };
+  let sync = () => {};
+  const width = createModuleNumber(
+    "Stroke width",
+    "px",
+    (value, phase, event) => emit("stroke-width", `${value}px`, phase, event),
+    { min: 0, prependIcon: STROKE_WIDTH_ICON },
+  );
+  const style = createModuleSelect(
+    "Stroke style",
+    STROKE_STYLE_OPTIONS,
+    (value, phase, event) => {
+      if (value === "custom") return;
+      emit(
+        "stroke-dasharray",
+        STROKE_DASHARRAY_BY_STYLE[value],
+        phase,
+        event,
+      );
+    },
+  );
+  const color = createModuleColor("Stroke color", (value, phase, event) => {
+    state.lastColor = value;
+    emit("stroke", value, phase, event);
+    const detail = event instanceof CustomEvent ? event.detail : null;
+    const alpha = Number(detail?.rgba?.a);
+    if (Number.isFinite(alpha)) {
+      emit("stroke-opacity", Math.max(0, Math.min(1, alpha)), phase, event);
+    }
+  });
+  const linecap = createModuleSelect(
+    "Line cap",
+    [["butt", "Butt"], ["round", "Round"], ["square", "Square"]],
+    (value, phase, event) => emit("stroke-linecap", value, phase, event),
+  );
+  const linejoin = createModuleSelect(
+    "Line join",
+    [["miter", "Miter"], ["round", "Round"], ["bevel", "Bevel"]],
+    (value, phase, event) => emit("stroke-linejoin", value, phase, event),
+  );
+  const dasharray = createModuleText(
+    "Stroke dash array",
+    (value, phase, event) => emit("stroke-dasharray", value || "none", phase, event),
+  );
+  const dashoffset = createModuleNumber(
+    "Stroke dash offset",
+    "",
+    (value, phase, event) => emit("stroke-dashoffset", String(value), phase, event),
+  );
+
+  const actions = setupCompactModuleActions(view, {
+    name: "stroke",
+    advanced: false,
+    onAdd(event) {
+      emit("stroke", state.lastColor, "change", event);
+      emit("stroke-width", "1px", "change", event);
+    },
+    onVisibility(event) {
+      const current = String(kit.values.stroke ?? "none");
+      if (current !== "none") state.lastColor = current;
+      emit(
+        "stroke",
+        current === "none" ? state.lastColor : "none",
+        "change",
+        event,
+      );
+    },
+    onRemove(event) {
+      emit("stroke", "none", "change", event);
+      emit("stroke-width", "0px", "change", event);
+    },
+  });
+  const colorRow = appendModuleRow(
+    view.group,
+    [color],
+    "compact-line-module-color",
+  );
+  colorRow.setAttribute("show-trailing", "");
+  const colorActions = document.createElement("fig-stack");
+  colorActions.setAttribute("slot", "trailing");
+  colorActions.setAttribute("gap", "1");
+  colorActions.append(
+    actions.visibility.tooltip,
+    actions.remove.tooltip,
+  );
+  colorRow.append(colorActions);
+  appendModuleRow(view.group, [
+    width,
+    style,
+  ], "compact-line-module-primary");
+  const dashRow = appendModuleRow(
+    view.group,
+    [dasharray, dashoffset],
+    "compact-line-module-dash",
+  );
+  appendModuleRow(
+    view.group,
+    [linecap, linejoin],
+    "compact-line-module-line",
+  );
+  sync = (values) => {
+    const strokeColor = String(values.stroke ?? "none");
+    if (strokeColor !== "none") state.lastColor = strokeColor;
+    width.setAttribute("value", String(numericValue(values["stroke-width"], 1)));
+    const strokeStyle = strokeStyleForDasharray(values["stroke-dasharray"]);
+    style.setAttribute("value", strokeStyle);
+    dashRow.hidden = strokeStyle !== "dashed";
+    const opacityValue = Number(values["stroke-opacity"] ?? 1);
+    const opacity = Number.isFinite(opacityValue)
+      ? Math.max(0, Math.min(1, opacityValue))
+      : 1;
+    const alpha = Math.round(opacity * 255).toString(16).padStart(2, "0");
+    color.setAttribute(
+      "value",
+      /^#[\da-f]{6}$/i.test(state.lastColor)
+        ? `${state.lastColor}${alpha}`
+        : state.lastColor,
+    );
+    linecap.setAttribute("value", String(values["stroke-linecap"] ?? "butt"));
+    linejoin.setAttribute("value", String(values["stroke-linejoin"] ?? "miter"));
+    dasharray.setAttribute(
+      "value",
+      String(values["stroke-dasharray"] ?? "none"),
+    );
+    dashoffset.setAttribute(
+      "value",
+      String(numericValue(values["stroke-dashoffset"], 0)),
+    );
+    actions.syncVisibility(strokeColor !== "none");
+  };
+  const unsubscribe = kit.subscribe(sync);
+  return {
+    element: view.root,
+    destroy() {
+      unsubscribe();
+      view.root.remove();
+    },
+  };
+}
+
+function mountOutlineModule(target, kit, emit) {
+  const view = createCompactModule(
+    target,
+    "fig-module-outline",
+    "outline",
+    "Outline",
+  );
+  view.advanced.remove();
+  const state = {
+    alignment: null,
+    applyingPreset: false,
+    lastStyle: "solid",
+    offset: 0,
+    width: 1,
+  };
+  const presetOffset = (alignment, width = state.width) => {
+    if (alignment === "inside") return -width;
+    if (alignment === "center") return -width / 2;
+    return 0;
+  };
+  const alignmentForOffset = (offset, width) => {
+    const epsilon = 0.0001;
+    if (Math.abs(offset + width) < epsilon) return "inside";
+    if (Math.abs(offset + width / 2) < epsilon) return "center";
+    if (Math.abs(offset) < epsilon) return "outside";
+    return "custom";
+  };
+  const emitPresetOffset = (alignment, phase, event, width = state.width) => {
+    if (alignment === "custom") return;
+    const offset = presetOffset(alignment, width);
+    state.offset = offset;
+    emit("outline-offset", `${offset}px`, phase, event);
+  };
+  const width = createModuleNumber(
+    "Outline width",
+    "px",
+    (value, phase, event) => {
+      const alignment = state.alignment ?? "outside";
+      state.width = value;
+      state.applyingPreset = alignment !== "custom";
+      emit("outline-width", `${value}px`, phase, event);
+      emitPresetOffset(alignment, phase, event, value);
+      state.applyingPreset = false;
+    },
+    { min: 0, prependIcon: STROKE_WIDTH_ICON },
+  );
+  const style = createModuleSelect(
+    "Outline style",
+    OUTLINE_STYLE_OPTIONS,
+    (value, phase, event) => {
+      if (value !== "none") state.lastStyle = value;
+      emit("outline-style", value, phase, event);
+    },
+  );
+  let syncAlignmentControls = () => {};
+  const alignment = createModuleSelect(
+    "Outline alignment",
+    OUTLINE_ALIGNMENT_OPTIONS,
+    (value, phase, event) => {
+      state.alignment = value;
+      syncAlignmentControls();
+      emitPresetOffset(value, phase, event);
+    },
+  );
+  const customOffset = document.createElement("fig-split-input");
+  customOffset.setAttribute("type", "number");
+  customOffset.setAttribute(
+    "options",
+    OUTLINE_ALIGNMENT_OPTIONS.map(([, label]) => label).join(","),
+  );
+  customOffset.setAttribute("aria-label", "Outline offset");
+  customOffset.setAttribute("full", "");
+  customOffset.style.cssText = "flex: 1 1 0; min-width: 0";
+  const syncCustomOffsetChrome = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!customOffset.isConnected) return;
+        const input = customOffset.querySelector("fig-input-number");
+        input?.setAttribute("steppers", "false");
+        input?.setAttribute("units", "px");
+        input?.setAttribute("aria-label", "Outline offset");
+        const select = customOffset.querySelector("fig-select");
+        const label = OUTLINE_ALIGNMENT_OPTIONS.find(
+          ([value]) => value === state.alignment,
+        )?.[1];
+        if (select && label) select.setAttribute("value", label);
+      });
+    });
+  };
+  syncAlignmentControls = () => {
+    const custom = state.alignment === "custom";
+    alignment.hidden = custom;
+    customOffset.hidden = !custom;
+    alignment.setAttribute("value", state.alignment ?? "outside");
+    customOffset.setAttribute("value", String(state.offset));
+    syncCustomOffsetChrome();
+  };
+  for (const phase of ["input", "change"]) {
+    customOffset.addEventListener(phase, (event) => {
+      const rawValue = String(eventValue(event));
+      const selectedAlignment = rawValue.toLowerCase();
+      if (
+        OUTLINE_ALIGNMENT_OPTIONS.some(
+          ([value]) => value === selectedAlignment,
+        )
+      ) {
+        state.alignment = selectedAlignment;
+        syncAlignmentControls();
+        emitPresetOffset(selectedAlignment, phase, event);
+        return;
+      }
+      const value = numericValue(rawValue, state.offset);
+      state.alignment = "custom";
+      state.offset = value;
+      syncCustomOffsetChrome();
+      emit("outline-offset", `${value}px`, phase, event);
+    });
+  }
+  const color = createModuleColor("Outline color", (value, phase, event) =>
+    emit("outline-color", value, phase, event),
+  );
+  const actions = setupCompactModuleActions(view, {
+    name: "outline",
+    advanced: false,
+    onAdd(event) {
+      emit("outline-width", "1px", "change", event);
+      emit("outline-style", state.lastStyle || "solid", "change", event);
+      emit(
+        "outline-color",
+        String(kit.values["outline-color"] ?? DEFAULT_OUTLINE_COLOR),
+        "change",
+        event,
+      );
+    },
+    onVisibility(event) {
+      const current = String(kit.values["outline-style"] ?? "none");
+      if (current !== "none") state.lastStyle = current;
+      emit(
+        "outline-style",
+        current === "none" ? state.lastStyle || "solid" : "none",
+        "change",
+        event,
+      );
+    },
+    onRemove(event) {
+      emit("outline-width", "0px", "change", event);
+      emit("outline-style", "none", "change", event);
+    },
+  });
+  const colorRow = appendModuleRow(view.group, [
+    color,
+    actions.visibility.tooltip,
+    actions.remove.tooltip,
+  ], "compact-line-module-color");
+  const primaryRow = appendModuleRow(view.group, [
+    width,
+    alignment,
+    customOffset,
+    style,
+  ]);
+
+  const sync = (values) => {
+    const currentStyle = String(values["outline-style"] ?? "none");
+    if (currentStyle !== "none") state.lastStyle = currentStyle;
+    state.width = numericValue(values["outline-width"], 1);
+    state.offset = numericValue(values["outline-offset"], 0);
+    if (
+      state.alignment === null ||
+      (state.alignment !== "custom" && !state.applyingPreset)
+    ) {
+      state.alignment = alignmentForOffset(state.offset, state.width);
+    }
+    width.setAttribute(
+      "value",
+      String(state.width),
+    );
+    style.setAttribute(
+      "value",
+      currentStyle === "none" ? state.lastStyle : currentStyle,
+    );
+    syncAlignmentControls();
+    color.setAttribute(
+      "value",
+      String(values["outline-color"] ?? DEFAULT_OUTLINE_COLOR),
+    );
+    const hasOutline =
+      currentStyle !== "none" || numericValue(values["outline-width"], 0) > 0;
+    colorRow.hidden = !hasOutline;
+    primaryRow.hidden = !hasOutline;
+    actions.add.button.toggleAttribute("hidden", hasOutline);
+    actions.add.tooltip.toggleAttribute("hidden", hasOutline);
+    actions.syncVisibility(currentStyle !== "none");
+  };
+  const unsubscribe = kit.subscribe(sync);
+  return {
+    element: view.root,
+    destroy() {
+      unsubscribe();
+      view.root.remove();
+    },
+  };
+}
+
 function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   const root = document.createElement("fig-module-appearance");
   root.className = "propskit-root propskit-module-root";
@@ -718,7 +1661,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   const header = document.createElement("fig-header");
   header.setAttribute("borderless", "");
   const title = document.createElement("h3");
-  title.textContent = "Blending";
+  title.textContent = "Appearance";
   header.append(title);
 
   const has = (property) =>
@@ -731,11 +1674,6 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     visibilityButton.setAttribute("variant", "ghost");
     visibilityButton.setAttribute("type", "toggle");
     visibilityButton.setAttribute("icon", "");
-    visibilityButton.addEventListener("click", (event) => {
-      const next =
-        kit.values.visibility === "visible" ? "hidden" : "visible";
-      emit("visibility", next, "change", event);
-    });
     visibilityTooltip.append(visibilityButton);
     header.append(visibilityTooltip);
   }
@@ -767,7 +1705,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     prepend.setAttribute("slot", "prepend");
     appendSvgIcon(prepend, OPACITY_ICON);
     opacityInput.append(prepend);
-    stack.append(opacityInput);
+    stack.append(withControlTooltip(opacityInput));
   }
 
   let blendSelect = null;
@@ -805,7 +1743,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
       });
     });
     blendSelect.append(options);
-    stack.append(blendSelect);
+    stack.append(withControlTooltip(blendSelect));
   }
 
   property.append(stack);
@@ -813,6 +1751,10 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   panel.append(group);
   root.append(panel);
   target.append(root);
+  visibilityButton?.addEventListener("click", (event) => {
+    const next = visibilityButton.selected ? "hidden" : "visible";
+    emit("visibility", next, "change", event);
+  });
 
   const sync = (values) => {
     if (visibilityButton && visibilityTooltip) {
@@ -829,7 +1771,6 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
       visibilityButton.replaceChildren();
       const icon = document.createElement("fig-icon");
       icon.setAttribute("name", visible ? "visible" : "hidden");
-      icon.setAttribute("size", "small");
       visibilityButton.append(icon);
     }
     if (opacityInput) {
@@ -869,6 +1810,33 @@ const MODULE_PRESENTATIONS = {
     properties: APPEARANCE_PROPERTIES,
     mount: mountAppearanceModule,
   },
+  border: {
+    properties: BORDER_PROPERTIES,
+    mount: mountBorderModule,
+  },
+  stroke: {
+    properties: STROKE_PROPERTIES,
+    mount: mountStrokeModule,
+  },
+  outline: {
+    properties: OUTLINE_PROPERTIES,
+    mount: mountOutlineModule,
+    serializeValues(values) {
+      return values["outline-style"] === "none"
+        ? { outline: "none" }
+        : values;
+    },
+    serializeChange(change) {
+      return change.path === "outline-style" && change.value === "none"
+        ? {
+            ...change,
+            path: "outline",
+            value: "none",
+            previousValue: undefined,
+          }
+        : change;
+    },
+  },
 };
 
 export function figCreateModule(moduleId, options = {}) {
@@ -877,7 +1845,7 @@ export function figCreateModule(moduleId, options = {}) {
     values: options.values,
   });
   const presentation = MODULE_PRESENTATIONS[moduleId];
-  const config = presentation
+  const config = presentation?.properties
     ? Object.fromEntries(
         presentation.properties
           .filter((property) =>
@@ -886,6 +1854,10 @@ export function figCreateModule(moduleId, options = {}) {
           .map((property) => [property, result.config[property]]),
       )
     : result.config;
+  const serializeValues = (values) =>
+    presentation?.serializeValues?.(values) ?? values;
+  const serializeChange = (change) =>
+    presentation?.serializeChange?.(change) ?? change;
   const kit = figCreateProps(result.module.label, config, {
     id: options.id,
     onInput: options.onInput,
@@ -905,7 +1877,7 @@ export function figCreateModule(moduleId, options = {}) {
     kit.setValue(path, value);
     const callback =
       phase === "input" ? options.onInput : options.onChange;
-    callback?.(path, value, {
+    const change = serializeChange({
       path,
       value,
       previousValue,
@@ -913,6 +1885,7 @@ export function figCreateModule(moduleId, options = {}) {
       panelId: kit.id,
       sourceEvent,
     });
+    callback?.(change.path, change.value, change);
   };
   const emitOptionHover = (path, value, sourceEvent) => {
     if (destroyed) return;
@@ -931,13 +1904,24 @@ export function figCreateModule(moduleId, options = {}) {
       return view?.element ?? null;
     },
     get values() {
-      return kit.values;
+      return serializeValues(kit.values);
     },
-    getValues: kit.getValues,
+    getValues() {
+      return serializeValues(kit.getValues());
+    },
     setValue: kit.setValue,
     setValues: kit.setValues,
     resetValues: kit.resetValues,
-    subscribe: kit.subscribe,
+    subscribe(listener, options = true) {
+      const changes =
+        typeof options === "object" && options.mode === "changes";
+      return kit.subscribe(
+        changes
+          ? (records) => listener(records.map(serializeChange))
+          : (values) => listener(serializeValues(values)),
+        options,
+      );
+    },
     mount(target) {
       if (destroyed) {
         throw new Error("Cannot mount a destroyed module.");

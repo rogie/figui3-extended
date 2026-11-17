@@ -230,6 +230,9 @@ export type FigTransformModuleElement = FigModuleTransformsElement;
 
 export interface FigModuleAppearanceElement extends FigHTMLElement {}
 export interface FigModuleTypographyElement extends FigHTMLElement {}
+export interface FigModuleBorderElement extends FigHTMLElement {}
+export interface FigModuleStrokeElement extends FigHTMLElement {}
+export interface FigModuleOutlineElement extends FigHTMLElement {}
 
 export interface FigExtendedTagNameMap {
   "fig-ai-context": FigHTMLElement;
@@ -239,9 +242,12 @@ export interface FigExtendedTagNameMap {
   "fig-canvas-control": FigValueElement;
   "fig-chat-message": FigHTMLElement;
   "fig-module-appearance": FigModuleAppearanceElement;
+  "fig-module-border": FigModuleBorderElement;
   "fig-module-fills": FigModuleFillsElement;
   "fig-module-filters": FigModuleFiltersElement;
+  "fig-module-outline": FigModuleOutlineElement;
   "fig-module-shadows": FigModuleShadowsElement;
+  "fig-module-stroke": FigModuleStrokeElement;
   "fig-module-typography": FigModuleTypographyElement;
   "fig-module-transforms": FigModuleTransformsElement;
   "fig-font-picker": FigFontPickerElement;
