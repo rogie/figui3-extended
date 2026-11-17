@@ -50,6 +50,34 @@ test.describe("editor component manifest contracts", () => {
     );
   });
 
+  test("empty list modules render only their header", async ({ page }) => {
+    const children = await page.evaluate(() => {
+      const definitions = [
+        ["fig-module-fills", "fills"],
+        ["fig-module-filters", "filters"],
+        ["fig-module-transforms", "transforms"],
+      ];
+      return definitions.map(([tag, attribute]) => {
+        const element = document.createElement(tag);
+        element.setAttribute(attribute, "[]");
+        document.body.append(element);
+        const group = element.querySelector("fig-group");
+        return {
+          tag,
+          children: Array.from(
+            group?.children ?? [],
+            (child) => child.tagName.toLowerCase(),
+          ),
+        };
+      });
+    });
+    expect(children).toEqual([
+      { tag: "fig-module-fills", children: ["fig-header"] },
+      { tag: "fig-module-filters", children: ["fig-header"] },
+      { tag: "fig-module-transforms", children: ["fig-header"] },
+    ]);
+  });
+
   for (const contract of editorComponentContracts) {
     test(`${contract.tag}: mounts without runtime errors`, async ({ page }) => {
       const errors = collectPageErrors(page);

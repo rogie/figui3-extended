@@ -1,4 +1,9 @@
 import { useEffect, useRef } from "react";
+import CodeView from "./CodeView";
+
+const SHADOWS_MODULE_MARKUP = `<fig-module-shadows
+  shadows='[{"type":"drop","x":0,"y":4,"blur":4,"spread":0,"color":"#00000040","visible":true}]'
+></fig-module-shadows>`;
 
 interface ShadowModuleElement extends HTMLElement {
   shadows: Array<Record<string, unknown>>;
@@ -56,12 +61,20 @@ export default function ShadowsModuleView({
   }, [onEventChange, onValuesChange]);
 
   return (
-    <div className="example-view-container" data-shadows-module>
-      <div className="propkit-example propkit-example-preview">
-        <div className="prop-panel">
-          <fig-module-shadows ref={moduleRef}></fig-module-shadows>
+    <>
+      <div className="example-view-container" data-shadows-module>
+        <div className="propkit-example propkit-example-preview">
+          <div className="prop-panel">
+            <fig-module-shadows ref={moduleRef}></fig-module-shadows>
+          </div>
         </div>
       </div>
-    </div>
+      <CodeView
+        markup={SHADOWS_MODULE_MARKUP}
+        readOnly
+        showPromptAction={false}
+        title="HTML"
+      />
+    </>
   );
 }

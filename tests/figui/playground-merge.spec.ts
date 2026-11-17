@@ -24,7 +24,10 @@ import {
 } from "../../playground/src/lib/images";
 import { labSections } from "../../playground/src/data/labSections";
 import { propskitSections } from "../../playground/src/data/propskitSections";
-import { moduleSections } from "../../playground/src/data/moduleSections";
+import {
+  htmlForModule,
+  moduleSections,
+} from "../../playground/src/data/moduleSections";
 import { allComponentContracts } from "../../playground/src/testing/componentManifest";
 import {
   CSS_PROPERTY_MODULES,
@@ -1285,6 +1288,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       await expect(
         page.locator(`fig-group[name="Modules"] fig-layer[data-section="${module.id}"]`),
       ).toHaveCount(1);
+      await expect(page.locator("main .propkit-code-view")).toHaveCount(1);
       const visibilityIcons = page.locator(
         '.propkit-example-preview fig-icon[name="visible"], ' +
           '.propkit-example-preview fig-icon[name="hidden"]',
@@ -1292,6 +1296,23 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       for (let index = 0; index < await visibilityIcons.count(); index += 1) {
         await expect(visibilityIcons.nth(index)).not.toHaveAttribute("size");
       }
+    }
+  });
+
+  test("all module examples show their custom-element HTML", async ({
+    page,
+  }) => {
+    for (const module of CSS_PROPERTY_MODULES.filter(
+      ({ id }) => id !== "mask",
+    )) {
+      const openingTag = htmlForModule(module.id).split(">")[0];
+      await page.goto(`${playgroundUrl}/#module-${module.id}/default`);
+      await expect(
+        page.locator("main .propkit-code-view .cm-content"),
+      ).toContainText(openingTag);
+      await expect(
+        page.locator("main .propkit-code-view > fig-header"),
+      ).toContainText("HTML");
     }
   });
 
@@ -1317,6 +1338,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       "fig-module-stroke",
       "fig-module-filters",
     ]);
+    const allCode = page.locator("main .propkit-code-view .cm-content");
+    for (const tag of moduleTags) {
+      await expect(allCode).toContainText(`<${tag}>`);
+    }
     await expect(
       page.locator("#properties > [data-layout-module]"),
     ).toHaveCount(1);
@@ -1741,14 +1766,23 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       border.locator(".compact-line-module-advanced"),
     ).toHaveCount(0);
     await expect(
-      border.locator(
-        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
-      ),
+      border.locator("fig-group > :not(fig-header)"),
     ).toHaveCount(0);
-    await expect(
-      border.locator("fig-group > fig-property").first(),
-    ).toHaveClass(/compact-line-module-color/);
     const borderColorRow = border.locator(".compact-line-module-color");
+    const borderPrimaryRow = border.locator(".compact-line-module-primary");
+    const addBorder = border.locator(
+      'fig-button[aria-label="Add border"]',
+    );
+    await expect(addBorder).toBeVisible();
+    await expect(borderColorRow).toHaveCount(0);
+    await expect(borderPrimaryRow).toHaveCount(0);
+    await addBorder.click();
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"border-style": "solid"');
+    await expect(addBorder).toBeHidden();
+    await expect(borderColorRow).toBeVisible();
+    await expect(borderPrimaryRow).toBeVisible();
     await expect(borderColorRow).toHaveAttribute("show-trailing", "");
     await expect(
       borderColorRow.locator(':scope > fig-stack[slot="trailing"]'),
@@ -1761,20 +1795,14 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       borderColorRow.locator('fig-button[aria-label="Remove border"]'),
     ).toHaveCount(1);
-    const borderPrimaryRow = border.locator(".compact-line-module-primary");
-    const addBorder = border.locator(
-      'fig-button[aria-label="Add border"]',
-    );
-    await expect(addBorder).toBeVisible();
-    await expect(borderColorRow).toBeHidden();
-    await expect(borderPrimaryRow).toBeHidden();
-    await addBorder.click();
     await expect(
-      page.locator("[data-propskit-values] .cm-content"),
-    ).toContainText('"border-style": "solid"');
-    await expect(addBorder).toBeHidden();
-    await expect(borderColorRow).toBeVisible();
-    await expect(borderPrimaryRow).toBeVisible();
+      border.locator(
+        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      border.locator("fig-group > fig-property").first(),
+    ).toHaveClass(/compact-line-module-color/);
     await expect(
       border.locator(
         ".compact-line-module-primary > fig-stack > fig-tooltip > fig-button",
@@ -1804,8 +1832,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
         );
       });
     await expect(addBorder).toBeVisible();
-    await expect(borderColorRow).toBeHidden();
-    await expect(borderPrimaryRow).toBeHidden();
+    await expect(borderColorRow).toHaveCount(0);
+    await expect(borderPrimaryRow).toHaveCount(0);
     await addBorder.click();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
@@ -1827,8 +1855,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"border-top-style": "none"');
     await expect(addBorder).toBeVisible();
-    await expect(borderColorRow).toBeHidden();
-    await expect(borderPrimaryRow).toBeHidden();
+    await expect(borderColorRow).toHaveCount(0);
+    await expect(borderPrimaryRow).toHaveCount(0);
     await addBorder.click();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
@@ -1944,10 +1972,14 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"stroke": "none"');
+    await expect(
+      stroke.locator("fig-group > :not(fig-header)"),
+    ).toHaveCount(0);
     await stroke.locator('fig-button[aria-label="Add stroke"]').click();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"stroke-width": "1px"');
+    await expect(stroke.locator("fig-group > fig-property")).toHaveCount(4);
 
     await page.goto(`${playgroundUrl}/#module-outline/default`);
     const outline = page.locator("fig-module-outline");
@@ -1955,15 +1987,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(outline.locator(":scope > .propskit-panel")).toHaveCount(0);
     await expect(outline.locator(":scope > fig-group")).toHaveCount(1);
     await expect(
-      outline.locator(
-        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
-      ),
+      outline.locator("fig-group > :not(fig-header)"),
     ).toHaveCount(0);
-    await expect(
-      outline.locator(
-        'fig-input-number[aria-label="Outline width"] > fig-icon[slot="prepend"] svg',
-      ),
-    ).toHaveCount(1);
     await expect(
       outline.locator('fig-button[aria-label="Advanced settings"]'),
     ).toHaveCount(0);
@@ -1977,18 +2002,12 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     const outlinePrimaryRow = outline.locator(
       'fig-property:has(fig-input-number[aria-label="Outline width"])',
     );
-    await expect(outlinePrimaryRow).not.toHaveClass(
-      /compact-line-module-primary/,
-    );
-    await expect(
-      outlinePrimaryRow.locator(':scope > fig-stack[slot="input"]'),
-    ).toHaveCount(1);
     const outlineValues = page.locator("[data-propskit-values] .cm-content");
     await expect(outlineValues).toContainText('"outline": "none"');
     await expect(outlineValues).not.toContainText('"outline-style"');
     await expect(addOutline).toBeVisible();
-    await expect(outlineColorRow).toBeHidden();
-    await expect(outlinePrimaryRow).toBeHidden();
+    await expect(outlineColorRow).toHaveCount(0);
+    await expect(outlinePrimaryRow).toHaveCount(0);
     await addOutline.click();
     await expect(outlineValues).toContainText('"outline-style": "solid"');
     await expect(outlineValues).not.toContainText('"outline":');
@@ -2001,6 +2020,22 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(addOutline).toBeHidden();
     await expect(outlineColorRow).toBeVisible();
     await expect(outlinePrimaryRow).toBeVisible();
+    await expect(
+      outline.locator(
+        'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      outline.locator(
+        'fig-input-number[aria-label="Outline width"] > fig-icon[slot="prepend"] svg',
+      ),
+    ).toHaveCount(1);
+    await expect(outlinePrimaryRow).not.toHaveClass(
+      /compact-line-module-primary/,
+    );
+    await expect(
+      outlinePrimaryRow.locator(':scope > fig-stack[slot="input"]'),
+    ).toHaveCount(1);
     await expect(
       outline.locator('fig-select[label="Outline style"]'),
     ).toHaveCount(1);
@@ -2106,7 +2141,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       page.locator("[data-propskit-event] .cm-content"),
     ).toContainText('"value": "none"');
-    await outline.locator('fig-button[aria-label="Show outline"]').click();
+    await expect(addOutline).toBeVisible();
+    await expect(outlineColorRow).toHaveCount(0);
+    await expect(outlinePrimaryRow).toHaveCount(0);
+    await addOutline.click();
     await expect(outlineValues).toContainText('"outline-style": "dashed"');
     await expect(outlineValues).not.toContainText('"outline":');
     await expect(addOutline).toBeHidden();
@@ -2114,8 +2152,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(outlineValues).toContainText('"outline": "none"');
     await expect(outlineValues).not.toContainText('"outline-style"');
     await expect(addOutline).toBeVisible();
-    await expect(outlineColorRow).toBeHidden();
-    await expect(outlinePrimaryRow).toBeHidden();
+    await expect(outlineColorRow).toHaveCount(0);
+    await expect(outlinePrimaryRow).toHaveCount(0);
     await addOutline.click();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
@@ -2133,7 +2171,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
 
       const borderController = figCreateModule("border");
       borderController.mount(host);
-      borderController.setValue("border-width", "7px");
+      borderController.setValues({
+        "border-width": "7px",
+        "border-style": "solid",
+      });
       const borderWidth = host
         .querySelector('fig-input-number[aria-label="Border width"]')
         ?.getAttribute("value");
@@ -2149,7 +2190,11 @@ test.describe.serial("ExampleView DOM synchronization", () => {
 
       const outlineController = figCreateModule("outline");
       outlineController.mount(host);
-      outlineController.setValue("outline-offset", "5px");
+      outlineController.setValues({
+        "outline-offset": "5px",
+        "outline-width": "1px",
+        "outline-style": "solid",
+      });
       const outlineOffset = host
         .querySelector('fig-input-number[aria-label="Outline offset"]')
         ?.getAttribute("value");

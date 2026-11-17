@@ -1,4 +1,9 @@
 import { useEffect, useRef } from "react";
+import CodeView from "./CodeView";
+
+const TRANSFORMS_MODULE_MARKUP = `<fig-module-transforms
+  transforms='[{"type":"translate","x":0,"y":0,"z":0,"visible":true}]'
+></fig-module-transforms>`;
 
 interface TransformModuleElement extends HTMLElement {
   transforms: Array<Record<string, unknown>>;
@@ -48,12 +53,20 @@ export default function TransformsModuleView({
   }, [onEventChange, onValuesChange]);
 
   return (
-    <div className="example-view-container" data-transforms-module>
-      <div className="propkit-example propkit-example-preview">
-        <div className="prop-panel">
-          <fig-module-transforms ref={moduleRef}></fig-module-transforms>
+    <>
+      <div className="example-view-container" data-transforms-module>
+        <div className="propkit-example propkit-example-preview">
+          <div className="prop-panel">
+            <fig-module-transforms ref={moduleRef}></fig-module-transforms>
+          </div>
         </div>
       </div>
-    </div>
+      <CodeView
+        markup={TRANSFORMS_MODULE_MARKUP}
+        readOnly
+        showPromptAction={false}
+        title="HTML"
+      />
+    </>
   );
 }

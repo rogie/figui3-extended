@@ -1,4 +1,9 @@
 import { useEffect, useRef } from "react";
+import CodeView from "./CodeView";
+
+const FILTERS_MODULE_MARKUP = `<fig-module-filters
+  filters='[{"type":"gaussian-blur","radius":4,"visible":true}]'
+></fig-module-filters>`;
 
 interface FilterModuleElement extends HTMLElement {
   filters: Array<Record<string, unknown>>;
@@ -53,12 +58,20 @@ export default function FiltersModuleView({
   }, [onEventChange, onValuesChange]);
 
   return (
-    <div className="example-view-container" data-filters-module>
-      <div className="propkit-example propkit-example-preview">
-        <div className="prop-panel">
-          <fig-module-filters ref={moduleRef}></fig-module-filters>
+    <>
+      <div className="example-view-container" data-filters-module>
+        <div className="propkit-example propkit-example-preview">
+          <div className="prop-panel">
+            <fig-module-filters ref={moduleRef}></fig-module-filters>
+          </div>
         </div>
       </div>
-    </div>
+      <CodeView
+        markup={FILTERS_MODULE_MARKUP}
+        readOnly
+        showPromptAction={false}
+        title="HTML"
+      />
+    </>
   );
 }

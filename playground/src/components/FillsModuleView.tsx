@@ -1,6 +1,13 @@
 import { useEffect, useRef } from "react";
 import { createCssModuleConfig } from "../../../css-properties.js";
 import { withElementProbe } from "../lib/elementProbe";
+import CodeView from "./CodeView";
+
+const FILLS_MODULE_MARKUP = `<fig-module-fills
+  fills='[{"type":"solid","color":"#00000000","visible":true}]'
+  mode="solid,gradient,image"
+  value-property="background"
+></fig-module-fills>`;
 
 interface FillModuleElement extends HTMLElement {
   fills: Array<Record<string, unknown>>;
@@ -72,12 +79,20 @@ export default function FillsModuleView({
   }, [onEventChange, onValuesChange]);
 
   return (
-    <div className="example-view-container" data-fills-module>
-      <div className="propkit-example propkit-example-preview">
-        <div className="prop-panel">
-          <fig-module-fills ref={moduleRef}></fig-module-fills>
+    <>
+      <div className="example-view-container" data-fills-module>
+        <div className="propkit-example propkit-example-preview">
+          <div className="prop-panel">
+            <fig-module-fills ref={moduleRef}></fig-module-fills>
+          </div>
         </div>
       </div>
-    </div>
+      <CodeView
+        markup={FILLS_MODULE_MARKUP}
+        readOnly
+        showPromptAction={false}
+        title="HTML"
+      />
+    </>
   );
 }

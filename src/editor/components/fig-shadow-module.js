@@ -11,6 +11,7 @@ import {
   figEditorUniqueId,
   figEditorWithTooltip,
 } from "../runtime/helpers.js";
+import { FIG_EDITOR_BLUR_ICON } from "../runtime/icons.js";
 
 const SHADOW_TYPES = {
   drop: {
@@ -167,7 +168,8 @@ function createNumberInput(label, value, options, onUpdate) {
   if (options.min !== undefined) input.setAttribute("min", String(options.min));
   if (options.disabled) input.setAttribute("disabled", "");
   const icon = document.createElement("fig-icon");
-  if (options.iconName) icon.setAttribute("name", options.iconName);
+  if (options.iconSvg) icon.innerHTML = options.iconSvg;
+  else if (options.iconName) icon.setAttribute("name", options.iconName);
   else icon.textContent = options.iconText;
   icon.setAttribute("slot", "prepend");
   input.append(icon);
@@ -328,6 +330,7 @@ class FigModuleShadows extends HTMLElement {
       const type = String(eventValue(event, typeSelect));
       if (!Object.prototype.hasOwnProperty.call(SHADOW_TYPES, type)) return;
       this.#updateShadow(index, defaultShadow(type), "change", event, true);
+      this.#openEditor(index);
     });
     const close = createIconButton("Close shadow editor", "close");
     close.setAttribute("close-dialog", "");
@@ -375,7 +378,7 @@ class FigModuleShadows extends HTMLElement {
     };
     appendNumberField("Blur", "blur", {
       min: 0,
-      iconName: "adjust",
+      iconSvg: FIG_EDITOR_BLUR_ICON,
       disabled,
     });
     if (shadow.type !== "text") {

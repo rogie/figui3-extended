@@ -1264,9 +1264,15 @@ function mountBorderModule(target, kit, emit) {
     const visible = String(values[styleProperty] ?? "none") !== "none";
     if (visible) state.lastStyle = String(values[styleProperty]);
     const hasBorder =
-      visible || numericValue(values[widthProperty], 0) > 0;
-    colorRow.hidden = !hasBorder;
-    primaryRow.hidden = !hasBorder;
+      visible && numericValue(values[widthProperty], 0) > 0;
+    if (hasBorder) {
+      if (colorRow.parentElement !== view.group) {
+        view.group.append(colorRow, primaryRow);
+      }
+    } else {
+      colorRow.remove();
+      primaryRow.remove();
+    }
     actions.add.button.toggleAttribute("hidden", hasBorder);
     actions.add.tooltip.toggleAttribute("hidden", hasBorder);
     actions.syncVisibility(visible);
@@ -1383,7 +1389,7 @@ function mountStrokeModule(target, kit, emit) {
     actions.remove.tooltip,
   );
   colorRow.append(colorActions);
-  appendModuleRow(view.group, [
+  const primaryRow = appendModuleRow(view.group, [
     width,
     style,
   ], "compact-line-module-primary");
@@ -1392,7 +1398,7 @@ function mountStrokeModule(target, kit, emit) {
     [dasharray, dashoffset],
     "compact-line-module-dash",
   );
-  appendModuleRow(
+  const lineRow = appendModuleRow(
     view.group,
     [linecap, linejoin],
     "compact-line-module-line",
@@ -1425,6 +1431,21 @@ function mountStrokeModule(target, kit, emit) {
       "value",
       String(numericValue(values["stroke-dashoffset"], 0)),
     );
+    const hasStroke =
+      strokeColor !== "none" &&
+      numericValue(values["stroke-width"], 0) > 0;
+    if (hasStroke) {
+      if (colorRow.parentElement !== view.group) {
+        view.group.append(colorRow, primaryRow, dashRow, lineRow);
+      }
+    } else {
+      colorRow.remove();
+      primaryRow.remove();
+      dashRow.remove();
+      lineRow.remove();
+    }
+    actions.add.button.toggleAttribute("hidden", hasStroke);
+    actions.add.tooltip.toggleAttribute("hidden", hasStroke);
     actions.syncVisibility(strokeColor !== "none");
   };
   const unsubscribe = kit.subscribe(sync);
@@ -1623,9 +1644,16 @@ function mountOutlineModule(target, kit, emit) {
       String(values["outline-color"] ?? DEFAULT_OUTLINE_COLOR),
     );
     const hasOutline =
-      currentStyle !== "none" || numericValue(values["outline-width"], 0) > 0;
-    colorRow.hidden = !hasOutline;
-    primaryRow.hidden = !hasOutline;
+      currentStyle !== "none" &&
+      numericValue(values["outline-width"], 0) > 0;
+    if (hasOutline) {
+      if (colorRow.parentElement !== view.group) {
+        view.group.append(colorRow, primaryRow);
+      }
+    } else {
+      colorRow.remove();
+      primaryRow.remove();
+    }
     actions.add.button.toggleAttribute("hidden", hasOutline);
     actions.add.tooltip.toggleAttribute("hidden", hasOutline);
     actions.syncVisibility(currentStyle !== "none");

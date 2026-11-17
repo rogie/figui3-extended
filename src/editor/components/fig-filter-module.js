@@ -10,6 +10,7 @@ import {
   figEditorDefineElement,
   figEditorWithTooltip,
 } from "../runtime/helpers.js";
+import { FIG_EDITOR_BLUR_ICON } from "../runtime/icons.js";
 
 const FILTER_TYPES = {
   "gaussian-blur": {
@@ -444,6 +445,10 @@ class FigModuleFilters extends HTMLElement {
         toStoredValue = (value) => value;
         valueInput.setAttribute("value", String(fallback));
         valueInput.setAttribute("units", "px");
+        const icon = document.createElement("fig-icon");
+        icon.setAttribute("slot", "prepend");
+        icon.innerHTML = FIG_EDITOR_BLUR_ICON;
+        valueInput.append(icon);
       } else if (filter.type === "hue-rotate") {
         valueKey = "angle";
         fallback = number(filter.angle, 0);
@@ -521,7 +526,7 @@ class FigModuleFilters extends HTMLElement {
       reorders[filter.target].append(property);
     });
 
-    group.append(reorders.layer);
+    if (targetCounts.layer > 0) group.append(reorders.layer);
     if (targetCounts.backdrop > 0) {
       const separator = document.createElement("fig-separator");
       separator.setAttribute("label", "Backdrop");

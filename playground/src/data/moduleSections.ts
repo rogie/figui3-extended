@@ -21,6 +21,18 @@ const module = figCreateModule(${JSON.stringify(id)})
 module.mount("#properties")`;
 }
 
+const SPECIAL_MODULE_TAGS: Partial<Record<CssPropertyModuleId, string>> = {
+  background: "fig-module-fills",
+  filters: "fig-module-filters",
+  shadow: "fig-module-shadows",
+  transforms: "fig-module-transforms",
+};
+
+export function htmlForModule(id: CssPropertyModuleId): string {
+  const tag = SPECIAL_MODULE_TAGS[id] ?? `fig-module-${id}`;
+  return `<${tag}></${tag}>`;
+}
+
 const ALL_MODULE_IDS: CssPropertyModuleId[] = [
   "layout",
   "appearance",
@@ -66,6 +78,7 @@ const allModulesSection: PropsKitSection = {
       description:
         "All primary visual property modules mounted together in their standard order.",
       markup: allModulesSource,
+      codeMarkup: ALL_MODULE_IDS.map(htmlForModule).join("\n"),
       createConfig: () =>
         Object.assign(
           {},
@@ -95,6 +108,7 @@ export const moduleSections: PropsKitSection[] = [
           cssModuleId: module.id,
           description: `An unconstrained ${module.label.toLowerCase()} module. Associate an element to filter properties and seed values from its current computed style.`,
           markup: sourceForModule(module.id, module.label),
+          codeMarkup: htmlForModule(module.id),
           createConfig: () =>
             createCssModuleConfig(module.id).config as PropsKitConfig,
         },

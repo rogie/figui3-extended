@@ -13,6 +13,7 @@ export interface PropsKitExample {
   panelName: string | null;
   description: string;
   markup: string;
+  codeMarkup?: string;
   createConfig: () => PropsKitConfig;
   lang?: "html" | "javascript";
   dialog?: PropsKitDialogPresentation;

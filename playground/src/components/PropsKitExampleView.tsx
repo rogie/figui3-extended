@@ -260,11 +260,18 @@ export default function PropsKitExampleView({
         </div>
       </div>
       <CodeView
-        markup={draftMarkup}
-        onMarkupChange={setDraftMarkup}
-        lang={example.lang ?? "javascript"}
+        markup={example.codeMarkup ?? draftMarkup}
+        onMarkupChange={example.codeMarkup ? undefined : setDraftMarkup}
+        lang={example.codeMarkup ? "html" : (example.lang ?? "javascript")}
+        readOnly={Boolean(example.codeMarkup)}
         showPromptAction={false}
-        title={example.lang === "html" ? "HTML + JavaScript" : "JavaScript"}
+        title={
+          example.codeMarkup
+            ? "HTML"
+            : example.lang === "html"
+              ? "HTML + JavaScript"
+              : "JavaScript"
+        }
       />
     </>
   );

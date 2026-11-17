@@ -114,11 +114,40 @@ test.describe("fig-module-shadows", () => {
         'fig-module-shadows dialog[open] > fig-header[dialog-header][data-auto]',
       ),
     ).toHaveCount(0);
+    const blurIcon = page.locator(
+      'fig-module-shadows dialog[open] fig-input-number[aria-label="Blur"] fig-icon[slot="prepend"] svg path',
+    );
+    await expect(blurIcon).toHaveAttribute("d", /^M6\.5 17C/);
+    await expect(blurIcon).toHaveAttribute("fill", "currentColor");
     await expect(
       page.locator('fig-module-shadows dialog[open] fig-field label', {
         hasText: "Spread",
       }),
     ).toHaveCount(1);
+
+    await page
+      .locator('fig-module-shadows dialog[open] fig-select[label="Shadow type"]')
+      .evaluate((element: HTMLElement & { value?: string }) => {
+        element.value = "text";
+        element.dispatchEvent(
+          new CustomEvent("change", {
+            bubbles: true,
+            composed: true,
+            detail: "text",
+          }),
+        );
+      });
+    await expect(
+      page.locator(
+        'fig-module-shadows dialog[open] fig-select[label="Shadow type"]',
+      ),
+    ).toHaveAttribute("value", "text");
+    await expect(triggers.first()).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      page.locator('fig-module-shadows dialog[open] fig-field label', {
+        hasText: "Spread",
+      }),
+    ).toHaveCount(0);
 
     await page.keyboard.press("Escape");
     await triggers.last().click();

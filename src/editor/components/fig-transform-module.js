@@ -558,7 +558,7 @@ class FigModuleTransforms extends HTMLElement {
       reorder.append(property);
     });
 
-    group.append(reorder);
+    if (this.#transforms.length > 0) group.append(reorder);
     this.replaceChildren(group);
     queueMicrotask(() => {
       if (reorder.isConnected) reorder.refresh();

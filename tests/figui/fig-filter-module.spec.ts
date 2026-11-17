@@ -42,6 +42,11 @@ test.describe("fig-module-filters", () => {
         tooltips: element.querySelectorAll(
           "fig-property > fig-stack > fig-tooltip",
         ).length,
+        blurIcon: element
+          .querySelector(
+            'fig-input-number[aria-label="Blur value"] fig-icon[slot="prepend"] svg path',
+          )
+          ?.getAttribute("d"),
       };
     });
 
@@ -54,6 +59,7 @@ test.describe("fig-module-filters", () => {
     expect(result.propertySelects).toBe(2);
     expect(result.numberInputs).toBe(2);
     expect(result.tooltips).toBe(8);
+    expect(result.blurIcon).toMatch(/^M6\.5 17C/);
   });
 
   test("visibility and removal update the mapped filter value", async ({

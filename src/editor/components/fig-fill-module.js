@@ -434,7 +434,7 @@ class FigModuleFills extends HTMLElement {
       reorder.append(property);
     });
 
-    group.append(reorder);
+    if (this.#fills.length > 0) group.append(reorder);
     this.replaceChildren(group);
     queueMicrotask(() => {
       if (reorder.isConnected) reorder.refresh();
