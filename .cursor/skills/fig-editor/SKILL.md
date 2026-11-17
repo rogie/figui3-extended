@@ -78,6 +78,7 @@ Registered tags:
 | `fig-module-filters` | Hydratable, reorderable SVG-derived filter module |
 | `fig-module-shadows` | Hydratable, reorderable box and text shadow module |
 | `fig-module-transforms` | Hydratable, reorderable CSS transform module |
+| `fig-module-layout` | Layout and sizing property module |
 | `fig-module-appearance` | Appearance and blending property module |
 | `fig-module-border` | Compact CSS border editor with side targeting |
 | `fig-module-stroke` | Compact SVG stroke editor with dash controls |

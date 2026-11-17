@@ -21,6 +21,7 @@ export * from "./components/fig-fill-module.js";
 export * from "./components/fig-filter-module.js";
 export * from "./components/fig-shadow-module.js";
 export * from "./components/fig-transform-module.js";
+export * from "./components/fig-module-layout.js";
 export * from "./components/fig-module-appearance.js";
 export * from "./components/fig-module-typography.js";
 export * from "./components/fig-module-border.js";

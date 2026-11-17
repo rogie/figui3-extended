@@ -722,10 +722,22 @@ export const editorComponentContracts: ComponentContract[] = [
     ],
   },
   {
+    tag: "fig-module-layout",
+    title: "Layout Module",
+    group: "layout",
+    markup: `<fig-module-layout></fig-module-layout>`,
+  },
+  {
     tag: "fig-module-appearance",
     title: "Appearance Module",
     group: "layout",
     markup: `<fig-module-appearance></fig-module-appearance>`,
+  },
+  {
+    tag: "fig-module-typography",
+    title: "Typography Module",
+    group: "layout",
+    markup: `<fig-module-typography></fig-module-typography>`,
   },
   {
     tag: "fig-module-border",

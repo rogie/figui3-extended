@@ -134,6 +134,7 @@ test("button combos expose a reduced nested-button variant control", () => {
 
 test("CSS property modules preserve exact keys and friendly labels", () => {
   expect(moduleSections.map((section) => section.name)).toEqual([
+    "All",
     "Layout",
     "Typography",
     "Fills",
@@ -1294,6 +1295,45 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     }
   });
 
+  test("All modules renders the requested module stack in order", async ({
+    page,
+  }) => {
+    await page.goto(`${playgroundUrl}/#module-all/default`);
+    const moduleTags = await page
+      .locator("#properties")
+      .evaluate((properties) =>
+        Array.from(properties.children, (child) =>
+          child.tagName.toLowerCase(),
+        ),
+      );
+    expect(moduleTags).toEqual([
+      "fig-module-layout",
+      "fig-module-appearance",
+      "fig-module-typography",
+      "fig-module-transforms",
+      "fig-module-fills",
+      "fig-module-border",
+      "fig-module-outline",
+      "fig-module-stroke",
+      "fig-module-filters",
+    ]);
+    await expect(
+      page.locator("#properties > [data-layout-module]"),
+    ).toHaveCount(1);
+    await expect(
+      page.locator("#properties > .propskit-panel"),
+    ).toHaveCount(0);
+    await expect(
+      page.locator("#properties > .fig-module"),
+    ).toHaveCount(9);
+    await expect(
+      page.locator(
+        "#properties > :is(.propskit-root, .propskit-module-root)",
+      ),
+    ).toHaveCount(0);
+    await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
   test("module element selection filters controls by computed capability", async ({
     page,
   }) => {
@@ -1330,6 +1370,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-layout/default`);
     const module = page.locator("[data-layout-module]");
     await expect(module).toBeVisible();
+    await expect(module.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(module.locator(":scope > fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group > fig-header")).toContainText(
       "Layout",
@@ -1566,6 +1608,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-typography/default`);
     const module = page.locator("fig-module-typography");
     await expect(module).toBeVisible();
+    await expect(module.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(module.locator(":scope > fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group > fig-header")).toContainText(
       "Typography",
     );
@@ -1680,6 +1724,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-border/default`);
     const border = page.locator("fig-module-border");
     await expect(border).toBeVisible();
+    await expect(border.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(border.locator(":scope > fig-group")).toHaveCount(1);
     const borderValues = page.locator("[data-propskit-values] .cm-content");
     await expect(borderValues).not.toContainText('"border":');
     await expect(borderValues).not.toContainText('"border-radius"');
@@ -1794,6 +1840,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-stroke/default`);
     const stroke = page.locator("fig-module-stroke");
     await expect(stroke).toBeVisible();
+    await expect(stroke.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(stroke.locator(":scope > fig-group")).toHaveCount(1);
     const strokeValues = page.locator("[data-propskit-values] .cm-content");
     await expect(strokeValues).not.toContainText('"marker');
     await expect(strokeValues).not.toContainText('"paint-order"');
@@ -1904,6 +1952,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-outline/default`);
     const outline = page.locator("fig-module-outline");
     await expect(outline).toBeVisible();
+    await expect(outline.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(outline.locator(":scope > fig-group")).toHaveCount(1);
     await expect(
       outline.locator(
         'fig-property > fig-stack[slot="input"] > :not(fig-tooltip)',
@@ -2120,6 +2170,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-appearance/default`);
     const module = page.locator("fig-module-appearance");
     await expect(module).toBeVisible();
+    await expect(module.locator(":scope > .propskit-panel")).toHaveCount(0);
+    await expect(module.locator(":scope > fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group")).toHaveCount(1);
     await expect(module.locator("fig-group > fig-header")).toContainText(
       "Appearance",

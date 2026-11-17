@@ -192,6 +192,7 @@ class FigModuleTransforms extends HTMLElement {
   }
 
   connectedCallback() {
+    this.classList.add("fig-module");
     if (this.hasAttribute("transforms")) {
       this.#transforms = parseTransforms(this.getAttribute("transforms"));
     } else {

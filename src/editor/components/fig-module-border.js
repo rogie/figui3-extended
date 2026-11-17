@@ -9,7 +9,11 @@ import {
   figEditorDefineElement,
 } from "../runtime/helpers.js";
 
-class FigModuleBorder extends HTMLElement {}
+class FigModuleBorder extends HTMLElement {
+  connectedCallback() {
+    this.classList.add("fig-module");
+  }
+}
 
 figEditorDefineElement("fig-module-border", FigModuleBorder);
 

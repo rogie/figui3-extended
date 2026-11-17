@@ -296,13 +296,11 @@ function appendTypographyIcon(parent, name, slot) {
 let nextLayoutModuleId = 0;
 
 function mountLayoutModule(target, kit, emit) {
-  const root = document.createElement("div");
-  root.className = "propskit-root propskit-module-root";
+  const root = document.createElement("fig-module-layout");
+  root.className = "fig-module";
   root.dataset.module = "layout";
   root.dataset.layoutModule = "";
 
-  const panel = document.createElement("div");
-  panel.className = "propskit-panel prop-panel";
   const group = document.createElement("fig-group");
   group.setAttribute("compact", "");
   group.className = "layout-properties-group";
@@ -558,8 +556,7 @@ function mountLayoutModule(target, kit, emit) {
     group.append(property);
   }
 
-  panel.append(group);
-  root.append(panel);
+  root.append(group);
   target.append(root);
   if (aspectRatioButton && handleAspectRatioClick) {
     aspectRatioButton.addEventListener("click", handleAspectRatioClick);
@@ -624,12 +621,10 @@ function mountLayoutModule(target, kit, emit) {
 
 function mountTypographyModule(target, kit, emit, emitOptionHover) {
   const root = document.createElement("fig-module-typography");
-  root.className = "propskit-root propskit-module-root";
+  root.className = "fig-module";
   root.dataset.module = "typography";
   root.dataset.typographyModule = "";
 
-  const panel = document.createElement("div");
-  panel.className = "propskit-panel prop-panel";
   const group = document.createElement("fig-group");
   group.setAttribute("compact", "");
   group.className = "text-properties-group";
@@ -907,8 +902,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     group.append(property);
   }
 
-  panel.append(group);
-  root.append(panel);
+  root.append(group);
   target.append(root);
 
   const sync = (values) => {
@@ -1070,11 +1064,9 @@ function createModuleAction(iconName, label, onClick) {
 
 function createCompactModule(target, tagName, moduleId, title) {
   const root = document.createElement(tagName);
-  root.className = "propskit-root propskit-module-root compact-line-module";
+  root.className = "fig-module compact-line-module";
   root.dataset.module = moduleId;
 
-  const panel = document.createElement("div");
-  panel.className = "propskit-panel prop-panel";
   const group = document.createElement("fig-group");
   group.setAttribute("compact", "");
   group.className = `${moduleId}-properties-group`;
@@ -1099,8 +1091,7 @@ function createCompactModule(target, tagName, moduleId, title) {
   advancedHeader.append(advancedTitle);
   advanced.append(advancedHeader);
 
-  panel.append(group, advanced);
-  root.append(panel);
+  root.append(group, advanced);
   target.append(root);
   return { root, group, header, actions, advanced };
 }
@@ -1651,12 +1642,10 @@ function mountOutlineModule(target, kit, emit) {
 
 function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   const root = document.createElement("fig-module-appearance");
-  root.className = "propskit-root propskit-module-root";
+  root.className = "fig-module";
   root.dataset.module = "appearance";
   root.dataset.appearanceModule = "";
 
-  const panel = document.createElement("div");
-  panel.className = "propskit-panel prop-panel";
   const group = document.createElement("fig-group");
   group.setAttribute("compact", "");
   group.className = "appearance-blending-group";
@@ -1793,8 +1782,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   property.append(stack);
   group.append(property);
   if (blendProperty) group.append(blendProperty);
-  panel.append(group);
-  root.append(panel);
+  root.append(group);
   target.append(root);
   visibilityButton?.addEventListener("click", (event) => {
     const next = visibilityButton.selected ? "hidden" : "visible";

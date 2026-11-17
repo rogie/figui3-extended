@@ -219,6 +219,7 @@ class FigModuleShadows extends HTMLElement {
   }
 
   connectedCallback() {
+    this.classList.add("fig-module");
     if (this.hasAttribute("shadows")) {
       this.#shadows = parseShadows(this.getAttribute("shadows"));
     } else {

@@ -27,6 +27,29 @@ test.describe("editor component manifest contracts", () => {
     expect(missing).toEqual([]);
   });
 
+  test("every module element applies the shared module class", async ({
+    page,
+  }) => {
+    const moduleTags = editorComponentContracts
+      .map((contract) => contract.tag)
+      .filter((tag) => tag.startsWith("fig-module-"));
+    const classes = await page.evaluate((tags) => {
+      const host = document.createElement("div");
+      document.body.append(host);
+      return tags.map((tag) => {
+        const element = document.createElement(tag);
+        host.append(element);
+        return {
+          tag,
+          isModule: element.classList.contains("fig-module"),
+        };
+      });
+    }, moduleTags);
+    expect(classes).toEqual(
+      moduleTags.map((tag) => ({ tag, isModule: true })),
+    );
+  });
+
   for (const contract of editorComponentContracts) {
     test(`${contract.tag}: mounts without runtime errors`, async ({ page }) => {
       const errors = collectPageErrors(page);

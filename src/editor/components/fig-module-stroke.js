@@ -9,7 +9,11 @@ import {
   figEditorDefineElement,
 } from "../runtime/helpers.js";
 
-class FigModuleStroke extends HTMLElement {}
+class FigModuleStroke extends HTMLElement {
+  connectedCallback() {
+    this.classList.add("fig-module");
+  }
+}
 
 figEditorDefineElement("fig-module-stroke", FigModuleStroke);
 

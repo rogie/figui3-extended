@@ -4,17 +4,15 @@ https://polyformproject.org/licenses/shield/1.0.0
 Required Notice: Copyright (c) 2026 Rogie King
 Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
 */
-fig-module-fills,
-fig-module-filters,
-fig-module-shadows,
-fig-module-transforms,
-fig-module-appearance,
-fig-module-typography,
-fig-module-border,
-fig-module-stroke,
-fig-module-outline {
+.fig-module {
   display: block;
+  width: 100%;
   width: stretch;
+  min-width: 0;
+  border-bottom: 1px solid var(--figma-color-border);
+  &:last-child{
+    border-bottom: none;
+  }
 }
 
 .compact-line-module {

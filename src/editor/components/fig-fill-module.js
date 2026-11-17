@@ -187,6 +187,7 @@ class FigModuleFills extends HTMLElement {
   }
 
   connectedCallback() {
+    this.classList.add("fig-module");
     if (this.hasAttribute("fills")) {
       this.#fills = parseFills(this.getAttribute("fills"));
     } else {

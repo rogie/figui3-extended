@@ -228,6 +228,7 @@ export interface FigModuleTransformsElement extends FigHTMLElement {
 
 export type FigTransformModuleElement = FigModuleTransformsElement;
 
+export interface FigModuleLayoutElement extends FigHTMLElement {}
 export interface FigModuleAppearanceElement extends FigHTMLElement {}
 export interface FigModuleTypographyElement extends FigHTMLElement {}
 export interface FigModuleBorderElement extends FigHTMLElement {}
@@ -245,6 +246,7 @@ export interface FigExtendedTagNameMap {
   "fig-module-border": FigModuleBorderElement;
   "fig-module-fills": FigModuleFillsElement;
   "fig-module-filters": FigModuleFiltersElement;
+  "fig-module-layout": FigModuleLayoutElement;
   "fig-module-outline": FigModuleOutlineElement;
   "fig-module-shadows": FigModuleShadowsElement;
   "fig-module-stroke": FigModuleStrokeElement;

@@ -180,6 +180,7 @@ class FigModuleFilters extends HTMLElement {
   }
 
   connectedCallback() {
+    this.classList.add("fig-module");
     if (this.hasAttribute("filters")) {
       this.#filters = parseFilters(this.getAttribute("filters"));
     } else {

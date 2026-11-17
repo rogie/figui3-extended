@@ -9,7 +9,11 @@ import {
   figEditorDefineElement,
 } from "../runtime/helpers.js";
 
-class FigModuleAppearance extends HTMLElement {}
+class FigModuleAppearance extends HTMLElement {
+  connectedCallback() {
+    this.classList.add("fig-module");
+  }
+}
 
 figEditorDefineElement("fig-module-appearance", FigModuleAppearance);
 
