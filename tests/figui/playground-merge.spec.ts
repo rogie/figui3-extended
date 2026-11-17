@@ -679,6 +679,19 @@ test("property exposes ratio controls and examples", () => {
   expect(example?.markup).toContain('ratio="2:3"');
 });
 
+test("select exposes default and compact icon modes", () => {
+  expect(controlAttributeRules["fig-select"]?.icon).toEqual({
+    label: "Icon",
+    type: "enum",
+    options: ["none", "true", "compact"],
+  });
+  const section = figui3Sections.find((entry) => entry.id === "select");
+  expect(
+    section?.examples.find((entry) => entry.id === "compact-icon-button")
+      ?.markup,
+  ).toContain('icon="compact"');
+});
+
 test("property all-properties example covers every supported control", () => {
   const section = figui3Sections.find((entry) => entry.id === "property");
   const example = section?.examples.find(

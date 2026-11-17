@@ -53,6 +53,17 @@ fig-select {
       left: 50%;
       transform: translate(-50%, -50%);
     }
+
+    &[icon="compact"] {
+      --fig-select-icon-size: var(--spacer-3);
+
+      flex-basis: auto;
+
+      &::after {
+        -webkit-mask-size: auto;
+        mask-size: auto;
+      }
+    }
   }
 
   &[disabled]:not([disabled="false"]) {

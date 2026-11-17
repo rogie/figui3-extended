@@ -1246,8 +1246,9 @@ export default function AttributesView({
               name === "label" &&
               (target.controlTag === "fig-checkbox" ||
                 target.controlTag === "fig-radio");
-            const isButtonIconMode =
-              target.controlTag === "fig-button" &&
+            const isIconMode =
+              (target.controlTag === "fig-button" ||
+                target.controlTag === "fig-select") &&
               scope === "control" &&
               name === "icon";
             const isColorPickerMode =
@@ -1258,7 +1259,7 @@ export default function AttributesView({
               ? value !== undefined && value !== null
                 ? "label"
                 : "none"
-              : isButtonIconMode
+              : isIconMode
                 ? value === undefined
                   ? "none"
                   : value === "compact"
@@ -1280,7 +1281,7 @@ export default function AttributesView({
                 : currentRaw;
             const useSegmentedControl =
               isCheckRadioLabel ||
-              isButtonIconMode ||
+              isIconMode ||
               isColorPickerMode ||
               (target.controlTag === "fig-icon" &&
                 scope === "control" &&
@@ -1316,7 +1317,7 @@ export default function AttributesView({
                 if (target.controlTag === "fig-icon" && name === "size") {
                   return option === "medium" ? "Default" : "Small";
                 }
-                if (isButtonIconMode) {
+                if (isIconMode) {
                   return option === "true"
                     ? "Default"
                     : toSentenceCaseLabel(option);
@@ -1354,14 +1355,23 @@ export default function AttributesView({
                   );
                   return;
                 }
-                if (isButtonIconMode) {
+                if (isIconMode) {
                   const enabled = option !== "none";
-                  const updated = applyButtonIconMutation(
-                    markup,
-                    target.fieldIndex,
-                    option === "compact" ? "compact" : enabled,
-                  );
-                  onMarkupChange(updated);
+                  if (target.controlTag === "fig-button") {
+                    const updated = applyButtonIconMutation(
+                      markup,
+                      target.fieldIndex,
+                      option === "compact" ? "compact" : enabled,
+                    );
+                    onMarkupChange(updated);
+                  } else {
+                    applyChange(
+                      target.fieldIndex,
+                      scope,
+                      name,
+                      enabled ? (option === "compact" ? "compact" : "") : null,
+                    );
+                  }
                   return;
                 }
                 if (
