@@ -692,6 +692,18 @@ test("select exposes default and compact icon modes", () => {
   ).toContain('icon="compact"');
 });
 
+test("select includes an appended keyboard-shortcut example", () => {
+  const section = figui3Sections.find((entry) => entry.id === "select");
+  const example = section?.examples.find(
+    (entry) => entry.id === "keyboard-shortcuts",
+  );
+  expect(example).toMatchObject({ name: "Keyboard shortcuts" });
+  expect(example?.markup.match(/<kbd slot="append">/g)).toHaveLength(3);
+  expect(example?.markup).toContain("⌥A");
+  expect(example?.markup).toContain("⌥H");
+  expect(example?.markup).toContain("⌥D");
+});
+
 test("property all-properties example covers every supported control", () => {
   const section = figui3Sections.find((entry) => entry.id === "property");
   const example = section?.examples.find(

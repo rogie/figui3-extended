@@ -901,6 +901,28 @@ const figui3BaseSections: Section[] = clusterPlaygroundGroups([
 </div>`,
       },
       {
+        id: "keyboard-shortcuts",
+        name: "Keyboard shortcuts",
+        markup: `<div class="prop-panel">
+  <fig-select value="center" label="Align">
+    <fig-select-options>
+      <fig-select-option value="left">
+        Left
+        <kbd slot="append">⌥A</kbd>
+      </fig-select-option>
+      <fig-select-option value="center">
+        Center
+        <kbd slot="append">⌥H</kbd>
+      </fig-select-option>
+      <fig-select-option value="right">
+        Right
+        <kbd slot="append">⌥D</kbd>
+      </fig-select-option>
+    </fig-select-options>
+  </fig-select>
+</div>`,
+      },
+      {
         id: "primary",
         name: "Primary",
         markup: `<div class="prop-panel">
