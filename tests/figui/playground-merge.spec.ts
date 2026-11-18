@@ -1289,6 +1289,11 @@ test.describe.serial("ExampleView DOM synchronization", () => {
         page.locator(`fig-group[name="Modules"] fig-layer[data-section="${module.id}"]`),
       ).toHaveCount(1);
       await expect(page.locator("main .propkit-code-view")).toHaveCount(1);
+      await expect(
+        page.locator(
+          ".propkit-example-preview .fig-module fig-group[compact]",
+        ),
+      ).toHaveCount(0);
       const visibilityIcons = page.locator(
         '.propkit-example-preview fig-icon[name="visible"], ' +
           '.propkit-example-preview fig-icon[name="hidden"]',

@@ -302,7 +302,6 @@ function mountLayoutModule(target, kit, emit) {
   root.dataset.layoutModule = "";
 
   const group = document.createElement("fig-group");
-  group.setAttribute("compact", "");
   group.className = "layout-properties-group";
 
   const header = document.createElement("fig-header");
@@ -626,7 +625,6 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
   root.dataset.typographyModule = "";
 
   const group = document.createElement("fig-group");
-  group.setAttribute("compact", "");
   group.className = "text-properties-group";
 
   const has = (property) =>
@@ -1115,7 +1113,6 @@ function createCompactModule(target, tagName, moduleId, title) {
   root.dataset.module = moduleId;
 
   const group = document.createElement("fig-group");
-  group.setAttribute("compact", "");
   group.className = `${moduleId}-properties-group`;
   const header = document.createElement("fig-header");
   header.setAttribute("borderless", "");
@@ -1128,7 +1125,6 @@ function createCompactModule(target, tagName, moduleId, title) {
   group.append(header);
 
   const advanced = document.createElement("fig-group");
-  advanced.setAttribute("compact", "");
   advanced.className = "compact-line-module-advanced";
   advanced.hidden = true;
   const advancedHeader = document.createElement("fig-header");
@@ -1722,7 +1718,6 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   root.dataset.appearanceModule = "";
 
   const group = document.createElement("fig-group");
-  group.setAttribute("compact", "");
   group.className = "appearance-blending-group";
 
   const header = document.createElement("fig-header");

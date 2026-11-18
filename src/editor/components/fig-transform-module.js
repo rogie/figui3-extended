@@ -410,7 +410,6 @@ class FigModuleTransforms extends HTMLElement {
     const disabled =
       this.hasAttribute("disabled") && this.getAttribute("disabled") !== "false";
     const group = document.createElement("fig-group");
-    group.setAttribute("compact", "");
     group.className = "transforms-group";
 
     const header = document.createElement("fig-header");

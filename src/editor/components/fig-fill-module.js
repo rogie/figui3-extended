@@ -261,7 +261,6 @@ class FigModuleFills extends HTMLElement {
       this.hasAttribute("disabled") && this.getAttribute("disabled") !== "false";
     const modes = this.#modes();
     const group = document.createElement("fig-group");
-    group.setAttribute("compact", "");
     group.className = "fills-group";
 
     const header = document.createElement("fig-header");

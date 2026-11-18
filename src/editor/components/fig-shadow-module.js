@@ -421,7 +421,6 @@ class FigModuleShadows extends HTMLElement {
     const disabled =
       this.hasAttribute("disabled") && this.getAttribute("disabled") !== "false";
     const group = document.createElement("fig-group");
-    group.setAttribute("compact", "");
     group.className = "shadows-group";
 
     const header = document.createElement("fig-header");
