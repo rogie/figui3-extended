@@ -782,9 +782,12 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     });
     appendProperty(fontPicker);
   }
-  appendProperty(weightSelect);
 
   const metricInputs = new Map();
+  let syncFontSizeChrome = () => {};
+  const fontWeightStack = document.createElement("fig-stack");
+  fontWeightStack.setAttribute("slot", "input");
+  fontWeightStack.setAttribute("full", "");
   const metricStack = document.createElement("fig-stack");
   metricStack.setAttribute("slot", "input");
   metricStack.setAttribute("full", "");
@@ -796,6 +799,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     units,
     fallback,
     serialize,
+    stack = metricStack,
   ) => {
     if (!has(property)) return;
     const input = document.createElement("fig-input-number");
@@ -823,11 +827,53 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
       });
     }
     metricInputs.set(property, { input, fallback });
-    metricStack.append(withTooltip(label, input));
+    stack.append(withTooltip(label, input));
   };
-  createMetric("font-size", "Font size", "↕A", null, "px", 16, (value) =>
-    numericCssValue(value, "px"),
-  );
+  if (weightSelect) {
+    weightSelect.style.cssText = "flex: 1 1 0; min-width: 0";
+    weightSelect.setAttribute("full", "");
+    fontWeightStack.append(withTooltip("Font weight", weightSelect));
+  }
+  if (has("font-size")) {
+    const fontSizeInput = document.createElement("fig-split-input");
+    fontSizeInput.dataset.typographyProperty = "font-size";
+    fontSizeInput.style.cssText = "flex: 1 1 0; min-width: 0";
+    fontSizeInput.setAttribute("type", "number");
+    fontSizeInput.setAttribute(
+      "options",
+      "10,11,12,13,14,15,16,20,24,32,36,40,48,64,96,128",
+    );
+    fontSizeInput.setAttribute("value", "16");
+    fontSizeInput.setAttribute("aria-label", "Font size");
+    fontSizeInput.setAttribute("full", "");
+    syncFontSizeChrome = () => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fontSizeInput
+            .querySelector("fig-input-number")
+            ?.setAttribute("steppers", "false");
+        });
+      });
+    };
+    for (const phase of ["input", "change"]) {
+      fontSizeInput.addEventListener(phase, (event) => {
+        emit(
+          "font-size",
+          numericCssValue(eventValue(event), "px"),
+          phase,
+          event,
+        );
+      });
+    }
+    metricInputs.set("font-size", { input: fontSizeInput, fallback: 16 });
+    fontWeightStack.append(withTooltip("Font size", fontSizeInput));
+    syncFontSizeChrome();
+  }
+  if (fontWeightStack.childElementCount > 0) {
+    const property = document.createElement("fig-property");
+    property.append(fontWeightStack);
+    group.append(property);
+  }
   createMetric(
     "line-height",
     "Line height",
@@ -921,6 +967,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
           : numericValue(raw, fallback);
       input.setAttribute("value", String(value));
     }
+    syncFontSizeChrome();
     for (const [property, control] of alignments) {
       let value = String(values[property] ?? "");
       if (property === "text-align") {
@@ -1868,6 +1915,13 @@ const MODULE_PRESENTATIONS = {
   layout: {
     properties: LAYOUT_PROPERTIES,
     mount: mountLayoutModule,
+    serializeValues(values) {
+      const display = String(values.display ?? "block");
+      if (display === "flex" || display === "inline-flex") return values;
+      const serialized = { ...values };
+      delete serialized["flex-direction"];
+      return serialized;
+    },
   },
   typography: {
     properties: TYPOGRAPHY_PROPERTIES,

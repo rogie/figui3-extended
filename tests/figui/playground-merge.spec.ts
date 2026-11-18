@@ -1512,11 +1512,17 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"display": "grid"');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).not.toContainText('"flex-direction"');
 
     await modes.locator('fig-segment[value="freeform"]').click();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"display": "block"');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).not.toContainText('"flex-direction"');
 
     await module.locator("fig-checkbox input").check();
     await expect(
@@ -1589,6 +1595,14 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       document.body.append(host);
       const controller = figCreateModule("layout");
       controller.mount(host);
+      controller.setValue("display", "flex");
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const defaultFlexMode = host
+        .querySelector("fig-segmented-control")
+        ?.getAttribute("value");
+      const horizontalChecked = host
+        .querySelector('fig-segment[value="horizontal"]')
+        ?.getAttribute("aria-checked");
       controller.setValues({
         left: "12px",
         top: "24px",
@@ -1601,6 +1615,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       });
       await new Promise((resolve) => requestAnimationFrame(resolve));
       const result = {
+        defaultFlexMode,
+        horizontalChecked,
         x: host
           .querySelector<HTMLElement>('[data-layout-property="left"]')
           ?.getAttribute("value"),
@@ -1621,6 +1637,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       return result;
     }, moduleUrl);
     expect(synced).toEqual({
+      defaultFlexMode: "horizontal",
+      horizontalChecked: "true",
       x: "12",
       mode: "vertical",
       clipped: true,
@@ -1638,7 +1656,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(module.locator("fig-group > fig-header")).toContainText(
       "Typography",
     );
-    await expect(module.locator("fig-select")).toHaveCount(2);
+    await expect(module.locator("fig-select")).toHaveCount(3);
     await expect(
       module.locator(
         'fig-property > fig-tooltip > fig-select[label="Font family"]',
@@ -1655,12 +1673,65 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(weightOptions).toHaveCount(9);
     await expect(module.locator("fig-input-number")).toHaveCount(3);
     const fontSizeInput = module.locator(
-      'fig-input-number[data-typography-property="font-size"]',
+      'fig-split-input[data-typography-property="font-size"]',
     );
     await expect(
       fontSizeInput,
     ).toHaveAttribute("value", "16");
-    await expect(fontSizeInput).not.toHaveAttribute("aria-label", "Font size");
+    await expect(fontSizeInput).toHaveAttribute("aria-label", "Font size");
+    await expect(fontSizeInput).toHaveAttribute(
+      "options",
+      "10,11,12,13,14,15,16,20,24,32,36,40,48,64,96,128",
+    );
+    await expect(
+      fontSizeInput.locator("fig-select-option"),
+    ).toHaveText([
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "20",
+      "24",
+      "32",
+      "36",
+      "40",
+      "48",
+      "64",
+      "96",
+      "128",
+    ]);
+    await expect(
+      fontSizeInput.locator(
+        ':scope > .input-combo > fig-input-number > fig-icon[slot="prepend"]',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      fontSizeInput.locator(":scope > .input-combo > fig-input-number"),
+    ).toHaveAttribute("steppers", "false");
+    const typographyRows = module.locator(
+      "fig-group.text-properties-group > fig-property",
+    );
+    await expect(
+      typographyRows.nth(1).locator('fig-select[label="Font weight"]'),
+    ).toHaveCount(1);
+    await expect(
+      typographyRows.nth(1).locator(
+        'fig-split-input[data-typography-property="font-size"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      typographyRows.nth(2).locator(
+        'fig-split-input[data-typography-property="font-size"]',
+      ),
+    ).toHaveCount(0);
+    await expect(
+      typographyRows.nth(2).locator(
+        'fig-input-number[aria-label="Line height"], fig-input-number[aria-label="Letter spacing"]',
+      ),
+    ).toHaveCount(2);
     await expect(module.locator("fig-segmented-control")).toHaveCount(2);
     await expect(
       module.locator(
@@ -1683,7 +1754,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       module.locator('fig-tooltip[text="Font family"] fig-font-picker'),
     ).toHaveCount(1);
     await expect(
-      module.locator('fig-tooltip[text="Font size"] fig-input-number'),
+      module.locator('fig-tooltip[text="Font size"] fig-split-input'),
     ).toHaveCount(1);
     await expect(
       module.locator('fig-tooltip[text="Align middle"] fig-segment'),
@@ -1732,7 +1803,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     ).toContainText('"font-family": "serif"');
 
     await module
-      .locator('fig-input-number[data-typography-property="font-size"]')
+      .locator('fig-split-input[data-typography-property="font-size"]')
       .evaluate((element: HTMLElement & { value?: string }) => {
         element.value = "24";
         element.dispatchEvent(new Event("change", { bubbles: true }));
