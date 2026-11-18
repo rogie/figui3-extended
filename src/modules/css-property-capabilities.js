@@ -595,8 +595,12 @@ export function getElementStyleCapability(element, property) {
   return decisionFor(entry.module, entry.mapping, elementFacts(element));
 }
 
-function parsedComputedValue(mapping, computedValue) {
-  const value = computedValue.trim();
+function parsedValue(mapping, rawValue) {
+  const value = String(rawValue ?? "").trim();
+  if (mapping.property === "font-weight") {
+    if (value === "normal") return "400";
+    if (value === "bold") return "700";
+  }
   if (!value) return mapping.definition.default;
   if (mapping.parser === "number") {
     const parsed = Number.parseFloat(value);
@@ -649,14 +653,15 @@ export function createCssModuleConfig(
       (entry) => entry.property === mapping.property,
     );
     if (capability.status !== "applicable") continue;
-    const value = Object.prototype.hasOwnProperty.call(values, mapping.property)
+    const rawValue = Object.prototype.hasOwnProperty.call(
+      values,
+      mapping.property,
+    )
       ? values[mapping.property]
       : facts
-        ? parsedComputedValue(
-            mapping,
-            facts.style.getPropertyValue(mapping.property),
-          )
+        ? facts.style.getPropertyValue(mapping.property)
         : mapping.definition.default;
+    const value = parsedValue(mapping, rawValue);
     config[mapping.property] = configDefinition(mapping, value);
   }
   return Object.freeze({

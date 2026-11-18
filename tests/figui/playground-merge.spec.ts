@@ -177,6 +177,36 @@ test("element-free CSS modules expose every mapped property", () => {
   }
 });
 
+test("explicit CSS values use the shared normalization path", () => {
+  const fontWeight = (value: unknown) =>
+    createCssModuleConfig("typography", {
+      values: { "font-weight": value },
+    }).config["font-weight"].default;
+
+  expect(fontWeight("normal")).toBe("400");
+  expect(fontWeight("bold")).toBe("700");
+  expect(fontWeight("500")).toBe("500");
+  expect(fontWeight("unexpected")).toBe("400");
+
+  const typography = createCssModuleConfig("typography", {
+    values: {
+      "font-family": "Example Sans",
+      "text-decoration-color": "#123456",
+    },
+  }).config;
+  expect(typography["font-family"].default).toBe("Example Sans");
+  expect(typography["text-decoration-color"].default).toBe("#123456");
+
+  const layout = createCssModuleConfig("layout", {
+    values: {
+      width: "calc(100% - 8px)",
+      "flex-grow": "2.5",
+    },
+  }).config;
+  expect(layout.width.default).toBe("calc(100% - 8px)");
+  expect(layout["flex-grow"].default).toBe(2.5);
+});
+
 async function getAvailablePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer();
@@ -1394,6 +1424,27 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       )
       .toContain('"width":');
     await expect(page.locator(".propkit-run-error")).toHaveCount(0);
+  });
+
+  test("Typography modules normalize explicit font-weight aliases", async ({
+    page,
+  }) => {
+    await page.goto(`${playgroundUrl}/#module-typography/default`);
+    const moduleUrl = `/@fs/${path.resolve(
+      "src/modules/fig-create-module.js",
+    )}`;
+    const weights = await page.evaluate(async (url) => {
+      const { figCreateModule } = await import(url);
+      return ["normal", "bold", "500", "unexpected"].map((value) => {
+        const controller = figCreateModule("typography", {
+          values: { "font-weight": value },
+        });
+        const normalized = controller.values["font-weight"];
+        controller.destroy();
+        return normalized;
+      });
+    }, moduleUrl);
+    expect(weights).toEqual(["400", "700", "500", "400"]);
   });
 
   test("Layout flex transitions emit display and direction for block elements", async ({
