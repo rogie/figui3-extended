@@ -1396,6 +1396,104 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await expect(page.locator(".propkit-run-error")).toHaveCount(0);
   });
 
+  test("Layout flex transitions emit display and direction for block elements", async ({
+    page,
+  }) => {
+    await page.goto(`${playgroundUrl}/#module-layout/default`);
+    const moduleUrl = `/@fs/${path.resolve(
+      "src/modules/fig-create-module.js",
+    )}`;
+    const capabilitiesUrl = `/@fs/${path.resolve(
+      "src/modules/css-property-capabilities.js",
+    )}`;
+    const result = await page.evaluate(async ([moduleUrl, capabilitiesUrl]) => {
+      const [{ figCreateModule }, { createCssModuleConfig }] =
+        await Promise.all([
+          import(moduleUrl),
+          import(capabilitiesUrl),
+        ]);
+      const element = document.createElement("div");
+      element.style.display = "block";
+      const host = document.createElement("div");
+      document.body.append(element, host);
+      const blockConfig = createCssModuleConfig("layout", { element });
+
+      const inputEvents: Array<[string, unknown]> = [];
+      const changeEvents: Array<[string, unknown]> = [];
+      const controller = figCreateModule("layout", {
+        element,
+        onInput(path: string, value: unknown) {
+          inputEvents.push([path, value]);
+        },
+        onChange(path: string, value: unknown) {
+          changeEvents.push([path, value]);
+        },
+      });
+      controller.mount(host);
+      const modes = host.querySelector("fig-segmented-control")!;
+
+      modes.dispatchEvent(
+        new CustomEvent("input", {
+          bubbles: true,
+          composed: true,
+          detail: "vertical",
+        }),
+      );
+      const verticalValues = controller.getValues();
+
+      modes.dispatchEvent(
+        new CustomEvent("change", {
+          bubbles: true,
+          composed: true,
+          detail: "horizontal",
+        }),
+      );
+      const horizontalValues = controller.getValues();
+
+      controller.setValue("display", "block");
+      const blockValues = controller.getValues();
+      controller.destroy();
+      element.remove();
+      host.remove();
+
+      return {
+        inputEvents,
+        changeEvents,
+        vertical: {
+          display: verticalValues.display,
+          direction: verticalValues["flex-direction"],
+        },
+        horizontal: {
+          display: horizontalValues.display,
+          direction: horizontalValues["flex-direction"],
+        },
+        blockConfigHasDirection: Object.prototype.hasOwnProperty.call(
+          blockConfig.config,
+          "flex-direction",
+        ),
+        blockHasDirection: Object.prototype.hasOwnProperty.call(
+          blockValues,
+          "flex-direction",
+        ),
+      };
+    }, [moduleUrl, capabilitiesUrl]);
+
+    expect(result).toEqual({
+      inputEvents: [
+        ["display", "flex"],
+        ["flex-direction", "column"],
+      ],
+      changeEvents: [
+        ["display", "flex"],
+        ["flex-direction", "row"],
+      ],
+      vertical: { display: "flex", direction: "column" },
+      horizontal: { display: "flex", direction: "row" },
+      blockConfigHasDirection: false,
+      blockHasDirection: false,
+    });
+  });
+
   test("Layout uses its opinionated module layout", async ({ page }) => {
     await page.goto(`${playgroundUrl}/#module-layout/default`);
     const module = page.locator("[data-layout-module]");

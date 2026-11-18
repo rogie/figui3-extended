@@ -1909,6 +1909,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
 const MODULE_PRESENTATIONS = {
   layout: {
     properties: LAYOUT_PROPERTIES,
+    transitionProperties: ["flex-direction"],
     mount: mountLayoutModule,
     serializeValues(values) {
       const display = String(values.display ?? "block");
@@ -1961,13 +1962,25 @@ export function figCreateModule(moduleId, options = {}) {
     values: options.values,
   });
   const presentation = MODULE_PRESENTATIONS[moduleId];
+  const transitionProperties = new Set(
+    presentation?.transitionProperties ?? [],
+  );
+  const unconstrainedConfig =
+    transitionProperties.size > 0
+      ? createCssModuleConfig(moduleId).config
+      : null;
   const config = presentation?.properties
     ? Object.fromEntries(
         presentation.properties
-          .filter((property) =>
-            Object.prototype.hasOwnProperty.call(result.config, property),
-          )
-          .map((property) => [property, result.config[property]]),
+          .map((property) => [
+            property,
+            Object.prototype.hasOwnProperty.call(result.config, property)
+              ? result.config[property]
+              : transitionProperties.has(property)
+                ? unconstrainedConfig?.[property]
+                : undefined,
+          ])
+          .filter(([, definition]) => definition !== undefined),
       )
     : result.config;
   const serializeValues = (values) =>
