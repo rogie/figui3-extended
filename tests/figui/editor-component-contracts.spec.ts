@@ -55,6 +55,7 @@ test.describe("editor component manifest contracts", () => {
       const definitions = [
         ["fig-module-fills", "fills"],
         ["fig-module-filters", "filters"],
+        ["fig-module-shadows", "shadows"],
         ["fig-module-transforms", "transforms"],
       ];
       return definitions.map(([tag, attribute]) => {
@@ -74,6 +75,7 @@ test.describe("editor component manifest contracts", () => {
     expect(children).toEqual([
       { tag: "fig-module-fills", children: ["fig-header"] },
       { tag: "fig-module-filters", children: ["fig-header"] },
+      { tag: "fig-module-shadows", children: ["fig-header"] },
       { tag: "fig-module-transforms", children: ["fig-header"] },
     ]);
   });
