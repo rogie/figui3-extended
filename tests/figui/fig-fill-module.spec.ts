@@ -97,6 +97,43 @@ test.describe("fig-module-fills", () => {
     });
   });
 
+  test("applies gradient fill opacity to every stop", async ({ page }) => {
+    const values = await page.evaluate(() => {
+      const element = document.createElement("fig-module-fills") as HTMLElement & {
+        fills: Array<Record<string, unknown>>;
+        values: Record<string, string>;
+      };
+      element.fills = [
+        {
+          type: "gradient",
+          visible: true,
+          gradient: {
+            type: "linear",
+            angle: 45,
+            opacity: 12,
+            stops: [
+              { position: 0, color: "#000000", opacity: 100 },
+              { position: 100, color: "#ffffff", opacity: 50 },
+            ],
+          },
+        },
+        {
+          type: "image",
+          visible: true,
+          image: { url: "https://example.com/image.png", scaleMode: "fill" },
+        },
+      ];
+      document.body.append(element);
+      return element.values;
+    });
+
+    expect(values).toEqual({
+      "background-color": "#00000000",
+      "background-image":
+        'linear-gradient(45deg, #0000001f 0%, #ffffff0f 100%), url("https://example.com/image.png")',
+    });
+  });
+
   test("opens a newly added fill editor", async ({ page }) => {
     await page.evaluate(() => {
       document.body.append(document.createElement("fig-module-fills"));

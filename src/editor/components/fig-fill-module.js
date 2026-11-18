@@ -82,26 +82,30 @@ function defaultFill(type = "solid", color = DEFAULT_COLOR) {
   return { type: "solid", color, visible: true };
 }
 
-function colorWithOpacity(fill) {
+function normalizedOpacity(value, fallback = 1) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
+}
+
+function colorWithOpacity(fill, multiplier = 1) {
   const color = typeof fill.color === "string" ? fill.color : DEFAULT_COLOR;
-  const rawOpacity = typeof fill.opacity === "number" ? fill.opacity : 100;
-  const opacity = Math.max(
-    0,
-    Math.min(100, rawOpacity <= 1 ? rawOpacity * 100 : rawOpacity),
-  );
-  if (opacity >= 100 || !/^#[0-9a-f]{6}$/i.test(color)) return color;
-  return `${color}${Math.round((opacity / 100) * 255)
+  const opacity = normalizedOpacity(fill.opacity) * multiplier;
+  if (opacity >= 1 || !/^#[0-9a-f]{6}$/i.test(color)) return color;
+  return `${color}${Math.round(opacity * 255)
     .toString(16)
     .padStart(2, "0")}`;
 }
 
 function gradientCss(fill) {
-  if (typeof fill.css === "string") return fill.css;
   const gradient =
     fill.gradient && typeof fill.gradient === "object" ? fill.gradient : {};
   const stops = Array.isArray(gradient.stops) ? gradient.stops : [];
+  const opacity = normalizedOpacity(gradient.opacity ?? fill.opacity);
+  if (typeof fill.css === "string" && (stops.length === 0 || opacity >= 1)) {
+    return fill.css;
+  }
   const cssStops = stops.map((stop) => {
-    const color = colorWithOpacity(stop ?? {});
+    const color = colorWithOpacity(stop ?? {}, opacity);
     const position = typeof stop?.position === "number" ? stop.position : 0;
     return `${color} ${position}%`;
   });
