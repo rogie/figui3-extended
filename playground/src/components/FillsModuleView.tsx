@@ -5,7 +5,7 @@ import CodeView from "./CodeView";
 
 const FILLS_MODULE_MARKUP = `<fig-module-fills
   fills='[{"type":"solid","color":"#00000000","visible":true}]'
-  mode="solid,gradient,image"
+  mode="solid,gradient,image,video"
   value-property="background"
 ></fig-module-fills>`;
 
@@ -45,7 +45,7 @@ export default function FillsModuleView({
 
     module.setAttribute(
       "mode",
-      supportsLayers ? "solid,gradient,image" : "solid",
+      supportsLayers ? "solid,gradient,image,video" : "solid",
     );
     module.setAttribute(
       "value-property",

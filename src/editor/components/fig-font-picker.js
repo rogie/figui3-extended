@@ -1265,14 +1265,15 @@ export class FigFontPicker extends HTMLElement {
       "aria-selected": String(unsetSelected),
       "data-font-option-id": "unset",
     });
+    const unsetIcon = figEditorCreateIcon("checkmark", {
+      className: "fig-font-picker-selected-icon",
+      size: "small",
+    });
+    unsetIcon.setAttribute("slot", "prepend");
+    unsetIcon.setAttribute("aria-hidden", "true");
     unsetOption.append(
-      figEditorCreateIcon("checkmark", {
-        slot: "prepend",
-        className: "fig-font-picker-selected-icon",
-        "aria-hidden": "true",
-        size: "small",
-      }),
-      "None",
+      unsetIcon,
+      this.#createOptionPreview({ sources: [] }, "None", { family: "unset", axes: {} }),
     );
     fragment.append(unsetOption);
     for (const family of visible) {

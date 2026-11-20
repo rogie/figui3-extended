@@ -1240,7 +1240,7 @@ function mountBorderModule(target, kit, emit) {
     "Border",
   );
   view.advanced.remove();
-  const state = { target: "all", lastStyle: "solid" };
+  const state = { target: "all", lastStyle: "solid", widths: new Map() };
   const propertyFor = (part) =>
     state.target === "all"
       ? `border-${part}`
@@ -1289,12 +1289,13 @@ function mountBorderModule(target, kit, emit) {
       emit(propertyFor("style"), state.lastStyle || "solid", "change", event);
     },
     onVisibility(event) {
-      const property = propertyFor("style");
-      const current = String(kit.values[property] ?? "none");
-      if (current !== "none") state.lastStyle = current;
+      const property = propertyFor("width");
+      const current = String(kit.values[property] ?? "0px");
+      const visible = hasVisibleWidth(current);
+      if (visible) state.widths.set(state.target, current);
       emit(
         property,
-        current === "none" ? state.lastStyle || "solid" : "none",
+        visible ? "0px" : state.widths.get(state.target) || "1px",
         "change",
         event,
       );
@@ -1325,6 +1326,10 @@ function mountBorderModule(target, kit, emit) {
   );
 
   sync = (values) => {
+    for (const [target] of BORDER_TARGET_OPTIONS) {
+      const property = target === "all" ? "border-width" : `border-${target}-width`;
+      if (hasVisibleWidth(values[property])) state.widths.set(target, String(values[property]));
+    }
     const widthProperty = propertyFor("width");
     const styleProperty = propertyFor("style");
     const colorProperty = propertyFor("color");
@@ -1332,10 +1337,9 @@ function mountBorderModule(target, kit, emit) {
     style.setAttribute("value", String(values[styleProperty] ?? "none"));
     targetSelect.setAttribute("value", state.target);
     color.setAttribute("value", String(values[colorProperty] ?? "#000000"));
-    const visible = String(values[styleProperty] ?? "none") !== "none";
-    if (visible) state.lastStyle = String(values[styleProperty]);
-    const hasBorder =
-      visible && numericValue(values[widthProperty], 0) > 0;
+    const hasBorder = String(values[styleProperty] ?? "none") !== "none";
+    const visible = hasBorder && hasVisibleWidth(values[widthProperty]);
+    if (hasBorder) state.lastStyle = String(values[styleProperty]);
     if (hasBorder) {
       if (colorRow.parentElement !== view.group) {
         view.group.append(colorRow, primaryRow);
@@ -1366,6 +1370,11 @@ function strokeStyleForDasharray(value) {
   return "custom";
 }
 
+function hasVisibleWidth(value) {
+  if (value === null || value === undefined || value === "") return false;
+  return !String(value).trim().split(/\s+/).every((part) => Number.parseFloat(part) === 0);
+}
+
 function mountStrokeModule(target, kit, emit) {
   const view = createCompactModule(
     target,
@@ -1374,7 +1383,7 @@ function mountStrokeModule(target, kit, emit) {
     "Stroke",
   );
   view.advanced.remove();
-  const state = { lastColor: "#000000" };
+  const state = { lastColor: "#000000", lastWidth: "1px" };
   let sync = () => {};
   const width = createModuleNumber(
     "Stroke width",
@@ -1432,18 +1441,18 @@ function mountStrokeModule(target, kit, emit) {
       emit("stroke-width", "1px", "change", event);
     },
     onVisibility(event) {
-      const current = String(kit.values.stroke ?? "none");
-      if (current !== "none") state.lastColor = current;
+      const current = String(kit.values["stroke-width"] ?? "0px");
+      const visible = hasVisibleWidth(current);
+      if (visible) state.lastWidth = current;
       emit(
-        "stroke",
-        current === "none" ? state.lastColor : "none",
+        "stroke-width",
+        visible ? "0px" : state.lastWidth,
         "change",
         event,
       );
     },
     onRemove(event) {
       emit("stroke", "none", "change", event);
-      emit("stroke-width", "0px", "change", event);
     },
   });
   const colorRow = appendModuleRow(
@@ -1477,6 +1486,7 @@ function mountStrokeModule(target, kit, emit) {
   sync = (values) => {
     const strokeColor = String(values.stroke ?? "none");
     if (strokeColor !== "none") state.lastColor = strokeColor;
+    if (hasVisibleWidth(values["stroke-width"])) state.lastWidth = String(values["stroke-width"]);
     width.setAttribute("value", String(numericValue(values["stroke-width"], 1)));
     const strokeStyle = strokeStyleForDasharray(values["stroke-dasharray"]);
     style.setAttribute("value", strokeStyle);
@@ -1502,9 +1512,7 @@ function mountStrokeModule(target, kit, emit) {
       "value",
       String(numericValue(values["stroke-dashoffset"], 0)),
     );
-    const hasStroke =
-      strokeColor !== "none" &&
-      numericValue(values["stroke-width"], 0) > 0;
+    const hasStroke = strokeColor !== "none";
     if (hasStroke) {
       if (colorRow.parentElement !== view.group) {
         view.group.append(colorRow, primaryRow, dashRow, lineRow);
@@ -1517,7 +1525,7 @@ function mountStrokeModule(target, kit, emit) {
     }
     actions.add.button.toggleAttribute("hidden", hasStroke);
     actions.add.tooltip.toggleAttribute("hidden", hasStroke);
-    actions.syncVisibility(strokeColor !== "none");
+    actions.syncVisibility(hasStroke && hasVisibleWidth(values["stroke-width"]));
   };
   const unsubscribe = kit.subscribe(sync);
   return {

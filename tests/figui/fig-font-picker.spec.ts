@@ -17,6 +17,32 @@ test.describe("fig-font-picker", () => {
   });
 
   for (const minimal of [true, false]) {
+    test(`aligns None with font names in ${minimal ? "minimal" : "full"} mode`, async ({ page }) => {
+      await page.evaluate((minimal) => {
+        const picker = document.createElement("fig-font-picker") as any;
+        picker.setAttribute("minimal", String(minimal));
+        picker.setAttribute("local-fonts", "false");
+        picker.setAttribute("google-fonts", "false");
+        picker.setAttribute("options", "Inter,Georgia");
+        picker.setAttribute("value", "Inter");
+        document.querySelector("#fixture-root")!.append(picker);
+        picker.open();
+      }, minimal);
+      const none = page.locator('[data-font-option-id="unset"]');
+      const family = page.locator('[data-font-option-id="family:Inter"]');
+      const label = none.locator('[slot="label"]');
+      await expect(label).toHaveText("None");
+      const [noneBox, familyBox] = await Promise.all([
+        label.boundingBox(), family.locator('[slot="label"]').boundingBox(),
+      ]);
+      expect(noneBox!.x).toBeCloseTo(familyBox!.x, 1);
+      await expect(label).toHaveCSS("font-size", "16px");
+      expect((await none.boundingBox())!.height).toBeCloseTo((await family.boundingBox())!.height, 1);
+      await none.click();
+      await expect(none).toHaveAttribute("aria-selected", "true");
+      await expect(label).toHaveCSS("font-size", "16px");
+    });
+
     test(`supports unset font state and clearing in ${minimal ? "minimal" : "full"} mode`, async ({ page }) => {
       await page.evaluate((minimal) => {
         document.querySelector("#fixture-root")!.innerHTML = `

@@ -300,6 +300,8 @@ class FigModuleShadows extends HTMLElement {
   #createEditor(shadow, index, trigger, disabled) {
     const popup = document.createElement("dialog", { is: "fig-popup" });
     popup.setAttribute("is", "fig-popup");
+    // Keep the editor interactive outside an overflow-clipped module panel.
+    popup.setAttribute("popover", "manual");
     popup.id = figEditorUniqueId();
     popup.setAttribute("anchor", `#${trigger.id}`);
     popup.setAttribute("position", "left");

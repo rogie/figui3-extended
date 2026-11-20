@@ -310,6 +310,8 @@ class FigModuleTransforms extends HTMLElement {
   #createEditor(transform, index, trigger, disabled) {
     const popup = document.createElement("dialog", { is: "fig-popup" });
     popup.setAttribute("is", "fig-popup");
+    // FigUI3 promotes popovers to the top layer, beyond scrolling ancestors.
+    popup.setAttribute("popover", "manual");
     popup.id = figEditorUniqueId();
     popup.setAttribute("anchor", `#${trigger.id}`);
     popup.setAttribute("position", "left");

@@ -13,9 +13,10 @@ import {
 
 const DEFAULT_COLOR = "#00000000";
 const FILL_LABELS = {
-  solid: "Color",
+  solid: "Solid color",
   gradient: "Gradient",
   image: "Image",
+  video: "Video",
 };
 
 function clone(value) {
@@ -27,7 +28,7 @@ function normalizeFill(fill) {
     fill?.value && typeof fill.value === "object" ? fill.value : fill;
   if (!source || typeof source !== "object") return null;
   const type =
-    source.type === "gradient" || source.type === "image"
+    source.type === "gradient" || source.type === "image" || source.type === "video"
       ? source.type
       : "solid";
   return {
@@ -53,6 +54,13 @@ function inputFill(fill) {
 }
 
 function defaultFill(type = "solid", color = DEFAULT_COLOR) {
+  if (type === "video") {
+    return {
+      type,
+      video: { url: null, poster: null, scaleMode: "fill", scale: 50, opacity: 1, missing: true },
+      visible: true,
+    };
+  }
   if (type === "gradient") {
     return {
       type,
@@ -134,11 +142,14 @@ function gradientCss(fill) {
 
 function fillLayerCss(fill) {
   if (fill.type === "gradient") return gradientCss(fill);
-  if (fill.type === "image") {
+  if (fill.type === "image" || fill.type === "video") {
     const image =
-      fill.image && typeof fill.image === "object" ? fill.image : {};
-    if (typeof image.url !== "string" || !image.url) return null;
-    const url = `url("${image.url.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`;
+      (fill.type === "video" ? fill.video : fill.image) ?? {};
+    // CSS backgrounds cannot play video. Preserve the video in fills and expose
+    // its poster as the static CSS fallback when one is available.
+    const source = fill.type === "video" ? image.poster : image.url;
+    if (typeof source !== "string" || !source) return null;
+    const url = `url("${source.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`;
     const opacity = normalizedOpacity(image.opacity ?? fill.opacity);
     if (opacity >= 1) return url;
     const transparent = 'url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")';
@@ -158,10 +169,11 @@ function backgroundValues(fills) {
     .map((fill) => ({ fill, css: fillLayerCss(fill) }))
     .filter((layer) => layer.css);
   const sizes = layers.map(({ fill }) => {
-    if (fill.type !== "image") return "auto";
-    if (fill.image?.scaleMode === "fit") return "contain";
-    if (fill.image?.scaleMode === "tile") {
-      const scale = Number(fill.image.scale ?? 50);
+    if (fill.type !== "image" && fill.type !== "video") return "auto";
+    const media = fill.type === "video" ? fill.video : fill.image;
+    if (media?.scaleMode === "fit") return "contain";
+    if (media?.scaleMode === "tile") {
+      const scale = Number(media.scale ?? 50);
       return `${Number.isFinite(scale) ? Math.max(0, scale) : 50}%`;
     }
     return "cover";
@@ -172,8 +184,8 @@ function backgroundValues(fills) {
       : DEFAULT_COLOR,
     "background-image": layers.length ? layers.map((layer) => layer.css).join(", ") : "none",
     "background-size": sizes.join(", ") || "auto",
-    "background-position": layers.map(({ fill }) => fill.type === "image" && fill.image?.scaleMode !== "tile" ? "center" : "0% 0%").join(", ") || "0% 0%",
-    "background-repeat": layers.map(({ fill }) => fill.type === "image" && fill.image?.scaleMode !== "tile" ? "no-repeat" : "repeat").join(", ") || "repeat",
+    "background-position": layers.map(({ fill }) => ["image", "video"].includes(fill.type) && (fill.image ?? fill.video)?.scaleMode !== "tile" ? "center" : "0% 0%").join(", ") || "0% 0%",
+    "background-repeat": layers.map(({ fill }) => ["image", "video"].includes(fill.type) && (fill.image ?? fill.video)?.scaleMode !== "tile" ? "no-repeat" : "repeat").join(", ") || "repeat",
   };
 }
 
@@ -182,7 +194,7 @@ function backgroundValues(fills) {
  *
  * @element fig-module-fills
  * @attr {string} fills - JSON array of fill objects
- * @attr {string} mode - Comma-separated supported fill types
+ * @attr {string} mode - Comma-separated supported fill types: solid, gradient, image, video
  * @attr {boolean} multiple - Set to "false" for a single fill
  * @attr {string} value-property - "background" (default) or "fill"
  */
@@ -246,7 +258,7 @@ class FigModuleFills extends HTMLElement {
   }
 
   #modes() {
-    const values = (this.getAttribute("mode") || "solid,gradient,image")
+    const values = (this.getAttribute("mode") || "solid,gradient,image,video")
       .split(",")
       .map((value) => value.trim())
       .filter((value) =>

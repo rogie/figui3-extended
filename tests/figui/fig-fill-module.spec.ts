@@ -169,4 +169,59 @@ test.describe("fig-module-fills", () => {
       1,
     );
   });
+
+  test("offers Solid color and Video and opens the newly added video picker", async ({ page }) => {
+    await page.addStyleTag({ url: "/fig-editor.css" });
+    await page.evaluate(() => {
+      const module = document.createElement("fig-module-fills");
+      module.setAttribute("fills", "[]");
+      document.body.append(module);
+    });
+    await page.getByRole("button", { name: "Add fill", exact: true }).click();
+    await expect(page.getByRole("menuitem")).toHaveText(["Solid color", "Gradient", "Image", "Video"]);
+    await page.getByRole("menuitem", { name: "Video", exact: true }).click();
+    const dialog = page.locator(".fig-fill-picker-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator(".fig-fill-picker-type")).toHaveAttribute("value", "video");
+    const fills = await page.locator("fig-module-fills").evaluate((element: any) => element.fills);
+    expect(fills).toEqual([{ type: "video", video: { url: null, poster: null, scaleMode: "fill", scale: 50, opacity: 1, missing: true }, visible: true }]);
+  });
+
+  test("video fill edits retain media settings in both event phases and reflect hydration", async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const module = document.createElement("fig-module-fills") as any;
+      module.fills = [{ type: "video", video: { url: null } }];
+      document.body.append(module);
+      const changes: any[] = [];
+      for (const phase of ["input", "change"]) module.addEventListener(phase, (event: any) => changes.push({ phase, detail: event.detail }));
+      const value = { type: "video", video: { url: "clip.mp4", poster: "poster.png", scaleMode: "fit", scale: 75, opacity: 0.5, missing: false } };
+      const input = module.querySelector("fig-input-fill");
+      for (const phase of ["input", "change"]) input.dispatchEvent(new CustomEvent(phase, { bubbles: true, detail: value }));
+      const copy = document.createElement("fig-module-fills") as any;
+      copy.setAttribute("fills", module.getAttribute("fills"));
+      document.body.append(copy);
+      return { value, fills: module.fills, copy: copy.fills, values: module.values, changes };
+    });
+    expect(result.fills).toEqual([{ ...result.value, visible: true }]);
+    expect(result.copy).toEqual(result.fills);
+    expect(result.changes.map((event: any) => event.phase)).toEqual(["input", "change"]);
+    for (const event of result.changes) {
+      expect(event.detail.fills).toEqual(result.fills);
+      expect(event.detail.values).toEqual(result.values);
+    }
+    expect(result.values["background-image"]).toContain("poster.png");
+    expect(result.values["background-image"]).not.toContain("clip.mp4");
+    expect(result.values["background-size"]).toBe("contain");
+  });
+
+  test("explicit solid-only mode continues to restrict the Add menu", async ({ page }) => {
+    await page.evaluate(() => {
+      const module = document.createElement("fig-module-fills");
+      module.setAttribute("fills", "[]");
+      module.setAttribute("mode", "solid");
+      document.body.append(module);
+    });
+    await page.getByRole("button", { name: "Add fill", exact: true }).click();
+    await expect(page.getByRole("menuitem")).toHaveText(["Solid color"]);
+  });
 });

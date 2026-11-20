@@ -2096,6 +2096,8 @@ test.describe.serial("ExampleView DOM synchronization", () => {
     await page.goto(`${playgroundUrl}/#module-stroke/default`);
     const stroke = page.locator("fig-module-stroke");
     await expect(stroke).toBeVisible();
+    await expect(stroke.locator("fig-group > :not(fig-header)")).toHaveCount(0);
+    await stroke.locator('fig-button[aria-label="Add stroke"]').click();
     await expect(stroke.locator(":scope > .propskit-panel")).toHaveCount(0);
     await expect(stroke.locator(":scope > fig-group")).toHaveCount(1);
     const strokeValues = page.locator("[data-propskit-values] .cm-content");
@@ -2410,7 +2412,7 @@ test.describe.serial("ExampleView DOM synchronization", () => {
 
       const strokeController = figCreateModule("stroke");
       strokeController.mount(host);
-      strokeController.setValue("stroke-dashoffset", "-3");
+      strokeController.setValues({ stroke: "#000000", "stroke-dashoffset": "-3" });
       const strokeOffset = host
         .querySelector('fig-input-number[aria-label="Stroke dash offset"]')
         ?.getAttribute("value");

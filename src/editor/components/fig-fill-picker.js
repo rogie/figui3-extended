@@ -1056,6 +1056,8 @@ class FigFillPicker extends HTMLElement {
 
     this.#dialog = document.createElement("dialog", { is: "fig-popup" });
     this.#dialog.setAttribute("is", "fig-popup");
+    // Color/fill pickers can open from an editor already in the top layer.
+    this.#dialog.setAttribute("popover", "manual");
     this.#dialog.id = this.#dialogId;
     this.#dialog.setAttribute("aria-label", this.#triggerLabel());
     this.#dialog.setAttribute("drag", "true");

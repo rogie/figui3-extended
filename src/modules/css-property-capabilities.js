@@ -334,7 +334,7 @@ const outline = [
 ];
 
 const stroke = [
-  color("stroke", "SVG stroke", "#000000", "svg"),
+  color("stroke", "SVG stroke", "none", "svg"),
   number("stroke-opacity", "SVG stroke opacity", 1, "", "svg", { min: 0, max: 1, step: 0.01 }),
   text("stroke-width", "SVG stroke width", "1px", "svg"),
   select("stroke-linecap", "SVG line cap", ["butt", "round", "square"], "butt", "svg"),

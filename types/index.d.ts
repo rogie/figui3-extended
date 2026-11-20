@@ -159,7 +159,7 @@ export interface FigFillPickerElement extends FigValueElement {
 }
 
 export interface FigFill {
-  type: "solid" | "gradient" | "image" | string;
+  type: "solid" | "gradient" | "image" | "video" | string;
   visible?: boolean;
   color?: string;
   opacity?: number;

@@ -116,7 +116,7 @@ test("border snapshots agree with edits and public setters", async ({ page }) =>
 for (const id of ["border", "outline", "stroke"]) {
   test(`${id} color edits preserve alpha without applying it twice`, async ({ page }) => {
     const result = await page.evaluate((id) => {
-      const module = (window as any).mountModule(id, { values: { [`${id}-width`]: "2px", [`${id}-style`]: "solid" } });
+      const module = (window as any).mountModule(id, { values: { [`${id}-width`]: "2px", [`${id}-style`]: "solid", ...(id === "stroke" ? { stroke: "#000000" } : {}) } });
       const label = `${id[0].toUpperCase()}${id.slice(1)} color`;
       module.element.querySelector(`[aria-label="${label}"]`).dispatchEvent(new CustomEvent("change", {
         bubbles: true, detail: { value: "#11223380", hex: "#11223380", hexOpaque: "#112233", rgba: { r: 17, g: 34, b: 51, a: 0.5 } },
@@ -181,13 +181,154 @@ test("appearance preserves percentage radius, complex corners, and fractional op
 });
 
 test("custom stroke dash patterns remain editable", async ({ page }) => {
-  await page.evaluate(() => (window as any).mountModule("stroke", { values: { "stroke-dasharray": "3 4 5 6" } }));
+  await page.evaluate(() => (window as any).mountModule("stroke", { values: { stroke: "#000000", "stroke-dasharray": "3 4 5 6" } }));
   const input = page.locator('[aria-label="Stroke dash array"] input');
   await expect(input).toBeVisible();
   await input.fill("2 4 6 8");
   await input.press("Tab");
   expect(await page.evaluate(() => (window as any).auditModule.values["stroke-dasharray"])).toBe("2 4 6 8");
 });
+
+test("stroke starts at browser defaults and renders only its Add action", async ({ page }) => {
+  const initial = await page.evaluate(() => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const rect = document.createElementNS(svg.namespaceURI, "rect");
+    svg.append(rect);
+    document.body.append(svg);
+    const module = (window as any).mountModule("stroke");
+    return {
+      values: module.values,
+      browser: { stroke: getComputedStyle(rect).stroke, width: getComputedStyle(rect).strokeWidth },
+    };
+  });
+  expect(initial.values.stroke).toBe(initial.browser.stroke);
+  expect(initial.values["stroke-width"]).toBe(initial.browser.width);
+  await expect(page.locator("fig-module-stroke fig-group > :not(fig-header)")).toHaveCount(0);
+  await page.getByRole("button", { name: "Add stroke", exact: true }).click();
+  await expect(page.locator('[aria-label="Stroke width"] input')).toHaveValue("1");
+  await expect(page.getByRole("button", { name: "Hide stroke", exact: true })).toBeVisible();
+});
+
+for (const id of ["stroke", "border"]) {
+  test(`${id} visibility keeps controls and restores width while remove clears paint`, async ({ page }) => {
+    await page.evaluate((id) => (window as any).mountModule(id, { values: {
+      ...(id === "stroke" ? { stroke: "#336699", "stroke-opacity": 0.4, "stroke-dasharray": "3 4 5 6" } : { "border-color": "#336699", "border-style": "solid" }),
+      [`${id}-width`]: "3.5px",
+    } }), id);
+    const before = await page.evaluate(() => (window as any).auditModule.getValues());
+    const width = page.locator(`fig-input-number[aria-label="${id === "stroke" ? "Stroke" : "Border"} width"]`);
+    await page.getByRole("button", { name: `Hide ${id}`, exact: true }).click();
+    await expect(width).toBeVisible();
+    await expect(width.locator("input")).toHaveValue("0");
+    await expect(page.getByRole("button", { name: `Add ${id}`, exact: true })).toBeHidden();
+    const hidden = await page.evaluate(() => (window as any).auditModule.getValues());
+    expect(hidden[`${id}-width`]).toBe("0px");
+    if (id === "stroke") {
+      expect(hidden.stroke).toBe(before.stroke);
+      expect(hidden["stroke-opacity"]).toBe(before["stroke-opacity"]);
+      expect(hidden["stroke-dasharray"]).toBe(before["stroke-dasharray"]);
+    } else expect(hidden["border-style"]).toBe("solid");
+    expect(await page.evaluate(() => (window as any).changes)).toEqual([
+      { path: `${id}-width`, value: "0px", phase: "change" },
+    ]);
+    await page.getByRole("button", { name: `Show ${id}`, exact: true }).click();
+    expect(await page.evaluate(() => (window as any).auditModule.getValues())).toEqual(before);
+    await expect(width.locator("input")).toHaveValue("3.5");
+    // Manual zero width also retains the row and shows the correct action.
+    await width.locator("input").fill("0");
+    await width.locator("input").press("Tab");
+    await page.getByRole("button", { name: `Show ${id}`, exact: true }).click();
+    await expect(width.locator("input")).toHaveValue("3.5");
+    await page.getByRole("button", { name: `Hide ${id}`, exact: true }).click();
+    await page.getByRole("button", { name: `Remove ${id}`, exact: true }).click();
+    await expect(page.locator(`fig-module-${id} fig-group > :not(fig-header)`)).toHaveCount(0);
+    const removed = await page.evaluate(() => (window as any).auditModule.getValues());
+    expect(id === "stroke" ? removed.stroke : removed["border-style"]).toBe("none");
+    await page.getByRole("button", { name: `Add ${id}`, exact: true }).click();
+    await expect(width).toBeVisible();
+    await expect(width.locator("input")).toHaveValue("1");
+  });
+}
+
+test("border visibility remembers each side independently", async ({ page }) => {
+  await page.evaluate(() => (window as any).mountModule("border", { values: {
+    "border-style": "solid", "border-width": "2px 4px 6px 8px",
+  } }));
+  const selectSide = async (side: string) => {
+    await page.locator('fig-select[label="Border sides"]').evaluate((element: any, value) => {
+      element.value = value;
+      element.dispatchEvent(new CustomEvent("change", { bubbles: true, detail: value }));
+    }, side);
+  };
+  await selectSide("top");
+  await page.getByRole("button", { name: "Hide border", exact: true }).click();
+  await selectSide("right");
+  await page.getByRole("button", { name: "Hide border", exact: true }).click();
+  await page.getByRole("button", { name: "Show border", exact: true }).click();
+  await selectSide("top");
+  await page.getByRole("button", { name: "Show border", exact: true }).click();
+  const values = await page.evaluate(() => (window as any).auditModule.getValues());
+  expect(values["border-width"]).toBe("2px 4px 6px 8px");
+  await selectSide("all");
+  await page.getByRole("button", { name: "Hide border", exact: true }).click();
+  await page.getByRole("button", { name: "Show border", exact: true }).click();
+  expect(await page.evaluate(() => (window as any).auditModule.values["border-width"])).toBe("2px 4px 6px 8px");
+});
+
+test("stroke seeded from an SVG element restores its existing width", async ({ page }) => {
+  await page.evaluate(() => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const rect = document.createElementNS(svg.namespaceURI, "rect");
+    rect.setAttribute("stroke", "#336699");
+    rect.setAttribute("stroke-width", "6.5");
+    svg.append(rect);
+    document.body.append(svg);
+    (window as any).mountModule("stroke", { element: rect });
+  });
+  const input = page.locator('[aria-label="Stroke width"] input');
+  await expect(input).toHaveValue("6.5");
+  await page.getByRole("button", { name: "Hide stroke", exact: true }).click();
+  await page.getByRole("button", { name: "Show stroke", exact: true }).click();
+  await expect(input).toHaveValue("6.5");
+});
+
+for (const id of ["fills", "filters", "shadows", "transforms", "stroke", "border", "outline"]) {
+  test(`${id} empty header uses icon tokens for Add hover and keyboard focus`, async ({ page }) => {
+    await page.evaluate((id) => {
+      const root = document.querySelector("#fixture-root") as HTMLElement;
+      root.style.setProperty("--figma-color-icon-secondary", "rgb(11, 22, 33)");
+      root.style.setProperty("--figma-color-icon", "rgb(44, 55, 66)");
+      if (["fills", "filters", "shadows", "transforms"].includes(id)) {
+        const element = document.createElement(`fig-module-${id}`);
+        element.setAttribute(id, "[]");
+        root.append(element);
+      } else (window as any).mountModule(id);
+    }, id);
+    const header = page.locator(`fig-module-${id} > fig-group > fig-header`);
+    const addIcon = header.locator('fig-icon[name="add"]');
+    await page.mouse.move(1100, 700);
+    await expect(addIcon).toHaveCSS("color", "rgb(11, 22, 33)");
+    await header.hover();
+    await expect(addIcon).toHaveCSS("color", "rgb(44, 55, 66)");
+    await page.mouse.move(1100, 700);
+    await expect(addIcon).toHaveCSS("color", "rgb(11, 22, 33)");
+    await header.locator('fig-button[aria-label^="Add "]').focus();
+    await expect(addIcon).toHaveCSS("color", "rgb(44, 55, 66)");
+  });
+}
+
+for (const id of ["fills", "filters", "shadows", "transforms"]) {
+  test(`${id} trailing ghost stack aligns Remove with header Add`, async ({ page }) => {
+    await page.evaluate((id) => {
+      document.querySelector("#fixture-root")!.append(document.createElement(`fig-module-${id}`));
+    }, id);
+    const module = page.locator(`fig-module-${id}`);
+    const add = module.locator('fig-header fig-button[aria-label^="Add "]');
+    const remove = module.locator('fig-button[aria-label^="Remove "]');
+    const [addBox, removeBox] = await Promise.all([add.boundingBox(), remove.boundingBox()]);
+    expect(removeBox!.x + removeBox!.width / 2).toBeCloseTo(addBox!.x + addBox!.width / 2, 1);
+  });
+}
 
 test("filters normalize negative magnitudes and allow unrestricted hue angles", async ({ page }) => {
   const values = await page.evaluate(() => {

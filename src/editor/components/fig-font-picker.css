@@ -160,7 +160,7 @@ fig-font-picker {
 }
 
 .fig-font-picker-list
-  > .fig-font-picker-option
+  > :is(.fig-font-picker-option, .fig-font-picker-unset)
   > .fig-font-picker-option-preview {
   position: relative;
   display: block;

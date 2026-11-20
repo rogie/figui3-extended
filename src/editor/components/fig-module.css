@@ -15,6 +15,24 @@ Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
   }
 }
 
+/* Empty group titles stay secondary; their Add action brightens with the header. */
+.fig-module > fig-group > fig-header:only-child {
+  fig-icon[name="add"] {
+    --icon-color: var(--figma-color-icon-secondary);
+  }
+
+  &:is(:hover, :focus-within) fig-icon[name="add"] {
+    --icon-color: var(--figma-color-icon);
+  }
+}
+
+.fig-module fig-property:has(
+  > fig-stack[slot="trailing"] > fig-button[variant="ghost"]:last-child,
+  > fig-stack[slot="trailing"] > fig-tooltip:last-child > fig-button[variant="ghost"]
+) {
+  --fig-property-right-padding: var(--spacer-2);
+}
+
 .compact-line-module {
   .compact-line-module-actions {
     margin-left: auto;
