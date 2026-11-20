@@ -50,3 +50,20 @@ Licensor Line of Business: FigUI3 editor and lab (Figma-style plugin UI kit)
     }
   }
 }
+fig-module-filters > .filters-group > fig-separator {
+  --filters-section-inset-start: var(--fig-property-left-padding, var(--spacer-3));
+  --filters-section-inset-end: var(--fig-property-right-padding, var(--spacer-3));
+  --fig-separator-padding-inline: 0;
+
+  width: calc(100% - var(--filters-section-inset-start) - var(--filters-section-inset-end));
+  margin-inline: var(--filters-section-inset-start) var(--filters-section-inset-end);
+}
+
+/* A lone backdrop section starts the content; no preceding section to divide. */
+fig-module-filters > .filters-group > fig-header + fig-separator {
+  --fig-separator-margin-block: 0;
+  --fig-separator-padding-block: 0;
+  --fig-separator-color: transparent;
+
+  border-block-start: 0;
+}

@@ -95,6 +95,7 @@ export interface FigFontFamily {
 }
 
 export interface FigFontPickerValue {
+  /** Font family name; "unset" means no explicit family is selected. */
   family: string;
   face?: Omit<FigFontFace, "family" | "src" | "axes" | "instances">;
   axes: Record<string, number>;

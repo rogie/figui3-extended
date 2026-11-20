@@ -1709,7 +1709,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       });
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
-    ).toContainText('"aspect-ratio": "640 / 180"');
+    ).toContainText('"aspect-ratio": "320 / 180"');
+    await expect(
+      page.locator("[data-propskit-values] .cm-content"),
+    ).toContainText('"height": "360%"');
 
     await module
       .locator('fig-input-number[aria-label="X position"]')
@@ -1719,10 +1722,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
       });
     await expect(
       page.locator("[data-propskit-event] .cm-content"),
-    ).toContainText('"path": "aspect-ratio"');
+    ).toContainText('"path": "left"');
     await expect(
       page.locator("[data-propskit-event] .cm-content"),
-    ).toContainText('"value": "640 / 180"');
+    ).toContainText('"value": "24px"');
 
     await aspectRatioButton.click();
     await expect(aspectRatioButton).toHaveAttribute("aria-pressed", "false");
@@ -2056,10 +2059,10 @@ test.describe.serial("ExampleView DOM synchronization", () => {
           }),
         );
       });
-    await expect(addBorder).toBeVisible();
-    await expect(borderColorRow).toHaveCount(0);
-    await expect(borderPrimaryRow).toHaveCount(0);
-    await addBorder.click();
+    // Editing all sides also updates the top-side snapshot.
+    await expect(addBorder).toBeHidden();
+    await expect(borderColorRow).toBeVisible();
+    await expect(borderPrimaryRow).toBeVisible();
     await expect(
       page.locator("[data-propskit-values] .cm-content"),
     ).toContainText('"border-top-style": "solid"');

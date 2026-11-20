@@ -116,6 +116,22 @@ const BORDER_PROPERTIES = BORDER_TARGET_OPTIONS.flatMap(([target]) =>
   ),
 );
 
+function borderValuesPatch(current, patch) {
+  if (typeof document === "undefined") return patch;
+  const style = document.createElement("div").style;
+  for (const values of [current, patch]) {
+    for (const property of BORDER_PROPERTIES) {
+      if (Object.prototype.hasOwnProperty.call(values, property)) {
+        style.setProperty(property, String(values[property]));
+      }
+    }
+  }
+  return Object.fromEntries(Object.keys(current).map((property) => [
+    property,
+    style.getPropertyValue(property) || current[property],
+  ]));
+}
+
 const STROKE_STYLE_OPTIONS = [
   ["solid", "Solid"],
   ["dashed", "Dashed"],
@@ -330,10 +346,17 @@ function mountLayoutModule(target, kit, emit) {
       ? `${width} / ${height}`
       : "1 / 1";
   };
-  const emitCalculatedAspectRatio = (phase, event) => {
-    if (aspectRatioButton?.selected === true) {
-      emit("aspect-ratio", calculatedAspectRatio(), phase, event);
-    }
+  const emitConstrainedSize = (property, phase, event) => {
+    if (aspectRatioButton?.selected !== true) return;
+    const [widthRatio, heightRatio = 1] = String(kit.values["aspect-ratio"]).split("/").map(Number);
+    const ratio = widthRatio / heightRatio;
+    if (!Number.isFinite(ratio) || ratio <= 0) return;
+    const otherProperty = property === "width" ? "height" : "width";
+    const current = sizeInputs.get(property);
+    const other = sizeInputs.get(otherProperty);
+    if (!current || !other || current.mode !== other.mode || current.mode === "Fill") return;
+    other.value = Math.round((property === "width" ? current.value / ratio : current.value * ratio) * 1e6) / 1e6;
+    emit(otherProperty, numericCssValue(other.value, other.mode === "Relative" ? "%" : "px"), phase, event);
   };
 
   const createNumberInput = (property, label, prefix, unit, minimum) => {
@@ -362,7 +385,6 @@ function mountLayoutModule(target, kit, emit) {
           phase,
           event,
         );
-        emitCalculatedAspectRatio(phase, event);
       });
     }
     inputs.set(property, input);
@@ -387,6 +409,7 @@ function mountLayoutModule(target, kit, emit) {
           if (!input.isConnected) return;
           const numberInput = input.querySelector("fig-input-number");
           if (numberInput) {
+            numberInput.setAttribute("min", "0");
             numberInput.setAttribute("steppers", "false");
             if (!numberInput.querySelector('[slot="prepend"]')) {
               const prepend = document.createElement("fig-icon");
@@ -416,11 +439,11 @@ function mountLayoutModule(target, kit, emit) {
           input.setAttribute("value", String(state.value));
         } else {
           const parsed = Number(value);
-          if (Number.isFinite(parsed)) state.value = parsed;
+          if (Number.isFinite(parsed)) state.value = Math.max(0, parsed);
         }
         syncChrome();
         emit(property, cssValue(), phase, event);
-        emitCalculatedAspectRatio(phase, event);
+        emitConstrainedSize(property, phase, event);
       });
     }
     state.syncChrome = syncChrome;
@@ -445,6 +468,8 @@ function mountLayoutModule(target, kit, emit) {
   let modeControl = null;
   if (has("display")) {
     const property = document.createElement("fig-property");
+    property.setAttribute("trailing", "space");
+    property.setAttribute("show-trailing", "");
     modeControl = document.createElement("fig-segmented-control");
     modeControl.setAttribute("slot", "input");
     modeControl.setAttribute("sizing", "equal");
@@ -477,7 +502,6 @@ function mountLayoutModule(target, kit, emit) {
       } else if (has("flex-direction") && mode === "horizontal") {
         emit("flex-direction", "row", phase, event);
       }
-      emitCalculatedAspectRatio(phase, event);
     };
     modeControl.addEventListener("input", (event) => emitMode("input", event));
     modeControl.addEventListener("change", (event) =>
@@ -548,7 +572,6 @@ function mountLayoutModule(target, kit, emit) {
           phase,
           event,
         );
-        emitCalculatedAspectRatio(phase, event);
       });
     }
     property.append(withControlTooltip(clipCheckbox));
@@ -806,6 +829,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     if (property !== "font-size") input.setAttribute("aria-label", label);
     input.setAttribute("steppers", "false");
     input.setAttribute("units", units);
+    if (property === "line-height") input.setAttribute("min", "0");
     if (iconName) {
       appendTypographyIcon(input, iconName, "prepend");
     } else {
@@ -818,7 +842,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
       input.addEventListener(phase, (event) => {
         emit(
           property,
-          serialize(Number(eventValue(event))),
+          serialize(property === "line-height" ? Math.max(0, Number(eventValue(event))) : Number(eventValue(event))),
           phase,
           event,
         );
@@ -847,9 +871,9 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     syncFontSizeChrome = () => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          fontSizeInput
-            .querySelector("fig-input-number")
-            ?.setAttribute("steppers", "false");
+          const numberInput = fontSizeInput.querySelector("fig-input-number");
+          numberInput?.setAttribute("steppers", "false");
+          numberInput?.setAttribute("min", "0");
         });
       });
     };
@@ -857,7 +881,7 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
       fontSizeInput.addEventListener(phase, (event) => {
         emit(
           "font-size",
-          numericCssValue(eventValue(event), "px"),
+          numericCssValue(Math.max(0, numericValue(eventValue(event))), "px"),
           phase,
           event,
         );
@@ -959,10 +983,14 @@ function mountTypographyModule(target, kit, emit, emitOptionHover) {
     }
     for (const [property, { input, fallback }] of metricInputs) {
       const raw = String(values[property] ?? "");
-      const value =
-        property === "letter-spacing" && raw.endsWith("em")
-          ? numericValue(raw, fallback) * 100
-          : numericValue(raw, fallback);
+      let value = numericValue(raw, fallback);
+      if (property === "letter-spacing") {
+        if (raw.endsWith("em")) value *= 100;
+        else if (raw.endsWith("px")) {
+          const fontSize = numericValue(values["font-size"], 16);
+          value = fontSize > 0 ? value / fontSize * 100 : 0;
+        }
+      }
       input.setAttribute("value", String(value));
     }
     syncFontSizeChrome();
@@ -993,10 +1021,10 @@ function moduleLabel(property) {
     .join(" ");
 }
 
-function moduleColorValue(event, control) {
+function moduleColorValue(event, control, opaque = false) {
   const detail = event instanceof CustomEvent ? event.detail : null;
   const value =
-    detail?.hexOpaque ??
+    (opaque ? detail?.hexOpaque : undefined) ??
     detail?.hex ??
     detail?.value ??
     control.value ??
@@ -1063,7 +1091,7 @@ function createModuleText(label, onValue) {
   return input;
 }
 
-function createModuleColor(label, onValue) {
+function createModuleColor(label, onValue, opaque = false) {
   const input = document.createElement("fig-input-color");
   input.setAttribute("aria-label", label);
   input.setAttribute("text", "true");
@@ -1071,7 +1099,7 @@ function createModuleColor(label, onValue) {
   input.style.cssText = "flex: 1 1 0; min-width: 0";
   for (const phase of ["input", "change"]) {
     input.addEventListener(phase, (event) => {
-      onValue(moduleColorValue(event, input), phase, event);
+      onValue(moduleColorValue(event, input, opaque), phase, event);
     });
   }
   return input;
@@ -1375,7 +1403,7 @@ function mountStrokeModule(target, kit, emit) {
     if (Number.isFinite(alpha)) {
       emit("stroke-opacity", Math.max(0, Math.min(1, alpha)), phase, event);
     }
-  });
+  }, true);
   const linecap = createModuleSelect(
     "Line cap",
     [["butt", "Butt"], ["round", "Round"], ["square", "Square"]],
@@ -1452,7 +1480,7 @@ function mountStrokeModule(target, kit, emit) {
     width.setAttribute("value", String(numericValue(values["stroke-width"], 1)));
     const strokeStyle = strokeStyleForDasharray(values["stroke-dasharray"]);
     style.setAttribute("value", strokeStyle);
-    dashRow.hidden = strokeStyle !== "dashed";
+    dashRow.hidden = strokeStyle !== "dashed" && strokeStyle !== "custom";
     const opacityValue = Number(values["stroke-opacity"] ?? 1);
     const opacity = Number.isFinite(opacityValue)
       ? Math.max(0, Math.min(1, opacityValue))
@@ -1771,6 +1799,9 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
   }
 
   let borderRadiusInput = null;
+  let borderRadiusText = null;
+  let borderRadiusTooltip = null;
+  let borderRadiusUnit = "px";
   if (has("border-radius")) {
     borderRadiusInput = document.createElement("fig-input-number");
     borderRadiusInput.style.cssText = "flex: 1 1 0; min-width: 0";
@@ -1783,7 +1814,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     borderRadiusInput.addEventListener("input", (event) => {
       emit(
         "border-radius",
-        `${Number(eventValue(event))}px`,
+        `${Number(eventValue(event))}${borderRadiusUnit}`,
         "input",
         event,
       );
@@ -1791,7 +1822,7 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     borderRadiusInput.addEventListener("change", (event) => {
       emit(
         "border-radius",
-        `${Number(eventValue(event))}px`,
+        `${Number(eventValue(event))}${borderRadiusUnit}`,
         "change",
         event,
       );
@@ -1800,7 +1831,12 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     prepend.setAttribute("slot", "prepend");
     appendSvgIcon(prepend, BORDER_RADIUS_ICON);
     borderRadiusInput.append(prepend);
-    stack.append(withControlTooltip(borderRadiusInput));
+    borderRadiusText = createModuleText("Border radius", (value, phase, event) => {
+      if (CSS.supports("border-radius", value)) emit("border-radius", value, phase, event);
+      else if (phase === "change") borderRadiusText.value = kit.values["border-radius"];
+    });
+    borderRadiusTooltip = withControlTooltip(borderRadiusInput);
+    stack.append(borderRadiusTooltip);
   }
 
   let blendSelect = null;
@@ -1879,14 +1915,23 @@ function mountAppearanceModule(target, kit, emit, emitOptionHover) {
     if (opacityInput) {
       opacityInput.setAttribute(
         "value",
-        String(Math.round(Number(values.opacity ?? 1) * 100)),
+        String(Number((Number(values.opacity ?? 1) * 100).toFixed(10))),
       );
     }
     if (borderRadiusInput) {
+      const rawRadius = String(values["border-radius"] ?? "0px");
+      const scalar = rawRadius.trim().match(/^([\d.]+)([a-z%]*)$/i);
+      const control = scalar ? borderRadiusInput : borderRadiusText;
+      if (borderRadiusTooltip.firstElementChild !== control) {
+        borderRadiusTooltip.replaceChildren(control);
+      }
+      borderRadiusUnit = scalar?.[2] || "px";
+      borderRadiusInput.setAttribute("units", borderRadiusUnit);
       borderRadiusInput.setAttribute(
         "value",
         String(numericValue(values["border-radius"], 0)),
       );
+      borderRadiusText.setAttribute("value", rawRadius);
     }
     if (blendSelect) {
       blendSelect.setAttribute(
@@ -1987,6 +2032,12 @@ export function figCreateModule(moduleId, options = {}) {
     presentation?.serializeValues?.(values) ?? values;
   const serializeChange = (change) =>
     presentation?.serializeChange?.(change) ?? change;
+  if (moduleId === "border") {
+    const initial = Object.fromEntries(Object.entries(config).map(([property, definition]) => [property, definition.default]));
+    for (const [property, value] of Object.entries(borderValuesPatch(initial, options.values ?? {}))) {
+      config[property] = { ...config[property], default: value };
+    }
+  }
   const kit = figCreateProps(result.module.label, config, {
     id: options.id,
     onInput: options.onInput,
@@ -1995,6 +2046,13 @@ export function figCreateModule(moduleId, options = {}) {
   });
 
   let view = null;
+  const setModuleValues = (values) => kit.setValues(
+    moduleId === "border" ? borderValuesPatch(kit.getValues(), values) : values,
+  );
+  const setModuleValue = (path, value) => {
+    if (moduleId === "border") setModuleValues({ [path]: value });
+    else kit.setValue(path, value);
+  };
   let destroyed = false;
   const unmount = () => {
     view?.destroy();
@@ -2003,7 +2061,7 @@ export function figCreateModule(moduleId, options = {}) {
   const emit = (path, value, phase, sourceEvent) => {
     if (destroyed) return;
     const previousValue = kit.getValues()[path];
-    kit.setValue(path, value);
+    setModuleValue(path, value);
     const callback =
       phase === "input" ? options.onInput : options.onChange;
     const change = serializeChange({
@@ -2038,8 +2096,8 @@ export function figCreateModule(moduleId, options = {}) {
     getValues() {
       return serializeValues(kit.getValues());
     },
-    setValue: kit.setValue,
-    setValues: kit.setValues,
+    setValue: setModuleValue,
+    setValues: setModuleValues,
     resetValues: kit.resetValues,
     subscribe(listener, options = true) {
       const changes =

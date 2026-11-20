@@ -410,9 +410,11 @@ class FigModuleShadows extends HTMLElement {
     content.append(colorField);
     popup.append(content);
 
-    popup.addEventListener("close", () => {
-      trigger.setAttribute("aria-expanded", "false");
-      trigger.removeAttribute("selected");
+    popup.addEventListener("fig-popup-lifecycle", (event) => {
+      if (event.target !== popup) return;
+      const open = event.detail?.state === "opening" || event.detail?.state === "open";
+      trigger.setAttribute("aria-expanded", String(open));
+      trigger.toggleAttribute("selected", open);
     });
     return popup;
   }
@@ -510,8 +512,6 @@ class FigModuleShadows extends HTMLElement {
         const popup = property.querySelector(`#${trigger.getAttribute("aria-controls")}`);
         if (!popup) return;
         popup.open = !popup.open;
-        trigger.setAttribute("aria-expanded", String(popup.open));
-        trigger.toggleAttribute("selected", popup.open);
       });
       property.append(
         figEditorWithTooltip(SHADOW_TYPES[shadow.type].label, trigger),

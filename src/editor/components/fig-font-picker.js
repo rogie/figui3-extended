@@ -196,7 +196,9 @@ function cssUrl(source) {
 }
 
 function fontPickerUiFamily(value) {
-  return `${fontPickerCss(value).fontFamily}, var(--fig-font-family, system-ui, sans-serif)`;
+  const family = fontPickerCss(value).fontFamily;
+  const fallback = "var(--fig-font-family, system-ui, sans-serif)";
+  return family === "unset" ? fallback : `${family}, ${fallback}`;
 }
 
 function applyFontPickerUiCss(element, value) {
@@ -231,7 +233,7 @@ function figFontDispatchEvent(element, type, value, detail = {}) {
 /**
  * Searchable family/face picker with progressive local-font discovery.
  *
- * @attr {string} value - Font family name or serialized { family, face?, axes } value.
+ * @attr {string} value - Font family name or serialized { family, face?, axes } value. Empty or "unset" clears the family.
  * @attr {string} default - Default font family name or serialized font value.
  * @attr {string} options - Supplied family/face metadata.
  * @attr {string} preview-text - Editable preview sample.
@@ -346,7 +348,7 @@ export class FigFontPicker extends HTMLElement {
     if (!this.#surface) this.#initialize();
     if (!this.#initialValue) {
       this.#initialValue = normalizeFontPickerValue(
-        this.getAttribute("value") ?? this.getAttribute("default") ?? "system-ui",
+        this.getAttribute("value") ?? this.getAttribute("default") ?? "unset",
       );
       this.#reflectValue(this.#initialValue);
     }
@@ -378,7 +380,7 @@ export class FigFontPicker extends HTMLElement {
       this.#syncSurface();
     } else if (name === "value" && !this.#reflecting) {
       const value = this.#reflectValue(
-        normalizeFontPickerValue(newValue, this.value),
+        normalizeFontPickerValue(newValue ?? ""),
       );
       if (this.#dialog?.open) {
         this.#lastChangeValue = serializeFontPickerValue(value);
@@ -806,7 +808,7 @@ export class FigFontPicker extends HTMLElement {
         "options",
         JSON.stringify(
           value.family
-            ? [{ value: value.family, label: value.family }]
+            ? [{ value: value.family, label: value.family === "unset" ? "None" : value.family }]
             : [],
         ),
       );
@@ -1249,6 +1251,30 @@ export class FigFontPicker extends HTMLElement {
     const active = document.activeElement?.dataset?.fontOptionId;
     const fragment = document.createDocumentFragment();
     const visible = this.#visibleFamilies();
+    const unsetSelected = this.value.family === "unset";
+    const unsetOption = figEditorCreateElement("fig-button", {
+      className: "fig-font-picker-unset",
+      role: "option",
+      variant: "ghost",
+      size: "large",
+      full: true,
+      align: "start",
+      tabindex: "-1",
+      value: "unset",
+      selected: unsetSelected,
+      "aria-selected": String(unsetSelected),
+      "data-font-option-id": "unset",
+    });
+    unsetOption.append(
+      figEditorCreateIcon("checkmark", {
+        slot: "prepend",
+        className: "fig-font-picker-selected-icon",
+        "aria-hidden": "true",
+        size: "small",
+      }),
+      "None",
+    );
+    fragment.append(unsetOption);
     for (const family of visible) {
       const familyId = `family:${family.family}`;
       const familySelected =
@@ -1340,6 +1366,7 @@ export class FigFontPicker extends HTMLElement {
     for (const list of [this.#fontList, this.#favoritesList]) {
       if (!list) continue;
       const option =
+        family === "unset" ? list.querySelector('[data-font-option-id="unset"]') :
         [...list.querySelectorAll("[data-font-option-id][data-family]")].find(
           (candidate) =>
             !candidate.dataset.faceId &&
@@ -1486,6 +1513,9 @@ export class FigFontPicker extends HTMLElement {
   }
 
   #optionFromElement(element) {
+    if (element?.dataset.fontOptionId === "unset") {
+      return { family: null, face: null, value: { family: "unset", axes: {} } };
+    }
     const family = this.#families.find(
       (entry) =>
         entry.family.toLocaleLowerCase() ===
@@ -1557,7 +1587,7 @@ export class FigFontPicker extends HTMLElement {
   #commitValue(value) {
     const next = this.#reflectValue(value);
     const key = next.family.toLocaleLowerCase();
-    this.#recent = [key, ...this.#recent.filter((family) => family !== key)].slice(
+    if (key !== "unset") this.#recent = [key, ...this.#recent.filter((family) => family !== key)].slice(
       0,
       20,
     );
@@ -1943,12 +1973,12 @@ export class FigFontPicker extends HTMLElement {
     if (this.#eventValue !== undefined) return normalizeFontPickerValue(this.#eventValue);
     return normalizeFontPickerValue(
       this.getAttribute("value"),
-      this.#initialValue || { family: "system-ui" },
+      this.#initialValue || { family: "unset" },
     );
   }
 
   set value(value) {
-    this.#reflectValue(value);
+    this.#reflectValue(value ?? "");
     this.#syncPresentation();
     this.#syncListSelection();
     this.#inspectSelectedFace();
@@ -1957,7 +1987,7 @@ export class FigFontPicker extends HTMLElement {
   get defaultValue() {
     return normalizeFontPickerValue(
       this.getAttribute("default"),
-      this.#initialValue || { family: "system-ui" },
+      this.#initialValue || { family: "unset" },
     );
   }
 
@@ -1979,8 +2009,39 @@ export class FigFontPicker extends HTMLElement {
     this.#valueAtOpen = serializeFontPickerValue(this.value);
     this.#lastChangeValue = this.#valueAtOpen;
     this.#syncTriggerDialogState();
-    this.refreshFonts({ requestLocal: this.#localStatus !== "ready" });
-    requestAnimationFrame(() => this.#search?.focus());
+    const family = this.value.family.toLocaleLowerCase();
+    if (family !== "unset" && !this.#visibleFamilies().some((entry) => entry.family.toLocaleLowerCase() === family)) {
+      this.#query = "";
+      if (this.#search) this.#search.value = "";
+      this.#showFontsPanel();
+      this.#source = this.#fontSource = "all";
+      this.#sourceSelect.value = "all";
+      this.#sourceSelect.removeAttribute("disabled");
+      this.#sourceSelect.removeAttribute("hidden");
+      this.#favoritesOnly = false;
+      this.#syncFavoritesOnlyButton();
+    }
+    const refresh = this.refreshFonts({ requestLocal: this.#localStatus !== "ready" });
+    this.#scrollToSelectedFont();
+    void refresh.then(() => this.#scrollToSelectedFont());
+    requestAnimationFrame(() => {
+      if (this.#dialog?.open) this.#search?.focus({ preventScroll: true });
+    });
+  }
+
+  #scrollToSelectedFont() {
+    requestAnimationFrame(() => {
+      if (!this.#dialog?.open || !this.#list) return;
+      const selected = this.#list.querySelector('[data-font-option-id][aria-selected="true"]');
+      if (!selected) return;
+      const listRect = this.#list.getBoundingClientRect();
+      const selectedRect = selected.getBoundingClientRect();
+      this.#list.scrollTo({
+        top: this.#list.scrollTop + selectedRect.top - listRect.top -
+          (this.#list.clientHeight - selectedRect.height) / 2,
+        behavior: "instant",
+      });
+    });
   }
 
   close() {

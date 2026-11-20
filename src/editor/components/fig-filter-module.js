@@ -75,7 +75,7 @@ function normalizeFilter(filter) {
     ? filter.type
     : "gaussian-blur";
   const definition = FILTER_TYPES[type];
-  return {
+  const normalized = {
     ...clone(definition.defaults),
     ...clone(filter),
     type,
@@ -83,6 +83,11 @@ function normalizeFilter(filter) {
     primitive: definition.primitive,
     visible: filter.visible !== false,
   };
+  for (const [key, fallback] of Object.entries(definition.defaults)) {
+    const value = number(normalized[key], fallback);
+    normalized[key] = type === "hue-rotate" ? value : Math.max(0, value);
+  }
+  return normalized;
 }
 
 function parseFilters(value) {
@@ -453,7 +458,7 @@ class FigModuleFilters extends HTMLElement {
         fallback = number(filter.angle, 0);
         toStoredValue = (value) => value;
         valueInput.setAttribute("value", String(fallback));
-        valueInput.setAttribute("max", "360");
+        valueInput.removeAttribute("min");
         valueInput.setAttribute("units", "°");
       } else {
         fallback = Math.round(number(filter.amount, 1) * 100);

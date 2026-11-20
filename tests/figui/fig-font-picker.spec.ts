@@ -16,6 +16,80 @@ test.describe("fig-font-picker", () => {
     await page.evaluate(() => customElements.whenDefined("fig-font-picker"));
   });
 
+  for (const minimal of [true, false]) {
+    test(`supports unset font state and clearing in ${minimal ? "minimal" : "full"} mode`, async ({ page }) => {
+      await page.evaluate((minimal) => {
+        document.querySelector("#fixture-root")!.innerHTML = `
+          <fig-font-picker minimal="${minimal}" local-fonts="false" google-fonts="false"
+            options="Inter,Georgia"></fig-font-picker>`;
+        (document.querySelector("fig-font-picker") as any).open();
+      }, minimal);
+      const picker = page.locator("fig-font-picker");
+      const dialog = picker.locator(".fig-font-picker-dialog");
+      const none = dialog.locator('[data-font-option-id="unset"]');
+      await expect(none).toHaveAttribute("aria-selected", "true");
+      await expect(dialog.locator('[data-family][aria-selected="true"]')).toHaveCount(0);
+      await expect(picker.locator(".fig-font-picker-surface fig-select")).toContainText("None");
+      await dialog.locator('[data-family="Inter"]').click();
+      await picker.evaluate((element) => {
+        element.addEventListener("change", (event: any) => { (window as any).__unsetDetail = event.detail; });
+      });
+      await none.click();
+      expect(await picker.evaluate((element: any) => ({ value: element.value, family: element.cssValue.fontFamily, resource: element.selectedResource })))
+        .toEqual({ value: { family: "unset", axes: {} }, family: "unset", resource: null });
+      const detail = await page.evaluate(() => (window as any).__unsetDetail);
+      expect(detail.value).toEqual({ family: "unset", axes: {} });
+      expect(detail.css.fontFamily).toBe("unset");
+      expect(detail.resource).toBeNull();
+      await picker.evaluate((element: any) => { element.close(); element.open(); });
+      await expect(none).toHaveAttribute("aria-selected", "true");
+      await picker.evaluate((element: any) => { element.value = "Georgia"; element.resetToDefault(); });
+      await expect(none).toHaveAttribute("aria-selected", "true");
+      for (const value of ["", "unset", { family: "", axes: { wght: 800 } }, { family: "unset", axes: { wght: 800 } }]) {
+        await picker.evaluate((element: any, value) => { element.value = "Inter"; element.value = value; }, value);
+        expect(await picker.evaluate((element: any) => element.value)).toEqual({ family: "unset", axes: {} });
+        await expect(none).toHaveAttribute("aria-selected", "true");
+      }
+    });
+
+    test(`jumps to selected font on open and reopen in ${minimal ? "minimal" : "full"} mode`, async ({ page }) => {
+      await page.evaluate((minimal) => {
+        const picker = document.createElement("fig-font-picker") as any;
+        picker.setAttribute("minimal", String(minimal));
+        picker.setAttribute("local-fonts", "false");
+        picker.setAttribute("google-fonts", "false");
+        picker.options = Array.from({ length: 100 }, (_, index) => ({ family: `Test Font ${String(index).padStart(3, "0")}` }));
+        picker.value = "Test Font 090";
+        document.querySelector("#fixture-root")!.append(picker);
+        picker.open();
+      }, minimal);
+      const picker = page.locator("fig-font-picker");
+      const dialog = picker.locator(".fig-font-picker-dialog");
+      const selected = dialog.locator('[data-family="Test Font 090"]');
+      const selectionInView = () => selected.evaluate((element) => {
+        const list = element.closest("fig-chooser")!;
+        const itemRect = element.getBoundingClientRect();
+        const listRect = list.getBoundingClientRect();
+        return list.scrollTop > 0 && itemRect.top >= listRect.top && itemRect.bottom <= listRect.bottom;
+      });
+      await expect.poll(selectionInView).toBe(true);
+      await picker.evaluate((element: any) => {
+        element.close();
+        element.querySelector(".fig-font-picker-list").scrollTop = 0;
+        element.open();
+      });
+      await expect.poll(selectionInView).toBe(true);
+      const search = dialog.locator("fig-input-text");
+      await search.evaluate((element: any) => {
+        element.value = "Test Font 000";
+        element.dispatchEvent(new CustomEvent("input", { bubbles: true }));
+      });
+      await expect(selected).toHaveCount(0);
+      await picker.evaluate((element: any) => { element.close(); element.open(); });
+      await expect.poll(selectionInView).toBe(true);
+    });
+  }
+
   test("uses FigUI controls and normalizes value/default state", async ({
     page,
   }) => {

@@ -386,7 +386,7 @@ export function genericFontFamilies() {
   );
 }
 
-export function normalizeFontPickerValue(value, fallback = { family: "system-ui" }) {
+export function normalizeFontPickerValue(value, fallback = { family: "unset" }) {
   let source = value;
   if (typeof source === "string") {
     const text = source.trim();
@@ -401,9 +401,10 @@ export function normalizeFontPickerValue(value, fallback = { family: "system-ui"
     }
   }
   if (!source || typeof source !== "object" || Array.isArray(source)) {
-    source = fallback;
+    source = fallback || { family: "unset" };
   }
-  const family = cleanText(source.family) || cleanText(fallback?.family) || "system-ui";
+  const family = cleanText(source.family) || "unset";
+  if (family.toLocaleLowerCase() === "unset") return { family: "unset", axes: {} };
   const faceSource = source.face;
   const face =
     faceSource && typeof faceSource === "object"
@@ -442,6 +443,7 @@ export function serializeFontPickerValue(value) {
 
 export function quoteFontFamily(family) {
   const text = cleanText(family);
+  if (text.toLocaleLowerCase() === "unset") return "unset";
   if (!text) return "system-ui";
   if (
     GENERIC_FAMILIES.has(text.toLocaleLowerCase()) ||

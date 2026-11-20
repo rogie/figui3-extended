@@ -89,9 +89,19 @@ function normalizedOpacity(value, fallback = 1) {
 
 function colorWithOpacity(fill, multiplier = 1) {
   const color = typeof fill.color === "string" ? fill.color : DEFAULT_COLOR;
-  const opacity = normalizedOpacity(fill.opacity) * multiplier;
-  if (opacity >= 1 || !/^#[0-9a-f]{6}$/i.test(color)) return color;
-  return `${color}${Math.round(opacity * 255)
+  const opacity = (Number.isFinite(fill.alpha)
+    ? Math.max(0, Math.min(1, fill.alpha))
+    : normalizedOpacity(fill.opacity)) * multiplier;
+  if (opacity >= 1) return color;
+  let hex = color;
+  if (/^#[0-9a-f]{3,4}$/i.test(hex)) {
+    hex = `#${[...hex.slice(1)].map((digit) => digit + digit).join("")}`;
+  }
+  if (!/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(hex)) {
+    return `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`;
+  }
+  const alpha = hex.length === 9 ? parseInt(hex.slice(7), 16) / 255 : 1;
+  return `${hex.slice(0, 7)}${Math.round(opacity * alpha * 255)
     .toString(16)
     .padStart(2, "0")}`;
 }
@@ -105,11 +115,20 @@ function gradientCss(fill) {
     return fill.css;
   }
   const cssStops = stops.map((stop) => {
-    const color = colorWithOpacity(stop ?? {}, opacity);
+    const color = colorWithOpacity({
+      ...stop,
+      alpha: typeof stop?.alpha === "number" ? stop.alpha : (stop?.opacity ?? 100) / 100,
+    }, opacity);
     const position = typeof stop?.position === "number" ? stop.position : 0;
     return `${color} ${position}%`;
   });
   const angle = typeof gradient.angle === "number" ? gradient.angle : 90;
+  if (gradient.type === "radial") {
+    return `radial-gradient(circle at ${gradient.centerX ?? 50}% ${gradient.centerY ?? 50}%, ${cssStops.join(", ")})`;
+  }
+  if (gradient.type === "angular" || gradient.type === "conic") {
+    return `conic-gradient(from ${angle}deg, ${cssStops.join(", ")})`;
+  }
   return `linear-gradient(${angle}deg, ${cssStops.join(", ")})`;
 }
 
@@ -118,9 +137,14 @@ function fillLayerCss(fill) {
   if (fill.type === "image") {
     const image =
       fill.image && typeof fill.image === "object" ? fill.image : {};
-    return typeof image.url === "string" && image.url
-      ? `url("${image.url.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`
-      : null;
+    if (typeof image.url !== "string" || !image.url) return null;
+    const url = `url("${image.url.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}")`;
+    const opacity = normalizedOpacity(image.opacity ?? fill.opacity);
+    if (opacity >= 1) return url;
+    const transparent = 'url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")';
+    const standard = `cross-fade(${url} ${opacity * 100}%, ${transparent})`;
+    if (globalThis.CSS?.supports("background-image", standard)) return standard;
+    return `-webkit-cross-fade(${url}, ${transparent}, ${1 - opacity})`;
   }
   const color = colorWithOpacity(fill);
   return `linear-gradient(${color}, ${color})`;
@@ -131,13 +155,25 @@ function backgroundValues(fills) {
   const bottom = visible[visible.length - 1];
   const bottomIsColor = bottom?.type === "solid";
   const layers = (bottomIsColor ? visible.slice(0, -1) : visible)
-    .map(fillLayerCss)
-    .filter(Boolean);
+    .map((fill) => ({ fill, css: fillLayerCss(fill) }))
+    .filter((layer) => layer.css);
+  const sizes = layers.map(({ fill }) => {
+    if (fill.type !== "image") return "auto";
+    if (fill.image?.scaleMode === "fit") return "contain";
+    if (fill.image?.scaleMode === "tile") {
+      const scale = Number(fill.image.scale ?? 50);
+      return `${Number.isFinite(scale) ? Math.max(0, scale) : 50}%`;
+    }
+    return "cover";
+  });
   return {
     "background-color": bottomIsColor
       ? colorWithOpacity(bottom)
       : DEFAULT_COLOR,
-    "background-image": layers.length ? layers.join(", ") : "none",
+    "background-image": layers.length ? layers.map((layer) => layer.css).join(", ") : "none",
+    "background-size": sizes.join(", ") || "auto",
+    "background-position": layers.map(({ fill }) => fill.type === "image" && fill.image?.scaleMode !== "tile" ? "center" : "0% 0%").join(", ") || "0% 0%",
+    "background-repeat": layers.map(({ fill }) => fill.type === "image" && fill.image?.scaleMode !== "tile" ? "no-repeat" : "repeat").join(", ") || "repeat",
   };
 }
 

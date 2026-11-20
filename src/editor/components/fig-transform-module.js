@@ -35,9 +35,9 @@ const TRANSFORM_TYPES = {
     label: "Scale",
     defaults: { x: 1, y: 1, z: 1 },
     fields: [
-      ["x", "X scale", ""],
-      ["y", "Y scale", ""],
-      ["z", "Z scale", ""],
+      ["x", "X scale", "%"],
+      ["y", "Y scale", "%"],
+      ["z", "Z scale", "%"],
     ],
   },
   skew: {
@@ -273,22 +273,31 @@ class FigModuleTransforms extends HTMLElement {
 
   #createNumberInput(transform, index, key, label, units, disabled) {
     const input = document.createElement("fig-input-number");
-    input.setAttribute("value", String(transform[key]));
+    // Scale stays a unitless factor in the public API and CSS output.
+    const displayFactor = transform.type === "scale" ? 100 : 1;
+    input.setAttribute("value", String(transform[key] * displayFactor));
+    input.setAttribute("default", String(TRANSFORM_TYPES[transform.type].defaults[key] * displayFactor));
+    input.setAttribute("step", "1");
     input.setAttribute("full", "");
     input.setAttribute("aria-label", label);
     if (units) input.setAttribute("units", units);
+    input.setAttribute("units-disallow", "");
     if (transform.type === "perspective") input.setAttribute("min", "1");
     if (disabled) input.setAttribute("disabled", "");
-    const prepend = document.createElement("fig-icon");
-    prepend.setAttribute("slot", "prepend");
-    prepend.textContent =
-      key === "depth" ? "P" : key.toUpperCase();
-    input.append(prepend);
+    if (key !== "depth") {
+      const prepend = document.createElement("fig-icon");
+      prepend.setAttribute("slot", "prepend");
+      prepend.textContent = key.toUpperCase();
+      input.append(prepend);
+    }
     const update = (event) => {
       event.stopPropagation();
       this.#updateTransform(
         index,
-        { [key]: number(eventValue(event, input), transform[key]) },
+        {
+          [key]: number(eventValue(event, input), transform[key] * displayFactor) /
+            displayFactor,
+        },
         event.type,
         event,
       );
@@ -337,15 +346,19 @@ class FigModuleTransforms extends HTMLElement {
         event,
         true,
       );
+      this.#openEditor(index);
     });
     const close = createIconButton("Close transform editor", "close");
     close.setAttribute("close-dialog", "");
     header.append(typeSelect, close);
     popup.append(header);
     popup.setAttribute("title", TRANSFORM_TYPES[transform.type].label);
-    popup.addEventListener("close", () => {
-      trigger.setAttribute("aria-expanded", "false");
-      trigger.removeAttribute("selected");
+    popup.addEventListener("fig-popup-lifecycle", (event) => {
+      if (event.target !== popup) return;
+      const open = event.detail?.state === "opening" ||
+        event.detail?.state === "open";
+      trigger.setAttribute("aria-expanded", String(open));
+      trigger.toggleAttribute("selected", open);
     });
 
     const content = document.createElement("fig-content");
@@ -384,7 +397,9 @@ class FigModuleTransforms extends HTMLElement {
 
     const field = document.createElement("fig-field");
     const fieldLabel = document.createElement("label");
-    fieldLabel.textContent = TRANSFORM_TYPES[transform.type].label;
+    fieldLabel.textContent = transform.type === "perspective"
+      ? "Depth"
+      : TRANSFORM_TYPES[transform.type].label;
     const stack = document.createElement("fig-stack");
     stack.setAttribute("direction", "vertical");
     stack.setAttribute("full", "");
@@ -508,8 +523,6 @@ class FigModuleTransforms extends HTMLElement {
         );
         if (!popup) return;
         popup.open = !popup.open;
-        trigger.setAttribute("aria-expanded", String(popup.open));
-        trigger.toggleAttribute("selected", popup.open);
       });
       property.append(trigger);
 

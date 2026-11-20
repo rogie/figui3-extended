@@ -94,6 +94,9 @@ test.describe("fig-module-fills", () => {
     expect(detail.values).toEqual({
       "background-color": "#00000000",
       "background-image": "none",
+      "background-size": "auto",
+      "background-position": "0% 0%",
+      "background-repeat": "repeat",
     });
   });
 
@@ -131,6 +134,9 @@ test.describe("fig-module-fills", () => {
       "background-color": "#00000000",
       "background-image":
         'linear-gradient(45deg, #0000001f 0%, #ffffff0f 100%), url("https://example.com/image.png")',
+      "background-size": "auto, cover",
+      "background-position": "0% 0%, center",
+      "background-repeat": "repeat, no-repeat",
     });
   });
 
